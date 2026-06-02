@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { DateRangePicker } from "@/components/admin/DateRangePicker";
-import { Search, Plus, Pencil, Trash2, X, User, Phone, Mail, Shield, ShieldOff } from "lucide-react";
+import { Search, Plus, Pencil, Eye, X, User, Phone, Mail, Shield, ShieldOff } from "lucide-react";
 
 type UserType = {
   id: string; name: string; email: string; phone: string;
@@ -38,6 +38,7 @@ export default function UsersPage() {
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [selected, setSelected] = useState<string[]>([]);
+  const [viewUser, setViewUser] = useState<UserType | null>(null);
 
   const filtered = users.filter((u) => {
     const matchSearch = u.name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase()) || u.phone.includes(search) || u.id.toLowerCase().includes(search.toLowerCase());
@@ -61,11 +62,9 @@ export default function UsersPage() {
     setShowModal(false);
   }
 
-  function handleDelete(id: string) { setUsers((prev) => prev.filter((u) => u.id !== id)); setSelected((prev) => prev.filter((x) => x !== id)); }
   function toggleBlock(id: string) { setUsers((prev) => prev.map((u) => u.id === id ? { ...u, status: u.status === "Active" ? "Blocked" : "Active" } : u)); }
   function toggleSelect(id: string) { setSelected((s) => s.includes(id) ? s.filter((x) => x !== id) : [...s, id]); }
   function toggleAll() { setSelected((s) => s.length === filtered.length ? [] : filtered.map((u) => u.id)); }
-  function deleteSelected() { setUsers((prev) => prev.filter((u) => !selected.includes(u.id))); setSelected([]); }
 
   return (
     <div className="flex-1 overflow-y-auto">
@@ -109,11 +108,6 @@ export default function UsersPage() {
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-display text-lg font-medium text-foreground">All Customers</h3>
             <div className="flex items-center gap-3">
-              {selected.length > 0 && (
-                <button onClick={deleteSelected} className="flex items-center gap-1.5 text-xs text-destructive border border-destructive/30 hover:bg-destructive/10 px-3 py-1.5 rounded-lg transition">
-                  <Trash2 className="h-3.5 w-3.5" /> Delete Selected ({selected.length})
-                </button>
-              )}
               <span className="text-xs text-muted-foreground">{filtered.length} of {users.length} users</span>
             </div>
           </div>
@@ -164,7 +158,7 @@ export default function UsersPage() {
                         <button onClick={() => toggleBlock(u.id)} className={`p-1.5 rounded-lg transition ${u.status === "Active" ? "text-muted-foreground hover:text-amber-400 hover:bg-amber-400/10" : "text-amber-400 hover:bg-amber-400/10"}`} title={u.status === "Active" ? "Block" : "Unblock"}>
                           {u.status === "Active" ? <ShieldOff className="h-3.5 w-3.5" /> : <Shield className="h-3.5 w-3.5" />}
                         </button>
-                        <button onClick={() => handleDelete(u.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition" title="Delete"><Trash2 className="h-3.5 w-3.5" /></button>
+                        <button onClick={() => setViewUser(u)} className="p-1.5 rounded-lg text-muted-foreground hover:text-sky-400 hover:bg-sky-400/10 transition" title="View"><Eye className="h-3.5 w-3.5" /></button>
                       </div>
                     </td>
                   </tr>
@@ -174,6 +168,42 @@ export default function UsersPage() {
           </div>
         </div>
       </div>
+
+      {viewUser && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+          <div className="glass-card rounded-2xl p-5 w-full max-w-md border border-[var(--gold)]/20">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-display text-lg text-foreground">User Details</h3>
+              <button onClick={() => setViewUser(null)} className="text-muted-foreground hover:text-foreground transition"><X className="h-5 w-5" /></button>
+            </div>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="h-12 w-12 rounded-full bg-[var(--gold)]/10 border border-[var(--gold)]/20 flex items-center justify-center shrink-0">
+                <User className="h-6 w-6 text-gold" />
+              </div>
+              <div>
+                <p className="text-foreground font-semibold">{viewUser.name}</p>
+                <p className="text-xs text-muted-foreground">{viewUser.id}</p>
+              </div>
+            </div>
+            <div className="space-y-2.5">
+              {[
+                { label: "Email", value: viewUser.email },
+                { label: "Phone", value: viewUser.phone },
+                { label: "Role", value: viewUser.role },
+                { label: "Status", value: viewUser.status },
+                { label: "Joined", value: viewUser.joined },
+                { label: "Bookings", value: String(viewUser.bookings) },
+              ].map(({ label, value }) => (
+                <div key={label} className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">{label}</span>
+                  <span className="text-foreground font-medium">{value}</span>
+                </div>
+              ))}
+            </div>
+            <button onClick={() => setViewUser(null)} className="mt-5 w-full rounded-lg py-2.5 text-sm border border-white/10 text-muted-foreground hover:text-foreground transition">Close</button>
+          </div>
+        </div>
+      )}
 
       {showModal && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
