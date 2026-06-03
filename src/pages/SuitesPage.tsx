@@ -1,13 +1,7 @@
 import { useState, useRef } from "react";
-import { Plus, Search, Pencil, Trash2, X, BedDouble, ImagePlus, Wifi, Tv, Wind, Music, Camera, Coffee, Cake, Sparkles } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, X, BedDouble, ImagePlus, Check } from "lucide-react";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { useSuitesContext, type Suite } from "@/components/admin/SuitesContext";
-
-const AMENITY_OPTIONS = [
-  { key: "WiFi", icon: Wifi }, { key: "Smart TV", icon: Tv }, { key: "AC", icon: Wind },
-  { key: "Music System", icon: Music }, { key: "Photography", icon: Camera },
-  { key: "Welcome Drinks", icon: Coffee }, { key: "Cake", icon: Cake }, { key: "Decoration", icon: Sparkles },
-];
 
 const emptyForm: Omit<Suite, "id"> = { name: "", capacity: 2, price: "", occasions: "", status: "Active", description: "", images: [], amenities: [] };
 
@@ -15,6 +9,64 @@ const statusStyle: Record<string, string> = {
   Active: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
   Inactive: "bg-amber-500/10 text-amber-400 border-amber-500/20",
 };
+
+function AmenitiesEditor({ amenities, onChange }: { amenities: string[]; onChange: (a: string[]) => void }) {
+  const [newVal, setNewVal] = useState("");
+  const [editIdx, setEditIdx] = useState<number | null>(null);
+  const [editVal, setEditVal] = useState("");
+
+  function addAmenity() {
+    const trimmed = newVal.trim();
+    if (!trimmed || amenities.includes(trimmed)) return;
+    onChange([...amenities, trimmed]);
+    setNewVal("");
+  }
+
+  function saveEdit(idx: number) {
+    const trimmed = editVal.trim();
+    if (!trimmed) return;
+    onChange(amenities.map((a, i) => (i === idx ? trimmed : a)));
+    setEditIdx(null);
+  }
+
+  return (
+    <div>
+      <label className="text-xs text-muted-foreground uppercase tracking-wide">Amenities</label>
+      <div className="mt-1.5 space-y-1.5">
+        {amenities.map((a, i) => (
+          <div key={i} className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-white/10 bg-white/[0.03]">
+            {editIdx === i ? (
+              <>
+                <input autoFocus value={editVal} onChange={(e) => setEditVal(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") saveEdit(i); if (e.key === "Escape") setEditIdx(null); }}
+                  className="luxury-input flex-1 rounded-md px-2 py-0.5 text-xs" />
+                <button type="button" onClick={() => saveEdit(i)} className="p-1 rounded text-emerald-400 hover:bg-emerald-400/10 transition"><Check className="h-3 w-3" /></button>
+                <button type="button" onClick={() => setEditIdx(null)} className="p-1 rounded text-muted-foreground hover:text-foreground transition"><X className="h-3 w-3" /></button>
+              </>
+            ) : (
+              <>
+                <span className="flex-1 text-xs text-foreground">{a}</span>
+                <button type="button" onClick={() => { setEditIdx(i); setEditVal(a); }}
+                  className="p-1 rounded text-gold/60 hover:text-gold hover:bg-[var(--gold)]/10 transition"><Pencil className="h-3 w-3" /></button>
+                <button type="button" onClick={() => onChange(amenities.filter((_, idx) => idx !== i))}
+                  className="p-1 rounded text-destructive/60 hover:text-destructive hover:bg-destructive/10 transition"><Trash2 className="h-3 w-3" /></button>
+              </>
+            )}
+          </div>
+        ))}
+        <div className="flex gap-2">
+          <input value={newVal} onChange={(e) => setNewVal(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addAmenity(); } }}
+            placeholder="Add amenity (e.g. WiFi)" className="luxury-input flex-1 rounded-lg px-3 py-1.5 text-xs" />
+          <button type="button" onClick={addAmenity}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs border border-[var(--gold)]/30 text-gold hover:bg-[var(--gold)]/10 transition">
+            <Plus className="h-3 w-3" /> Add
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function SuitesPage() {
   const { suites, setSuites } = useSuitesContext();
@@ -178,20 +230,7 @@ export default function SuitesPage() {
                 <label className="text-xs text-muted-foreground uppercase tracking-wide">Description</label>
                 <textarea rows={2} placeholder="Brief description..." value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} className="luxury-input w-full rounded-lg px-3 py-1.5 text-sm mt-0.5 resize-none" />
               </div>
-              <div>
-                <label className="text-xs text-muted-foreground uppercase tracking-wide">Amenities</label>
-                <div className="mt-1.5 flex flex-wrap gap-2">
-                  {AMENITY_OPTIONS.map(({ key, icon: Icon }) => {
-                    const selected = form.amenities.includes(key);
-                    return (
-                      <button key={key} type="button" onClick={() => setForm((f) => ({ ...f, amenities: selected ? f.amenities.filter((a) => a !== key) : [...f.amenities, key] }))}
-                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs border transition ${selected ? "bg-[var(--gold)]/15 border-[var(--gold)]/50 text-gold" : "border-white/10 text-muted-foreground hover:border-[var(--gold)]/30 hover:text-foreground"}`}>
-                        <Icon className="h-3 w-3" /> {key}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              <AmenitiesEditor amenities={form.amenities} onChange={(a) => setForm((f) => ({ ...f, amenities: a }))} />
               <div>
                 <label className="text-xs text-muted-foreground uppercase tracking-wide">Status</label>
                 <select value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as Suite["status"] }))} className="luxury-input w-full rounded-lg px-3 py-1.5 text-sm mt-0.5 bg-transparent cursor-pointer">

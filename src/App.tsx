@@ -10,6 +10,9 @@ import AddonsPage from "@/pages/AddonsPage";
 import AnalyticsPage from "@/pages/AnalyticsPage";
 import OffersPage from "@/pages/OffersPage";
 import PackagesPage from "@/pages/PackagesPage";
+import RevenuePage from "@/pages/RevenuePage";
+import CustomersPage from "@/pages/CustomersPage";
+import AvgBookingValuePage from "@/pages/AvgBookingValuePage";
 
 export default function App() {
   return (
@@ -18,6 +21,9 @@ export default function App() {
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route element={<AdminLayout />}>
         <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/revenue" element={<RevenuePage />} />
+        <Route path="/customers-overview" element={<CustomersPage />} />
+        <Route path="/avg-booking-value" element={<AvgBookingValuePage />} />
         <Route path="/bookings" element={<BookingsPage />} />
         <Route path="/rooms" element={<SuitesPage />} />
         <Route path="/addons" element={<AddonsPage />} />

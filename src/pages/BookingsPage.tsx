@@ -3,23 +3,11 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Search, Filter, Download, Trash2 } from "lucide-react";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { DateRangePicker } from "@/components/admin/DateRangePicker";
-
-const allBookings = [
-  { id: "#VN1042", guest: "Arjun Sharma", phone: "+91 98765 43210", suite: "Royal Celebration Suite", occasion: "Birthday", date: "12 Jun 2025", time: "6:00 PM", guests: 4, amount: "₹8,500", status: "Confirmed" },
-  { id: "#VN1041", guest: "Priya Reddy", phone: "+91 91234 56789", suite: "Starlight Romance Suite", occasion: "Anniversary", date: "11 Jun 2025", time: "7:00 PM", guests: 2, amount: "₹6,200", status: "Pending" },
-  { id: "#VN1040", guest: "Rahul Mehta", phone: "+91 99887 76655", suite: "Garden Bliss Suite", occasion: "Proposal", date: "10 Jun 2025", time: "8:00 PM", guests: 2, amount: "₹5,000", status: "Confirmed" },
-  { id: "#VN1039", guest: "Sneha Patel", phone: "+91 93456 78901", suite: "Midnight Luxe Suite", occasion: "Birthday", date: "09 Jun 2025", time: "5:00 PM", guests: 6, amount: "₹7,800", status: "Cancelled" },
-  { id: "#VN1038", guest: "Vikram Nair", phone: "+91 87654 32109", suite: "Royal Celebration Suite", occasion: "Anniversary", date: "08 Jun 2025", time: "7:30 PM", guests: 2, amount: "₹9,200", status: "Confirmed" },
-  { id: "#VN1037", guest: "Divya Krishnan", phone: "+91 76543 21098", suite: "Starlight Romance Suite", occasion: "Surprise Party", date: "07 Jun 2025", time: "6:30 PM", guests: 8, amount: "₹11,000", status: "Confirmed" },
-  { id: "#VN1036", guest: "Karan Malhotra", phone: "+91 65432 10987", suite: "Garden Bliss Suite", occasion: "Birthday", date: "06 Jun 2025", time: "5:30 PM", guests: 5, amount: "₹4,800", status: "Pending" },
-  { id: "#VN1035", guest: "Ananya Singh", phone: "+91 54321 09876", suite: "Midnight Luxe Suite", occasion: "Proposal", date: "05 Jun 2025", time: "8:30 PM", guests: 2, amount: "₹6,500", status: "Confirmed" },
-  { id: "#VN1034", guest: "Rohan Gupta", phone: "+91 43210 98765", suite: "Royal Celebration Suite", occasion: "Anniversary", date: "04 Jun 2025", time: "7:00 PM", guests: 2, amount: "₹8,000", status: "Cancelled" },
-  { id: "#VN1033", guest: "Meera Iyer", phone: "+91 32109 87654", suite: "Starlight Romance Suite", occasion: "Birthday", date: "03 Jun 2025", time: "6:00 PM", guests: 4, amount: "₹7,200", status: "Confirmed" },
-];
+import { useAppData } from "@/components/admin/AppDataContext";
 
 const statusStyle: Record<string, string> = {
   Confirmed: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-  Pending: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+  Pending:   "bg-amber-500/10 text-amber-400 border-amber-500/20",
   Cancelled: "bg-destructive/10 text-destructive border-destructive/20",
 };
 
@@ -31,13 +19,14 @@ export default function BookingsPage() {
   const [searchParams] = useSearchParams();
   const dateParam = searchParams.get("date") ?? "";
   const navigate = useNavigate();
+  const { bookings, setBookings, stats } = useAppData();
+
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [occasionFilter, setOccasionFilter] = useState("All");
   const [suiteFilter, setSuiteFilter] = useState("All");
   const [dateFilter, setDateFilter] = useState(dateParam);
   const [selected, setSelected] = useState<string[]>([]);
-  const [bookings, setBookings] = useState(allBookings);
 
   useEffect(() => { if (dateParam) setDateFilter(dateParam); }, [dateParam]);
 
@@ -64,10 +53,10 @@ export default function BookingsPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap gap-3">
             {[
-              { label: "Total", count: allBookings.length, color: "border-[var(--gold)]/30 text-gold" },
-              { label: "Confirmed", count: allBookings.filter(b => b.status === "Confirmed").length, color: "border-emerald-500/30 text-emerald-400" },
-              { label: "Pending", count: allBookings.filter(b => b.status === "Pending").length, color: "border-amber-500/30 text-amber-400" },
-              { label: "Cancelled", count: allBookings.filter(b => b.status === "Cancelled").length, color: "border-destructive/30 text-destructive" },
+              { label: "Total",     count: bookings.length,               color: "border-[var(--gold)]/30 text-gold" },
+              { label: "Confirmed", count: stats.confirmedBookings,        color: "border-emerald-500/30 text-emerald-400" },
+              { label: "Pending",   count: stats.pendingBookings,          color: "border-amber-500/30 text-amber-400" },
+              { label: "Cancelled", count: stats.cancelledBookings,        color: "border-destructive/30 text-destructive" },
             ].map((s) => (
               <div key={s.label} className={`glass-card rounded-xl px-4 py-2.5 border ${s.color} flex items-center gap-2`}>
                 <span className="text-xl font-display font-semibold">{s.count}</span>
@@ -126,7 +115,8 @@ export default function BookingsPage() {
                   <th className="pb-3 pr-4">Guest</th>
                   <th className="pb-3 pr-4">Suite</th>
                   <th className="pb-3 pr-4">Occasion</th>
-                  <th className="pb-3 pr-4">Date & Time</th>
+                  <th className="pb-3 pr-4">Date</th>
+                  <th className="pb-3 pr-4">Time</th>
                   <th className="pb-3 pr-4">Amount</th>
                   <th className="pb-3 pr-4">Status</th>
                   <th className="pb-3">Action</th>
@@ -134,7 +124,7 @@ export default function BookingsPage() {
               </thead>
               <tbody className="divide-y divide-white/[0.04]">
                 {filtered.length === 0 ? (
-                  <tr><td colSpan={9} className="py-10 text-center text-sm text-muted-foreground">No bookings found</td></tr>
+                  <tr><td colSpan={10} className="py-10 text-center text-sm text-muted-foreground">No bookings found</td></tr>
                 ) : filtered.map((b) => (
                   <tr key={b.id} className={`hover:bg-white/[0.02] transition ${selected.includes(b.id) ? "bg-[var(--gold)]/5" : ""}`}>
                     <td className="py-3 pr-3"><input type="checkbox" checked={selected.includes(b.id)} onChange={() => toggleSelect(b.id)} className="h-3.5 w-3.5 accent-[var(--gold)] cursor-pointer" /></td>
@@ -144,7 +134,8 @@ export default function BookingsPage() {
                       <button onClick={() => navigate("/rooms")} className="text-gold hover:underline underline-offset-2 text-left transition">{b.suite}</button>
                     </td>
                     <td className="py-3 pr-4 text-muted-foreground">{b.occasion}</td>
-                    <td className="py-3 pr-4 text-muted-foreground text-xs">{b.date}<br />{b.time}</td>
+                    <td className="py-3 pr-4 text-muted-foreground text-xs">{b.date}</td>
+                    <td className="py-3 pr-4 text-muted-foreground text-xs">{b.time} – {b.endTime}</td>
                     <td className="py-3 pr-4 text-foreground font-medium">{b.amount}</td>
                     <td className="py-3 pr-4">
                       <span className={`px-2.5 py-1 rounded-full text-[11px] font-medium border ${statusStyle[b.status]}`}>{b.status}</span>

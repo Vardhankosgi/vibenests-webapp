@@ -8,19 +8,23 @@ import { BookingChart } from "@/components/admin/BookingChart";
 import { TopSuites } from "@/components/admin/TopSuites";
 import { RecentBookings } from "@/components/admin/RecentBookings";
 import { DateRangePicker } from "@/components/admin/DateRangePicker";
+import { useAppData } from "@/components/admin/AppDataContext";
+
+function fmtRevenue(n: number) {
+  if (n >= 100000) return `₹${(n / 100000).toFixed(1)}L`;
+  if (n >= 1000) return `₹${(n / 1000).toFixed(1)}k`;
+  return `₹${n}`;
+}
 
 export default function DashboardPage() {
   const navigate = useNavigate();
+  const { stats } = useAppData();
 
-  function fmtDate(d: Date) {
-    return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
-  }
-
-  const stats = [
-    { title: "Total Revenue", value: "₹12.4L", change: "+18%", positive: true, icon: IndianRupee },
-    { title: "Total Bookings", value: "284", change: "+12%", positive: true, icon: CalendarDays, onClick: () => navigate("/bookings") },
-    { title: "Total Customers", value: "196", change: "+9%", positive: true, icon: Users },
-    { title: "Avg. Booking Value", value: "₹4,366", change: "+5%", positive: true, icon: TrendingUp },
+  const cards = [
+    { title: "Total Revenue",      value: fmtRevenue(stats.totalRevenue),               change: "+18%", positive: true,  icon: IndianRupee,  onClick: () => navigate("/revenue") },
+    { title: "Total Bookings",     value: String(stats.totalBookings),                  change: "+12%", positive: true,  icon: CalendarDays, onClick: () => navigate("/bookings") },
+    { title: "Total Customers",    value: String(stats.totalCustomers),                 change: "+9%",  positive: true,  icon: Users,        onClick: () => navigate("/customers-overview") },
+    { title: "Avg. Booking Value", value: `₹${stats.avgBookingValue.toLocaleString()}`, change: "+5%",  positive: true,  icon: TrendingUp,   onClick: () => navigate("/avg-booking-value") },
   ];
 
   return (
@@ -32,7 +36,7 @@ export default function DashboardPage() {
           <DateRangePicker />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-          {stats.map((s) => <StatsCard key={s.title} {...s} />)}
+          {cards.map((s) => <StatsCard key={s.title} {...s} />)}
         </div>
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
           <div className="xl:col-span-2"><RevenueChart /></div>

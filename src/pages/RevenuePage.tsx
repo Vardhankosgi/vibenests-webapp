@@ -1,0 +1,289 @@
+import { useState } from "react";
+import { IndianRupee, TrendingUp, TrendingDown, ArrowLeft, Download, CreditCard, Banknote, Wallet } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { AdminHeader } from "@/components/admin/AdminHeader";
+import { useAppData, parseAmount } from "@/components/admin/AppDataContext";
+import {
+  AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer, Cell, PieChart, Pie,
+} from "recharts";
+
+const monthly = [
+  { month: "Jan", revenue: 42000, expenses: 12000 },
+  { month: "Feb", revenue: 58000, expenses: 15000 },
+  { month: "Mar", revenue: 51000, expenses: 13000 },
+  { month: "Apr", revenue: 73000, expenses: 18000 },
+  { month: "May", revenue: 68000, expenses: 17000 },
+  { month: "Jun", revenue: 91000, expenses: 22000 },
+  { month: "Jul", revenue: 87000, expenses: 21000 },
+  { month: "Aug", revenue: 105000, expenses: 26000 },
+  { month: "Sep", revenue: 98000, expenses: 24000 },
+  { month: "Oct", revenue: 112000, expenses: 28000 },
+  { month: "Nov", revenue: 124000, expenses: 31000 },
+  { month: "Dec", revenue: 138000, expenses: 35000 },
+];
+
+const pieData = [
+  { name: "Suites", value: 62, color: "oklch(0.78 0.13 80)" },
+  { name: "Add-ons", value: 21, color: "oklch(0.65 0.10 80)" },
+  { name: "Packages", value: 12, color: "oklch(0.55 0.09 75)" },
+  { name: "Others", value: 5, color: "oklch(0.42 0.07 70)" },
+];
+
+const PERIODS = ["Monthly", "Quarterly", "Yearly"];
+
+export default function RevenuePage() {
+  const navigate = useNavigate();
+  const { bookings, stats } = useAppData();
+  const [period, setPeriod] = useState("Monthly");
+  const [txFilter, setTxFilter] = useState("All");
+
+  // Derive transactions from real bookings
+  const transactions = bookings.map((b, i) => ({
+    id: `#TXN${8821 - i}`,
+    guest: b.guest,
+    suite: b.suite,
+    date: b.date,
+    amount: parseAmount(b.amount),
+    method: ["UPI", "Card", "Cash"][i % 3],
+    status: b.status === "Confirmed" ? "Settled" : "Pending",
+  }));
+
+  // Derive suite revenue from real bookings
+  const suiteMap: Record<string, { revenue: number; bookings: number }> = {};
+  bookings.filter(b => b.status === "Confirmed").forEach((b) => {
+    const key = b.suite.replace(" Suite", "");
+    if (!suiteMap[key]) suiteMap[key] = { revenue: 0, bookings: 0 };
+    suiteMap[key].revenue += parseAmount(b.amount);
+    suiteMap[key].bookings += 1;
+  });
+  const suiteRevenue = Object.entries(suiteMap).map(([suite, v], i) => ({
+    suite, ...v, color: `oklch(${0.78 - i * 0.07} ${0.13 - i * 0.01} 80)`,
+  }));
+
+  const totalRevenue = stats.totalRevenue;
+  const totalExpenses = Math.round(totalRevenue * 0.28);
+  const netProfit = totalRevenue - totalExpenses;
+
+  const filteredTx = txFilter === "All" ? transactions : transactions.filter((t) => t.status === txFilter);
+
+  return (
+    <div className="flex-1 overflow-y-auto">
+      <AdminHeader title="Revenue" />
+      <div className="p-6 space-y-6">
+
+        {/* Back + actions */}
+        <div className="flex items-center justify-between">
+          <button onClick={() => navigate("/dashboard")} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-gold transition">
+            <ArrowLeft className="h-4 w-4" /> Back to Dashboard
+          </button>
+          <button className="flex items-center gap-2 text-xs gold-btn px-4 py-2 rounded-lg font-medium">
+            <Download className="h-3.5 w-3.5" /> Export Report
+          </button>
+        </div>
+
+        {/* Top KPI cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          {[
+            { label: "Total Revenue", value: `₹${(totalRevenue / 100000).toFixed(1)}L`, sub: "+18% vs last year", up: true, icon: IndianRupee, accent: "border-[var(--gold)]/30" },
+            { label: "Net Profit",    value: `₹${(netProfit / 100000).toFixed(1)}L`,    sub: "+22% vs last year", up: true, icon: TrendingUp,  accent: "border-emerald-500/30" },
+            { label: "Total Expenses",value: `₹${(totalExpenses / 1000).toFixed(0)}k`,  sub: "+8% vs last year",  up: false,icon: TrendingDown,accent: "border-destructive/30" },
+            { label: "Avg Monthly",   value: `₹${(totalRevenue / 12 / 1000).toFixed(0)}k`, sub: "Per month avg", up: true, icon: IndianRupee, accent: "border-[var(--gold)]/20" },
+          ].map((c) => (
+            <div key={c.label} className={`glass-card rounded-2xl p-5 border ${c.accent} flex items-start justify-between gap-4`}>
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">{c.label}</p>
+                <p className="font-display text-3xl font-semibold text-foreground mt-1">{c.value}</p>
+                <p className={`text-xs mt-2 ${c.up ? "text-emerald-400" : "text-destructive"}`}>{c.sub}</p>
+              </div>
+              <div className="h-11 w-11 shrink-0 rounded-xl bg-[var(--gold)]/10 border border-[var(--gold)]/20 flex items-center justify-center">
+                <c.icon className="h-5 w-5 text-gold" />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Revenue vs Expenses Chart */}
+        <div className="glass-card rounded-2xl p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-display text-lg font-medium">Revenue vs Expenses</h3>
+            <div className="flex gap-1 p-1 rounded-lg bg-white/[0.04] border border-white/[0.06]">
+              {PERIODS.map((p) => (
+                <button key={p} onClick={() => setPeriod(p)}
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition ${period === p ? "bg-[var(--gold)]/20 text-gold border border-[var(--gold)]/30" : "text-muted-foreground hover:text-foreground"}`}>
+                  {p}
+                </button>
+              ))}
+            </div>
+          </div>
+          <ResponsiveContainer width="100%" height={280}>
+            <AreaChart data={monthly}>
+              <defs>
+                <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="oklch(0.78 0.13 80)" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="oklch(0.78 0.13 80)" stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="expGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="oklch(0.6 0.22 25)" stopOpacity={0.25} />
+                  <stop offset="95%" stopColor="oklch(0.6 0.22 25)" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="oklch(1 0 0 / 0.06)" />
+              <XAxis dataKey="month" tick={{ fill: "oklch(0.72 0.02 90)", fontSize: 12 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: "oklch(0.72 0.02 90)", fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(v) => `₹${v / 1000}k`} />
+              <Tooltip
+                contentStyle={{ background: "oklch(0.13 0.025 260)", border: "1px solid oklch(0.78 0.13 80 / 0.2)", borderRadius: "8px" }}
+                formatter={(v: number, name: string) => [`₹${v.toLocaleString()}`, name === "revenue" ? "Revenue" : "Expenses"]}
+              />
+              <Area type="monotone" dataKey="revenue" stroke="oklch(0.78 0.13 80)" strokeWidth={2} fill="url(#revGrad)" />
+              <Area type="monotone" dataKey="expenses" stroke="oklch(0.6 0.22 25)" strokeWidth={2} fill="url(#expGrad)" />
+            </AreaChart>
+          </ResponsiveContainer>
+          <div className="flex gap-4 mt-2 justify-end">
+            {[{ color: "oklch(0.78 0.13 80)", label: "Revenue" }, { color: "oklch(0.6 0.22 25)", label: "Expenses" }].map((l) => (
+              <div key={l.label} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <span className="h-2 w-4 rounded-full" style={{ background: l.color }} />
+                {l.label}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Suite Revenue + Pie */}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+          <div className="xl:col-span-2 glass-card rounded-2xl p-5">
+            <h3 className="font-display text-lg font-medium mb-4">Revenue by Suite</h3>
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart data={suiteRevenue} layout="vertical" margin={{ left: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="oklch(1 0 0 / 0.06)" horizontal={false} />
+                <XAxis type="number" tick={{ fill: "oklch(0.72 0.02 90)", fontSize: 11 }} axisLine={false} tickLine={false} tickFormatter={(v) => `₹${v / 1000}k`} />
+                <YAxis type="category" dataKey="suite" tick={{ fill: "oklch(0.72 0.02 90)", fontSize: 11 }} axisLine={false} tickLine={false} width={120} />
+                <Tooltip
+                  contentStyle={{ background: "oklch(0.13 0.025 260)", border: "1px solid oklch(0.78 0.13 80 / 0.2)", borderRadius: "8px" }}
+                  formatter={(v: number) => [`₹${v.toLocaleString()}`, "Revenue"]}
+                />
+                <Bar dataKey="revenue" radius={[0, 6, 6, 0]}>
+                  {suiteRevenue.map((s, i) => <Cell key={i} fill={s.color} />)}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="glass-card rounded-2xl p-5">
+            <h3 className="font-display text-lg font-medium mb-4">Revenue Split</h3>
+            <ResponsiveContainer width="100%" height={200}>
+              <PieChart>
+                <Pie data={pieData} cx="50%" cy="50%" innerRadius={55} outerRadius={80} paddingAngle={3} dataKey="value">
+                  {pieData.map((p, i) => <Cell key={i} fill={p.color} />)}
+                </Pie>
+                <Tooltip
+                  contentStyle={{ background: "oklch(0.13 0.025 260)", border: "1px solid oklch(0.78 0.13 80 / 0.2)", borderRadius: "8px" }}
+                  formatter={(v: number) => [`${v}%`, ""]}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="space-y-2 mt-2">
+              {pieData.map((p) => (
+                <div key={p.name} className="flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full" style={{ background: p.color }} />
+                    <span className="text-muted-foreground">{p.name}</span>
+                  </div>
+                  <span className="text-foreground font-medium">{p.value}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Suite performance table */}
+        <div className="glass-card rounded-2xl p-5">
+          <h3 className="font-display text-lg font-medium mb-4">Suite Performance</h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs text-muted-foreground uppercase tracking-wide border-b border-white/[0.06]">
+                  <th className="pb-3 pr-4">Suite</th>
+                  <th className="pb-3 pr-4">Bookings</th>
+                  <th className="pb-3 pr-4">Revenue</th>
+                  <th className="pb-3 pr-4">Avg per Booking</th>
+                  <th className="pb-3">Share</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/[0.04]">
+                {suiteRevenue.map((s) => (
+                  <tr key={s.suite} className="hover:bg-white/[0.02] transition">
+                    <td className="py-3 pr-4 font-medium text-foreground">{s.suite}</td>
+                    <td className="py-3 pr-4 text-muted-foreground">{s.bookings}</td>
+                    <td className="py-3 pr-4 text-gold font-medium">₹{s.revenue.toLocaleString()}</td>
+                    <td className="py-3 pr-4 text-muted-foreground">₹{Math.round(s.revenue / s.bookings).toLocaleString()}</td>
+                    <td className="py-3">
+                      <div className="flex items-center gap-2">
+                        <div className="h-1.5 w-24 rounded-full bg-white/[0.08] overflow-hidden">
+                          <div className="h-full rounded-full" style={{ width: `${totalRevenue ? Math.round((s.revenue / totalRevenue) * 100) : 0}%`, background: s.color }} />
+                        </div>
+                        <span className="text-xs text-muted-foreground">{totalRevenue ? Math.round((s.revenue / totalRevenue) * 100) : 0}%</span>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Transactions */}
+        <div className="glass-card rounded-2xl p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-display text-lg font-medium">Recent Transactions</h3>
+            <div className="flex gap-1 p-1 rounded-lg bg-white/[0.04] border border-white/[0.06]">
+              {["All", "Settled", "Pending"].map((f) => (
+                <button key={f} onClick={() => setTxFilter(f)}
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition ${txFilter === f ? "bg-[var(--gold)]/20 text-gold border border-[var(--gold)]/30" : "text-muted-foreground hover:text-foreground"}`}>
+                  {f}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs text-muted-foreground uppercase tracking-wide border-b border-white/[0.06]">
+                  <th className="pb-3 pr-4">Txn ID</th>
+                  <th className="pb-3 pr-4">Guest</th>
+                  <th className="pb-3 pr-4">Suite</th>
+                  <th className="pb-3 pr-4">Date</th>
+                  <th className="pb-3 pr-4">Amount</th>
+                  <th className="pb-3 pr-4">Method</th>
+                  <th className="pb-3">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/[0.04]">
+                {filteredTx.map((t) => (
+                  <tr key={t.id} className="hover:bg-white/[0.02] transition">
+                    <td className="py-3 pr-4 text-gold font-medium">{t.id}</td>
+                    <td className="py-3 pr-4 text-foreground">{t.guest}</td>
+                    <td className="py-3 pr-4 text-muted-foreground text-xs">{t.suite}</td>
+                    <td className="py-3 pr-4 text-muted-foreground text-xs">{t.date}</td>
+                    <td className="py-3 pr-4 text-foreground font-medium">₹{t.amount.toLocaleString()}</td>
+                    <td className="py-3 pr-4">
+                      <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        {t.method === "UPI" ? <Wallet className="h-3 w-3" /> : t.method === "Card" ? <CreditCard className="h-3 w-3" /> : <Banknote className="h-3 w-3" />} {t.method}
+                      </span>
+                    </td>
+                    <td className="py-3">
+                      <span className={`px-2.5 py-1 rounded-full text-[11px] font-medium border ${t.status === "Settled" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-amber-500/10 text-amber-400 border-amber-500/20"}`}>
+                        {t.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+}

@@ -2,20 +2,7 @@ import { useState } from "react";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { DateRangePicker } from "@/components/admin/DateRangePicker";
 import { Search, Plus, Pencil, Eye, X, User, Phone, Mail, Shield, ShieldOff } from "lucide-react";
-
-type UserType = {
-  id: string; name: string; email: string; phone: string;
-  role: "Guest" | "Admin"; status: "Active" | "Blocked"; joined: string; bookings: number;
-};
-
-const initialUsers: UserType[] = [
-  { id: "U001", name: "Arjun Sharma", email: "arjun@example.com", phone: "+91 98765 43210", role: "Guest", status: "Active", joined: "12 Jan 2025", bookings: 4 },
-  { id: "U002", name: "Priya Reddy", email: "priya@example.com", phone: "+91 91234 56789", role: "Guest", status: "Active", joined: "20 Feb 2025", bookings: 2 },
-  { id: "U003", name: "Rahul Mehta", email: "rahul@example.com", phone: "+91 99887 76655", role: "Guest", status: "Blocked", joined: "05 Mar 2025", bookings: 1 },
-  { id: "U004", name: "Sneha Patel", email: "sneha@example.com", phone: "+91 93456 78901", role: "Guest", status: "Active", joined: "18 Mar 2025", bookings: 3 },
-  { id: "U005", name: "Vikram Nair", email: "vikram@example.com", phone: "+91 87654 32109", role: "Admin", status: "Active", joined: "01 Jan 2025", bookings: 0 },
-  { id: "U006", name: "Divya Krishnan", email: "divya@example.com", phone: "+91 76543 21098", role: "Guest", status: "Active", joined: "22 Apr 2025", bookings: 5 },
-];
+import { useAppData, type UserType } from "@/components/admin/AppDataContext";
 
 const emptyForm: Omit<UserType, "id" | "joined" | "bookings"> = { name: "", email: "", phone: "", role: "Guest", status: "Active" };
 
@@ -30,7 +17,7 @@ const roleStyle: Record<string, string> = {
 };
 
 export default function UsersPage() {
-  const [users, setUsers] = useState(initialUsers);
+  const { users, setUsers, stats } = useAppData();
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState("All");
@@ -73,10 +60,10 @@ export default function UsersPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap gap-3">
             {[
-              { label: "Total Users", count: users.length, color: "border-[var(--gold)]/30 text-gold" },
-              { label: "Active", count: users.filter(u => u.status === "Active").length, color: "border-emerald-500/30 text-emerald-400" },
-              { label: "Blocked", count: users.filter(u => u.status === "Blocked").length, color: "border-destructive/30 text-destructive" },
-              { label: "Admins", count: users.filter(u => u.role === "Admin").length, color: "border-[var(--gold)]/30 text-gold" },
+              { label: "Total Users", count: users.length,           color: "border-[var(--gold)]/30 text-gold" },
+              { label: "Active",      count: stats.activeCustomers,  color: "border-emerald-500/30 text-emerald-400" },
+              { label: "Blocked",     count: stats.blockedCustomers, color: "border-destructive/30 text-destructive" },
+              { label: "Admins",      count: users.filter(u => u.role === "Admin").length, color: "border-[var(--gold)]/30 text-gold" },
             ].map((s) => (
               <div key={s.label} className={`glass-card rounded-xl px-4 py-2.5 border ${s.color} flex items-center gap-2`}>
                 <span className="text-xl font-display font-semibold">{s.count}</span>
