@@ -1,10 +1,12 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Mail, Lock, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { authApi } from "@/lib/api";
 import { useAuth } from "./AuthContext";
 
 export function EmailLoginForm() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
@@ -35,6 +37,7 @@ export function EmailLoginForm() {
     } finally {
       setLoading(false);
     }
+    setTimeout(() => { setLoading(false); window.location.href = "/user/dashboard"; }, 900);
   }
 
   return (

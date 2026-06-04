@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Phone, CheckCircle2, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { authApi } from "@/lib/api";
@@ -7,6 +8,7 @@ import { useAuth } from "./AuthContext";
 const COUNTRY_CODES = ["+91", "+1", "+44", "+61", "+971", "+65"];
 
 export function MobileOtpForm() {
+  const navigate = useNavigate();
   const [code, setCode] = useState("+91");
   const [mobile, setMobile] = useState("");
   const [stage, setStage] = useState<"input" | "otp" | "success">("input");
@@ -80,6 +82,8 @@ export function MobileOtpForm() {
     } finally {
       setLoading(false);
     }
+    setStage("success");
+    setTimeout(() => { window.location.href = "/user/dashboard"; }, 1200);
   }
 
   if (stage === "success") {

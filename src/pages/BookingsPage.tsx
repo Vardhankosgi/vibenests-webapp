@@ -345,6 +345,7 @@ export default function BookingsPage() {
   const [occasionFilter, setOccasionFilter] = useState("All");
   const [suiteFilter, setSuiteFilter] = useState("All");
   const [dateFilter, setDateFilter] = useState(dateParam);
+  const [dateRange, setDateRange] = useState<{ from: Date; to: Date } | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
   const [showNewBooking, setShowNewBooking] = useState(false);
 
@@ -363,7 +364,14 @@ export default function BookingsPage() {
     const matchOccasion = occasionFilter === "All" || b.occasion === occasionFilter;
     const matchSuite = suiteFilter === "All" || b.suite === suiteFilter;
     const matchDate = !dateFilter || b.date === dateFilter;
-    return matchSearch && matchStatus && matchOccasion && matchSuite && matchDate;
+    const matchDateRange = !dateRange || (() => {
+      const d = new Date(b.date);
+      const from = new Date(dateRange.from); from.setHours(0,0,0,0);
+      const to = new Date(dateRange.to); to.setHours(23,59,59,999);
+      return d >= from && d <= to;
+    })();
+    return matchSearch && matchStatus && matchOccasion && matchSuite && matchDate && matchDateRange;
+
   });
 
   const selectClass = "luxury-input rounded-lg px-3 py-2 text-xs text-foreground bg-transparent cursor-pointer";

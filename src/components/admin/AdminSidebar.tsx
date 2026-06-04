@@ -3,15 +3,16 @@ import { createPortal } from "react-dom";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/auth/AuthContext";
 import { authApi } from "@/lib/api";
-import { LayoutDashboard, CalendarDays, BedDouble, BarChart2, Settings, LogOut, Menu, Tag, Package, Users, Gift } from "lucide-react";
+import { LayoutDashboard, CalendarDays, BedDouble, BarChart2, Settings, LogOut, Menu, Tag, Package, Users, Gift,CreditCard } from "lucide-react";
 import { LogoPopover } from "@/components/shared/LogoPopover";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
   { icon: CalendarDays, label: "Bookings", to: "/bookings" },
+  { icon: CreditCard, label: "Suite Booking", to: "/suite-booking" },
   { icon: BedDouble, label: "Suites", to: "/rooms" },
   { icon: Package, label: "Add-on Management", to: "/addons" },
-  { icon: Gift, label: "Celebration Packages", to: "/packages" },
+  { icon: Gift, label: "Celebration Packages", to: "/celebration-packages" },
   { icon: Users, label: "User Management", to: "/customers" },
   { icon: BarChart2, label: "Analytics", to: "/analytics" },
   { icon: Tag, label: "Offers & Refund Configurations", to: "/offers" },
