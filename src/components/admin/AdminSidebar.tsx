@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { NavLink, useNavigate } from "react-router-dom";
+import { useAuth } from "@/components/auth/AuthContext";
+import { authApi } from "@/lib/api";
 import { LayoutDashboard, CalendarDays, BedDouble, BarChart2, Settings, LogOut, Menu, Tag, Package, Users, Gift } from "lucide-react";
 import { LogoPopover } from "@/components/shared/LogoPopover";
 
@@ -24,6 +26,7 @@ interface AdminSidebarProps {
 export function AdminSidebar({ collapsed, onToggle }: AdminSidebarProps) {
   const [showConfirm, setShowConfirm] = useState(false);
   const navigate = useNavigate();
+  const { clearSession } = useAuth();
   return (
     <>
     <aside
@@ -96,7 +99,13 @@ export function AdminSidebar({ collapsed, onToggle }: AdminSidebarProps) {
           <p className="text-sm text-muted-foreground mb-6">Are you sure you want to logout?</p>
           <div className="flex gap-3">
             <button
-              onClick={() => { setShowConfirm(false); navigate("/login"); }}
+              onClick={async () => {
+                const rt = localStorage.getItem('refreshToken');
+                if (rt) await authApi.logout(rt).catch(() => {});
+                clearSession();
+                setShowConfirm(false);
+                navigate("/login");
+              }}
               className="gold-btn flex-1 rounded-lg py-2.5 text-sm font-semibold"
             >
               Yes, Logout

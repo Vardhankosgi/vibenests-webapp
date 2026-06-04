@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Phone, CheckCircle2, ArrowRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { authApi } from "@/lib/api";
+import { useAuth } from "./AuthContext";
 
 const COUNTRY_CODES = ["+91", "+1", "+44", "+61", "+971", "+65"];
 
@@ -10,7 +13,10 @@ export function MobileOtpForm() {
   const [otp, setOtp] = useState<string[]>(Array(6).fill(""));
   const [timer, setTimer] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const inputsRef = useRef<Array<HTMLInputElement | null>>([]);
+  const navigate = useNavigate();
+  const { saveSession } = useAuth();
 
   useEffect(() => {
     if (timer <= 0) return;
@@ -18,17 +24,30 @@ export function MobileOtpForm() {
     return () => clearInterval(t);
   }, [timer]);
 
-  function sendOtp(e?: React.FormEvent) {
+  async function sendOtp(e?: React.FormEvent) {
     e?.preventDefault();
     setError(null);
     if (!/^\d{7,15}$/.test(mobile)) {
       setError("Please enter a valid mobile number.");
       return;
     }
-    setStage("otp");
-    setTimer(30);
-    setOtp(Array(6).fill(""));
-    setTimeout(() => inputsRef.current[0]?.focus(), 50);
+    setLoading(true);
+    try {
+      const res = await authApi.sendOtp(`${code}${mobile}`);
+      // In dev mode the OTP is returned in the response — auto-fill for convenience
+      if (res.otp) {
+        setOtp(res.otp.split(""));
+      } else {
+        setOtp(Array(6).fill(""));
+      }
+      setStage("otp");
+      setTimer(30);
+      setTimeout(() => inputsRef.current[0]?.focus(), 50);
+    } catch (err: any) {
+      setError(err.message || "Failed to send OTP.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   function handleOtpChange(i: number, v: string) {
@@ -43,14 +62,24 @@ export function MobileOtpForm() {
     if (e.key === "Backspace" && !otp[i] && i > 0) inputsRef.current[i - 1]?.focus();
   }
 
-  function verify(e: React.FormEvent) {
+  async function verify(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     if (otp.join("").length !== 6) {
       setError("Please enter the full 6-digit code.");
       return;
     }
-    setStage("success");
+    setLoading(true);
+    try {
+      const data = await authApi.verifyOtp(`${code}${mobile}`, otp.join(""));
+      saveSession(data.accessToken, data.refreshToken, data.user as any);
+      setStage("success");
+      setTimeout(() => navigate("/dashboard"), 1200);
+    } catch (err: any) {
+      setError(err.message || "OTP verification failed.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   if (stage === "success") {
@@ -134,10 +163,11 @@ export function MobileOtpForm() {
 
       <button
         type="submit"
-        className="gold-btn group w-full rounded-lg py-3.5 text-sm font-semibold flex items-center justify-center gap-2"
+        disabled={loading}
+        className="gold-btn group w-full rounded-lg py-3.5 text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-70"
       >
-        {stage === "input" ? "Send OTP" : "Verify OTP"}
-        <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+        {loading ? (stage === "input" ? "Sending..." : "Verifying...") : (stage === "input" ? "Send OTP" : "Verify OTP")}
+        {!loading && <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />}
       </button>
     </form>
   );

@@ -13,13 +13,14 @@ import PackagesPage from "@/pages/PackagesPage";
 import RevenuePage from "@/pages/RevenuePage";
 import CustomersPage from "@/pages/CustomersPage";
 import AvgBookingValuePage from "@/pages/AvgBookingValuePage";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 
 export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/" element={<Navigate to="/login" replace />} />
-      <Route element={<AdminLayout />}>
+      <Route element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/revenue" element={<RevenuePage />} />
         <Route path="/customers-overview" element={<CustomersPage />} />
