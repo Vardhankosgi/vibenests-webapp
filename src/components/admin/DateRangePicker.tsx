@@ -21,11 +21,19 @@ function sameDay(a: Date, b: Date) {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
 
-export function DateRangePicker() {
+interface DateRangePickerProps {
+  value?: { from: Date; to: Date } | null;
+  onChange?: (range: { from: Date; to: Date }) => void;
+}
+
+export function DateRangePicker({ value, onChange }: DateRangePickerProps = {}) {
   const today = new Date();
   const [open, setOpen] = useState(false);
   const [from, setFrom] = useState<Date>(new Date(today.getFullYear(), today.getMonth(), 1));
   const [to, setTo] = useState<Date>(today);
+
+  const displayFrom = value ? value.from : from;
+  const displayTo = value ? value.to : to;
   const [hovered, setHovered] = useState<Date | null>(null);
   const [selecting, setSelecting] = useState<"from" | "to" | null>(null);
   const [viewYear, setViewYear] = useState(today.getFullYear());
@@ -66,8 +74,8 @@ export function DateRangePicker() {
   }
 
   function isInRange(d: Date) {
-    const end = selecting === "to" && hovered ? hovered : to;
-    const start = from;
+    const end = selecting === "to" && hovered ? hovered : displayTo;
+    const start = displayFrom;
     return d > (start < end ? start : end) && d < (start < end ? end : start);
   }
 
@@ -83,7 +91,7 @@ export function DateRangePicker() {
       >
         <Calendar className="h-4 w-4 text-gold shrink-0" />
         <span className="hidden sm:block text-xs">
-          {fmt(from)} — {fmt(to)}
+          {fmt(displayFrom)} — {fmt(displayTo)}
         </span>
         <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
@@ -146,8 +154,8 @@ export function DateRangePicker() {
                 {Array.from({ length: firstDay }).map((_, i) => <div key={`e${i}`} />)}
                 {Array.from({ length: daysInMonth }).map((_, i) => {
                   const d = new Date(viewYear, viewMonth, i + 1);
-                  const isFrom = sameDay(d, from);
-                  const isTo = sameDay(d, to);
+                  const isFrom = sameDay(d, displayFrom);
+                  const isTo = sameDay(d, displayTo);
                   const inRange = isInRange(d);
                   const isToday = sameDay(d, today);
                   return (
@@ -172,10 +180,10 @@ export function DateRangePicker() {
               {/* Footer */}
               <div className="mt-4 pt-3 border-t border-[var(--gold)]/10 flex items-center justify-between">
                 <span className="text-xs text-muted-foreground">
-                  {fmt(from)} — {fmt(to)}
+                  {fmt(displayFrom)} — {fmt(displayTo)}
                 </span>
                 <button
-                  onClick={() => setOpen(false)}
+                  onClick={() => { onChange?.({ from, to }); setOpen(false); }}
                   className="gold-btn px-4 py-1.5 rounded-lg text-xs font-semibold"
                 >
                   Apply

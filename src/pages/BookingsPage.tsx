@@ -26,6 +26,7 @@ export default function BookingsPage() {
   const [occasionFilter, setOccasionFilter] = useState("All");
   const [suiteFilter, setSuiteFilter] = useState("All");
   const [dateFilter, setDateFilter] = useState(dateParam);
+  const [dateRange, setDateRange] = useState<{ from: Date; to: Date } | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
 
   useEffect(() => { if (dateParam) setDateFilter(dateParam); }, [dateParam]);
@@ -41,7 +42,14 @@ export default function BookingsPage() {
     const matchOccasion = occasionFilter === "All" || b.occasion === occasionFilter;
     const matchSuite = suiteFilter === "All" || b.suite === suiteFilter;
     const matchDate = !dateFilter || b.date === dateFilter;
-    return matchSearch && matchStatus && matchOccasion && matchSuite && matchDate;
+    const matchDateRange = !dateRange || (() => {
+      const d = new Date(b.date);
+      const from = new Date(dateRange.from); from.setHours(0,0,0,0);
+      const to = new Date(dateRange.to); to.setHours(23,59,59,999);
+      return d >= from && d <= to;
+    })();
+    return matchSearch && matchStatus && matchOccasion && matchSuite && matchDate && matchDateRange;
+
   });
 
   const selectClass = "luxury-input rounded-lg px-3 py-2 text-xs text-foreground bg-transparent cursor-pointer";
@@ -64,7 +72,10 @@ export default function BookingsPage() {
               </div>
             ))}
           </div>
-          <DateRangePicker />
+          <DateRangePicker value={dateRange} onChange={(r) => setDateRange(r)} />
+          {dateRange && (
+            <button onClick={() => setDateRange(null)} className="text-xs text-muted-foreground hover:text-gold transition px-2 py-1 rounded-lg border border-white/10 hover:border-[var(--gold)]/30">✕ Range</button>
+          )}
         </div>
 
         <div className="glass-card rounded-2xl p-4 flex flex-wrap items-center gap-3">
@@ -88,7 +99,7 @@ export default function BookingsPage() {
               <button onClick={() => setDateFilter("")} className="hover:text-white transition">✕</button>
             </div>
           )}
-          <button onClick={() => { setSearch(""); setStatusFilter("All"); setOccasionFilter("All"); setSuiteFilter("All"); setDateFilter(""); }} className="text-xs text-muted-foreground hover:text-gold transition px-3 py-2 rounded-lg border border-white/10 hover:border-[var(--gold)]/30">Clear</button>
+          <button onClick={() => { setSearch(""); setStatusFilter("All"); setOccasionFilter("All"); setSuiteFilter("All"); setDateFilter(""); setDateRange(null); }} className="text-xs text-muted-foreground hover:text-gold transition px-3 py-2 rounded-lg border border-white/10 hover:border-[var(--gold)]/30">Clear</button>
           <button className="flex items-center gap-2 text-xs gold-btn px-3 py-2 rounded-lg font-medium ml-auto">
             <Download className="h-3.5 w-3.5" /> Export
           </button>
