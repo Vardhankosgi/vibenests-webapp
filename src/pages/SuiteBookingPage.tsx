@@ -62,13 +62,11 @@ const OCCASIONS = [
   },
 ];
 
-const TIME_SLOTS = [
-  "10:00 AM",
-  "12:30 PM",
-  "03:00 PM",
-  "05:30 PM",
-  "08:00 PM",
-  "10:30 PM",
+const TIME_OPTIONS = [
+  "09:00 AM", "10:00 AM", "11:00 AM", "12:00 PM",
+  "01:00 PM", "02:00 PM", "03:00 PM", "04:00 PM",
+  "05:00 PM", "06:00 PM", "07:00 PM", "08:00 PM",
+  "09:00 PM", "10:00 PM",
 ];
 
 const SUITES = [
@@ -118,7 +116,8 @@ export default function SuiteBookingPage() {
   const [step, setStep] = useState(0);
   const [selectedOccasion, setSelectedOccasion] = useState<string>("");
   const [bookingDate, setBookingDate] = useState("");
-  const [selectedTime, setSelectedTime] = useState<string>("");
+  const [startTime, setStartTime] = useState<string>("");
+  const [endTime, setEndTime] = useState<string>("");
   const [selectedSuite, setSelectedSuite] = useState<string>("");
   const [addonQty, setAddonQty] = useState<Record<string, number>>({
     "premium-catering": 0,
@@ -145,11 +144,11 @@ export default function SuiteBookingPage() {
 
   const isStepValid = useMemo(() => {
     if (step === 0) return !!selectedOccasion;
-    if (step === 1) return !!bookingDate && !!selectedTime;
+    if (step === 1) return !!bookingDate && !!startTime && !!endTime;
     if (step === 2) return !!selectedSuite;
     if (step === 5) return !!paymentMethod;
     return true;
-  }, [step, selectedOccasion, bookingDate, selectedTime, selectedSuite, paymentMethod]);
+  }, [step, selectedOccasion, bookingDate, startTime, endTime, selectedSuite, paymentMethod]);
 
   function handleNext() {
     if (!isStepValid) {
@@ -211,26 +210,36 @@ export default function SuiteBookingPage() {
 
         <div className="mt-6 grid gap-6 lg:grid-cols-[1.75fr_1fr]">
           <div className="space-y-6">
-            <div className="glass-card rounded-3xl border border-[var(--gold)]/15 p-4">
-              <div className="flex flex-wrap items-center gap-3">
+            <div className="glass-card rounded-3xl border border-[var(--gold)]/15 p-5">
+              <div className="flex items-center justify-between">
                 {STEPS.map((label, index) => (
-                  <button
-                    key={label}
-                    type="button"
-                    onClick={() => setStep(index)}
-                    className={`flex-1 min-w-[120px] rounded-2xl border px-4 py-3 text-left transition-all duration-300 ${
-                      index === step
-                        ? "border-gold bg-gold/10 text-gold shadow-[inset_0_0_0_1px_rgba(255,218,132,0.2)]"
-                        : "border-white/10 bg-black/50 text-muted-foreground hover:border-gold/20 hover:text-foreground"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 text-xs uppercase tracking-[0.25em] font-semibold">
-                      <span className={`h-6 w-6 rounded-full border text-center text-[11px] leading-6 ${index === step ? "border-gold bg-gold/10 text-gold" : "border-white/10 text-muted-foreground"}`}>
-                      {index + 1}
-                    </span>
-                    <span>{label}</span>
-                    </div>
-                  </button>
+                  <div key={label} className="flex items-center flex-1 last:flex-none">
+                    <button
+                      type="button"
+                      onClick={() => setStep(index)}
+                      className="flex flex-col items-center gap-2 group"
+                    >
+                      <span className={`h-8 w-8 rounded-full border-2 flex items-center justify-center text-xs font-bold transition-all duration-300 ${
+                        index < step
+                          ? "border-gold bg-gold text-[oklch(0.12_0.02_260)]"
+                          : index === step
+                          ? "border-gold bg-gold/15 text-gold"
+                          : "border-white/15 bg-white/5 text-muted-foreground group-hover:border-gold/40"
+                      }`}>
+                        {index < step ? "✓" : index + 1}
+                      </span>
+                      <span className={`text-[10px] font-semibold uppercase tracking-[0.15em] text-center leading-tight max-w-[72px] transition-colors ${
+                        index === step ? "text-gold" : index < step ? "text-gold/70" : "text-muted-foreground"
+                      }`}>
+                        {label}
+                      </span>
+                    </button>
+                    {index < STEPS.length - 1 && (
+                      <div className={`flex-1 h-px mx-2 mb-5 transition-colors duration-300 ${
+                        index < step ? "bg-gold/50" : "bg-white/10"
+                      }`} />
+                    )}
+                  </div>
                 ))}
               </div>
             </div>
@@ -287,26 +296,40 @@ export default function SuiteBookingPage() {
                     />
                   </div>
                   <div className="space-y-4">
-                    <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground">Choose Time Slot</p>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      {TIME_SLOTS.map((slot) => (
-                        <button
-                          key={slot}
-                          type="button"
-                          onClick={() => setSelectedTime(slot)}
-                          className={`rounded-3xl border px-4 py-3 text-left transition ${
-                            selectedTime === slot
-                              ? "border-gold bg-gold/10 text-gold"
-                              : "border-white/10 bg-white/5 text-muted-foreground hover:border-gold/20 hover:text-foreground"
-                          }`}
+                    <div className="space-y-3">
+                      <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground">Start Time</p>
+                      <div className="relative">
+                        <Clock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gold/60 pointer-events-none" />
+                        <select
+                          value={startTime}
+                          onChange={(e) => { setStartTime(e.target.value); setEndTime(""); }}
+                          className="luxury-input w-full rounded-3xl pl-10 pr-4 py-3 text-sm bg-black/40 appearance-none cursor-pointer [&>option]:bg-[#0a0a0a] [&>option]:text-foreground"
+                          style={{ colorScheme: "dark" }}
                         >
-                          <div className="flex items-center gap-2 text-sm font-semibold">
-                            <Clock className="h-4 w-4" />
-                            <span>{slot}</span>
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-1">Premium arrival and setup included.</p>
-                        </button>
-                      ))}
+                          <option value="">Select start time</option>
+                          {TIME_OPTIONS.map((t) => (
+                            <option key={t} value={t}>{t}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground">End Time</p>
+                      <div className="relative">
+                        <Clock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gold/60 pointer-events-none" />
+                        <select
+                          value={endTime}
+                          onChange={(e) => setEndTime(e.target.value)}
+                          disabled={!startTime}
+                          className="luxury-input w-full rounded-3xl pl-10 pr-4 py-3 text-sm bg-black/40 appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed [&>option]:bg-[#0a0a0a] [&>option]:text-foreground"
+                          style={{ colorScheme: "dark" }}
+                        >
+                          <option value="">Select end time</option>
+                          {TIME_OPTIONS.slice(TIME_OPTIONS.indexOf(startTime) + 1).map((t) => (
+                            <option key={t} value={t}>{t}</option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -417,7 +440,7 @@ export default function SuiteBookingPage() {
                       <h4 className="text-sm uppercase tracking-[0.25em] text-muted-foreground">Your Celebration</h4>
                       <p className="mt-4 text-lg text-foreground font-semibold">{OCCASIONS.find((item) => item.id === selectedOccasion)?.label ?? "No occasion selected"}</p>
                       <p className="text-sm text-muted-foreground mt-2">{bookingDate ? `Date: ${new Date(bookingDate).toLocaleDateString()}` : "No date"}</p>
-                      <p className="text-sm text-muted-foreground">{selectedTime ? `Time: ${selectedTime}` : "No time slot"}</p>
+                      <p className="text-sm text-muted-foreground">{startTime ? `${startTime}${endTime ? ` – ${endTime}` : ""}` : "No time selected"}</p>
                     </div>
                     <div className="glass-card rounded-3xl border border-white/10 p-5">
                       <h4 className="text-sm uppercase tracking-[0.25em] text-muted-foreground">Suite</h4>
@@ -544,7 +567,7 @@ export default function SuiteBookingPage() {
                   </div>
                   <div className="flex items-center gap-3 text-sm text-muted-foreground mt-3">
                     <Clock className="h-4 w-4 text-gold" />
-                    <span>{selectedTime || "No time slot chosen"}</span>
+                    <span>{startTime ? `${startTime}${endTime ? ` – ${endTime}` : ""}` : "No time chosen"}</span>
                   </div>
                 </div>
 
