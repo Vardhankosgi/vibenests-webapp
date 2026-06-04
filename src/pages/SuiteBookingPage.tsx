@@ -127,6 +127,7 @@ export default function SuiteBookingPage() {
   const [specialRequests, setSpecialRequests] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"pay-now" | "pay-venue">("pay-now");
   const [showValidation, setShowValidation] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
 
   const suite = SUITES.find((suite) => suite.id === selectedSuite);
 
@@ -176,6 +177,34 @@ export default function SuiteBookingPage() {
   }
 
   const stepLabel = STEPS[step];
+
+  if (confirmed) {
+    return (
+      <div className="flex-1 overflow-y-auto bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.05),_transparent_35%),_linear-gradient(180deg,_#050505_0%,_#070707_100%)]">
+        <AdminHeader title="Suite Booking" />
+        <div className="p-6 flex items-center justify-center min-h-[60vh]">
+          <div className="glass-card rounded-3xl border border-gold/20 p-10 text-center max-w-md w-full space-y-5">
+            <div className="h-16 w-16 rounded-full bg-gold/15 border border-gold/30 flex items-center justify-center mx-auto">
+              <Sparkles className="h-7 w-7 text-gold" />
+            </div>
+            <h2 className="font-display text-3xl text-foreground">Booking Confirmed!</h2>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Your luxury suite has been reserved. A confirmation will be sent to you shortly.
+            </p>
+            <div className="glass rounded-2xl p-4 text-left space-y-2 border border-white/10">
+              <p className="text-xs text-muted-foreground">{OCCASIONS.find(o => o.id === selectedOccasion)?.label}</p>
+              <p className="text-sm text-foreground font-medium">{suite?.name}</p>
+              <p className="text-xs text-muted-foreground">{bookingDate} · {startTime}{endTime ? ` – ${endTime}` : ""}</p>
+              <p className="text-gold font-semibold">₹{grandTotal.toLocaleString()}</p>
+            </div>
+            <button onClick={() => navigate(-1)} className="gold-btn w-full rounded-2xl py-3 text-sm font-semibold">
+              Back to Dashboard
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 overflow-y-auto bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.05),_transparent_35%),_linear-gradient(180deg,_#050505_0%,_#070707_100%)]">
@@ -542,7 +571,7 @@ export default function SuiteBookingPage() {
                   onClick={handleNext}
                   className="gold-btn rounded-3xl px-6 py-3 text-sm font-semibold flex items-center justify-center gap-2"
                 >
-                  {step === STEPS.length - 1 ? "Confirm Booking" : "Proceed to Payment"}
+                  {step === STEPS.length - 1 ? "Confirm Booking" : "Continue"}
                   <ChevronRight className="h-4 w-4" />
                 </button>
               </div>
