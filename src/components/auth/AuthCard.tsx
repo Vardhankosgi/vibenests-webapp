@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { GoogleIcon } from "./GoogleIcon";
 import { EmailLoginForm } from "./EmailLoginForm";
@@ -8,6 +9,7 @@ type Tab = "email" | "otp";
 
 export function AuthCard() {
   const [tab, setTab] = useState<Tab>("otp");
+  const navigate = useNavigate();
 
   return (
     <motion.div
@@ -69,7 +71,7 @@ export function AuthCard() {
         <div className="px-4 py-3 text-center">
           <p className="text-sm text-muted-foreground">
             Don't have an account?{" "}
-            <a href="#" className="text-gold font-medium hover:underline underline-offset-4">Sign up</a>
+            <a onClick={() => navigate("/register")} className="text-gold font-medium hover:underline underline-offset-4 cursor-pointer">Sign up</a>
           </p>
         </div>
       </div>

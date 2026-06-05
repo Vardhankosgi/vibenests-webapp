@@ -197,14 +197,27 @@
   }
 
   .luxury-input {
-    background: oklch(1 0 0 / 0.04);
+    background: rgb(18, 20, 40);
     border: 1px solid oklch(0.78 0.13 80 / 0.25);
     outline: none;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    color: oklch(0.96 0.005 90);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
   }
   .luxury-input:focus {
+    background: rgb(18, 20, 40);
     border-color: oklch(0.78 0.13 80 / 0.7);
     box-shadow: 0 0 0 3px oklch(0.78 0.13 80 / 0.12);
+  }
+  .luxury-input:-webkit-autofill,
+  .luxury-input:-webkit-autofill:hover,
+  .luxury-input:-webkit-autofill:focus,
+  .luxury-input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 9999px rgb(18, 20, 40) inset !important;
+    box-shadow: 0 0 0 9999px rgb(18, 20, 40) inset !important;
+    -webkit-text-fill-color: oklch(0.96 0.005 90) !important;
+    caret-color: oklch(0.96 0.005 90);
+    border-color: oklch(0.78 0.13 80 / 0.25) !important;
+    transition: background-color 99999s ease-in-out 0s;
   }
 
   .gold-btn {

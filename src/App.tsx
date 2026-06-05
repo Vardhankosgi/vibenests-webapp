@@ -1,5 +1,7 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import LoginPage from "@/pages/LoginPage";
+import RegisterPage from "@/pages/RegisterPage";
+import AdminRegisterPage from "@/pages/AdminRegisterPage";
 import AdminLayout from "@/pages/AdminLayout";
 import DashboardPage from "@/pages/DashboardPage";
 import BookingsPage from "@/pages/BookingsPage";
@@ -18,6 +20,7 @@ import AvgBookingValuePage from "@/pages/AvgBookingValuePage";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import UserDashboardPage from "@/pages/UserDashboardPage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
+import WriteReviewPage from "@/pages/WriteReviewPage";
 import { SuitesProvider } from "@/components/admin/SuitesContext";
 
 export default function App() {
@@ -25,8 +28,11 @@ export default function App() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/admin/register" element={<AdminRegisterPage />} />
       <Route path="/user/dashboard" element={<SuitesProvider><UserDashboardPage /></SuitesProvider>} />
       <Route path="/user/suite-booking" element={<SuitesProvider><SuiteBookingPage /></SuitesProvider>} />
+      <Route path="/user/write-review" element={<WriteReviewPage />} />
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
         <Route path="/dashboard" element={<DashboardPage />} />

@@ -46,6 +46,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: "offers",      label: "Special Offers & Referrals", icon: Tag },
   { id: "profile",     label: "Profile Settings",  icon: UserCircle },
   { id: "help",        label: "Help & Support",    icon: HelpCircle },
+  { id: "write-review", label: "Write a Review",   icon: Star },
 ];
 
 /* ─── Bookings Data ──────────────────────────────────── */
@@ -1620,6 +1621,8 @@ function HelpView() {
 export default function UserDashboardPage() {
   const [activeNav, setActiveNav] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const navigate = useNavigate();
 
   function renderContent() {
     switch (activeNav) {
@@ -1664,7 +1667,38 @@ export default function UserDashboardPage() {
             <Bell className="h-4 w-4" />
             <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-gold" />
           </button>
-          <div className="h-9 w-9 rounded-xl bg-gradient-gold flex items-center justify-center font-bold text-[oklch(0.12_0.02_260)] text-sm">A</div>
+          <div className="relative">
+            <button
+              onClick={() => setProfileOpen((o) => !o)}
+              className="h-9 w-9 rounded-xl bg-gradient-gold flex items-center justify-center font-bold text-[oklch(0.12_0.02_260)] text-sm hover:opacity-80 transition-opacity">
+              A
+            </button>
+            <AnimatePresence>
+              {profileOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setProfileOpen(false)} />
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95, y: -4 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: -4 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 top-11 z-50 w-44 glass-card rounded-xl border border-white/10 py-1 shadow-xl"
+                  >
+                    <button
+                      onClick={() => { navigate("/login"); setProfileOpen(false); }}
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10 transition-colors">
+                      <LogOut className="h-4 w-4 shrink-0" /> Logout
+                    </button>
+                    <button
+                      onClick={() => setProfileOpen(false)}
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors">
+                      <X className="h-4 w-4 shrink-0" /> Cancel
+                    </button>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </header>
 
@@ -1708,7 +1742,10 @@ export default function UserDashboardPage() {
             {NAV_ITEMS.map(({ id, label, icon: Icon }) => {
               const active = activeNav === id;
               return (
-                <button key={id} onClick={() => { setActiveNav(id); setSidebarOpen(false); }}
+                <button key={id} onClick={() => {
+                    if (id === "write-review") { navigate("/user/write-review"); setSidebarOpen(false); return; }
+                    setActiveNav(id); setSidebarOpen(false);
+                  }}
                   className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${active ? "bg-gold/15 border border-gold/25 text-gold font-medium" : "text-muted-foreground hover:bg-white/5 hover:text-foreground"}`}>
                   <Icon className={`h-4 w-4 shrink-0 ${active ? "text-gold" : ""}`} />
                   {label}
@@ -1718,7 +1755,7 @@ export default function UserDashboardPage() {
           </nav>
 
           <div className="px-3 pb-6 pt-2 border-t border-white/5">
-            <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10 transition-all">
+            <button onClick={() => navigate("/login")} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10 transition-all">
               <LogOut className="h-4 w-4 shrink-0" />
               Logout
             </button>
