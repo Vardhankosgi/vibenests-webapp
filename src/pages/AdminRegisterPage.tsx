@@ -195,12 +195,18 @@ export default function AdminRegisterPage() {
           className="flex gap-2"
         >
           {BADGES.map(({ icon: Icon, label }) => (
-            <div key={label} className="glass-card rounded-2xl px-3 py-3 flex items-center gap-2 flex-1">
+            <a
+              key={label}
+              href="/privacy-policy"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="glass-card rounded-2xl px-3 py-3 flex items-center gap-2 flex-1 hover:border-gold/40 hover:bg-gold/5 transition-colors"
+            >
               <div className="h-7 w-7 rounded-lg bg-gold/10 border border-gold/25 flex items-center justify-center shrink-0">
                 <Icon className="h-3.5 w-3.5 text-gold" />
               </div>
               <span className="text-[10px] font-medium text-foreground/80 leading-tight">{label}</span>
-            </div>
+            </a>
           ))}
         </motion.div>
       </div>
@@ -441,9 +447,9 @@ export default function AdminRegisterPage() {
                       </button>
                       <span className="text-xs text-muted-foreground leading-relaxed">
                         I agree to the{" "}
-                        <a href="#" className="text-gold hover:underline underline-offset-2">Admin Terms of Service</a>
+                        <a href="/terms-of-use" target="_blank" className="text-gold hover:underline underline-offset-2">Admin Terms of Service</a>
                         {" "}and{" "}
-                        <a href="#" className="text-gold hover:underline underline-offset-2">Privacy Policy</a>.
+                        <a href="/privacy-policy" target="_blank" className="text-gold hover:underline underline-offset-2">Privacy Policy</a>.
                         {" "}This account will be reviewed before activation.
                       </span>
                     </label>
@@ -483,10 +489,16 @@ export default function AdminRegisterPage() {
                 {/* Mobile badges */}
                 <div className="flex gap-2 lg:hidden">
                   {BADGES.map(({ icon: Icon, label }) => (
-                    <div key={label} className="glass rounded-xl px-3 py-2 flex items-center gap-1.5 flex-1">
+                    <a
+                      key={label}
+                      href="/privacy-policy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="glass rounded-xl px-3 py-2 flex items-center gap-1.5 flex-1 hover:border-gold/40 transition-colors"
+                    >
                       <Icon className="h-3.5 w-3.5 text-gold shrink-0" />
                       <span className="text-[10px] text-muted-foreground leading-tight">{label}</span>
-                    </div>
+                    </a>
                   ))}
                 </div>
               </div>

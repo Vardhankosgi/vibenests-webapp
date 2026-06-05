@@ -1,20 +1,18 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Mail, Lock, ArrowRight } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import { authApi } from "@/lib/api";
 import { useAuth } from "./AuthContext";
 
 export function EmailLoginForm() {
   const navigate = useNavigate();
+  const { saveSession } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
   const [remember, setRemember] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
-  const { saveSession } = useAuth();
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -37,7 +35,6 @@ export function EmailLoginForm() {
     } finally {
       setLoading(false);
     }
-    setTimeout(() => { setLoading(false); window.location.href = "/user/dashboard"; }, 900);
   }
 
   return (
@@ -109,8 +106,8 @@ export function EmailLoginForm() {
 
       <p className="text-[11px] text-center text-muted-foreground leading-relaxed">
         By logging in, you agree to our{" "}
-        <a href="#" className="text-gold hover:underline">Terms of Service</a> and{" "}
-        <a href="#" className="text-gold hover:underline">Privacy Policy</a>.
+        <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-gold hover:underline">Terms of Service</a> and{" "}
+        <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-gold hover:underline">Privacy Policy</a>.
       </p>
     </form>
   );

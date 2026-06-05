@@ -1593,25 +1593,112 @@ function ProfileView() {
 }
 
 function HelpView() {
+  const topics = [
+    "Booking queries & confirmations",
+    "Celebration package customisation",
+    "Payment & refund requests",
+    "Live celebration sharing support",
+    "Complaints & escalations",
+    "Legal & privacy matters",
+  ];
+
+  const contactCards = [
+    {
+      icon: MessageSquare,
+      label: "Email Support",
+      value: "vibenestsmeetingpoint@gmail.com",
+      sub: "We respond within 1–2 business days",
+      href: "mailto:vibenestsmeetingpoint@gmail.com",
+    },
+    {
+      icon: Phone,
+      label: "Support Number",
+      value: "+91 9000201011",
+      sub: "Call or WhatsApp during support hours",
+      href: "tel:+919000201011",
+    },
+    {
+      icon: Clock,
+      label: "Support Hours",
+      value: "9:00 AM – 9:00 PM IST",
+      sub: "Monday to Sunday, incl. public holidays",
+      href: null,
+    },
+  ];
+
   return (
-    <div className="space-y-6 max-w-2xl">
-      <h3 className="font-display text-2xl text-foreground">Help & Support</h3>
-      <div className="grid sm:grid-cols-2 gap-4">
-        {[
-          { icon: Phone,         label: "Call Concierge", desc: "+91 1800-XXX-XXXX · 24/7 Support" },
-          { icon: MessageSquare, label: "Live Chat",       desc: "Instant help via in-app chat" },
-          { icon: HelpCircle,    label: "FAQs",            desc: "Browse common questions" },
-          { icon: CalendarDays,  label: "Booking Help",    desc: "Modify, cancel, or reschedule" },
-        ].map((h) => {
-          const Icon = h.icon;
-          return (
-            <button key={h.label} className="glass-card rounded-2xl p-5 text-left hover:border-gold/30 transition-colors group">
-              <Icon className="h-5 w-5 text-gold mb-3" />
-              <p className="text-sm font-medium text-foreground">{h.label}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{h.desc}</p>
-            </button>
-          );
-        })}
+    <div className="space-y-6">
+
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="font-display text-2xl text-foreground">Help & Support</h3>
+          <p className="text-xs text-muted-foreground mt-1">Vibenests Private Luxury Suites — we're here every day</p>
+        </div>
+        <span className="px-3 py-1 rounded-full bg-gold/10 border border-gold/25 text-gold text-[10px] font-bold tracking-widest uppercase">9 AM – 9 PM IST</span>
+      </div>
+
+      {/* Two-column layout */}
+      <div className="grid lg:grid-cols-2 gap-6">
+
+        {/* Left — contact cards */}
+        <div className="space-y-3">
+          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">Contact Us</p>
+          {contactCards.map((c) => {
+            const Icon = c.icon;
+            const cls = "flex items-center gap-4 glass-card rounded-2xl p-5 transition-colors group";
+            const inner = (
+              <>
+                <div className="h-11 w-11 rounded-xl bg-gold/10 border border-gold/25 flex items-center justify-center shrink-0">
+                  <Icon className="h-5 w-5 text-gold" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">{c.label}</p>
+                  <p className="text-sm font-medium text-foreground mt-0.5 break-all">{c.value}</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">{c.sub}</p>
+                </div>
+                {c.href && <ArrowUpRight className="h-4 w-4 text-gold/40 shrink-0 group-hover:text-gold transition-colors" />}
+              </>
+            );
+            return c.href ? (
+              <a key={c.label} href={c.href} className={`${cls} hover:border-gold/40 hover:bg-gold/5`}>{inner}</a>
+            ) : (
+              <div key={c.label} className={cls}>{inner}</div>
+            );
+          })}
+        </div>
+
+        {/* Right — topics + legal */}
+        <div className="space-y-4">
+          <div className="glass-card rounded-2xl p-5 space-y-4">
+            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">We Can Help With</p>
+            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-y-2.5 gap-x-4">
+              {topics.map((t) => (
+                <li key={t} className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span className="h-1.5 w-1.5 rounded-full bg-gold/60 shrink-0" />
+                  {t}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Business info */}
+          <div className="glass-card rounded-2xl p-5 space-y-1.5">
+            <p className="text-sm font-semibold text-foreground">Vibenests Private Luxury Suites</p>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Premium private suite bookings and celebration experiences. Our team is available 7 days a week to assist you.
+            </p>
+          </div>
+
+          {/* Legal links */}
+          <div className="glass rounded-2xl px-5 py-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
+            <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="hover:text-gold transition-colors">Privacy Policy</a>
+            <span className="text-white/15">|</span>
+            <a href="/terms-of-use" target="_blank" rel="noopener noreferrer" className="hover:text-gold transition-colors">Terms of Use</a>
+            <span className="text-white/15">|</span>
+            <a href="/contact" target="_blank" rel="noopener noreferrer" className="hover:text-gold transition-colors">Full Contact Page</a>
+          </div>
+        </div>
       </div>
     </div>
   );

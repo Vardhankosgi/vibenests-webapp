@@ -17,9 +17,11 @@ import SuiteBookingPage from "@/pages/SuiteBookingPage";
 import RevenuePage from "@/pages/RevenuePage";
 import CustomersPage from "@/pages/CustomersPage";
 import AvgBookingValuePage from "@/pages/AvgBookingValuePage";
-import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import UserDashboardPage from "@/pages/UserDashboardPage";
 import WriteReviewPage from "@/pages/WriteReviewPage";
+import PrivacyPolicyPage from "@/pages/PrivacyPolicyPage";
+import TermsOfUsePage from "@/pages/TermsOfUsePage";
+import ContactUsPage from "@/pages/ContactUsPage";
 import { SuitesProvider } from "@/components/admin/SuitesContext";
 
 export default function App() {
@@ -31,8 +33,11 @@ export default function App() {
       <Route path="/user/dashboard" element={<SuitesProvider><UserDashboardPage /></SuitesProvider>} />
       <Route path="/user/suite-booking" element={<SuitesProvider><SuiteBookingPage /></SuitesProvider>} />
       <Route path="/user/write-review" element={<WriteReviewPage />} />
+      <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+      <Route path="/terms-of-use" element={<TermsOfUsePage />} />
+      <Route path="/contact" element={<ContactUsPage />} />
       <Route path="/" element={<Navigate to="/login" replace />} />
-      <Route element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
+      <Route element={<AdminLayout />}>
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/revenue" element={<RevenuePage />} />
         <Route path="/customers-overview" element={<CustomersPage />} />

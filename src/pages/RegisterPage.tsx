@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Eye, EyeOff, User, Mail, Phone, Lock, MapPin,
   ShieldCheck, Star, Headphones, ChevronDown, Check,
-  AlertCircle,
+  AlertCircle, ArrowLeft,
 } from "lucide-react";
 import { BrandMark } from "@/components/auth/BrandMark";
 import { GoogleIcon } from "@/components/auth/GoogleIcon";
@@ -19,9 +19,9 @@ const CITIES = [
 
 /* ── Trust badges ───────────────────────────────────── */
 const TRUST_BADGES = [
-  { icon: ShieldCheck, label: "Secure & Private" },
-  { icon: Star,        label: "Exclusive Access" },
-  { icon: Headphones,  label: "24/7 Support"     },
+  { icon: ShieldCheck, label: "Secure & Private", href: "/privacy-policy" },
+  { icon: Star,        label: "Exclusive Access", href: "/privacy-policy" },
+  { icon: Headphones,  label: "24/7 Support",     href: "/contact"        },
 ];
 
 /* ── Validation helpers ─────────────────────────────── */
@@ -176,13 +176,19 @@ export default function RegisterPage() {
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}
           className="flex gap-3"
         >
-          {TRUST_BADGES.map(({ icon: Icon, label }) => (
-            <div key={label} className="glass-card rounded-2xl px-4 py-3 flex items-center gap-2.5 flex-1">
+          {TRUST_BADGES.map(({ icon: Icon, label, href }) => (
+            <a
+              key={label}
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="glass-card rounded-2xl px-4 py-3 flex items-center gap-2.5 flex-1 hover:border-gold/40 hover:bg-gold/5 transition-colors"
+            >
               <div className="h-8 w-8 rounded-lg bg-gold/10 border border-gold/25 flex items-center justify-center shrink-0">
                 <Icon className="h-4 w-4 text-gold" />
               </div>
               <span className="text-xs font-medium text-foreground/80 leading-tight">{label}</span>
-            </div>
+            </a>
           ))}
         </motion.div>
       </div>
@@ -225,11 +231,19 @@ export default function RegisterPage() {
 
               <div className="relative space-y-6">
                 {/* Header */}
-                <div>
-                  <h2 className="font-display text-3xl sm:text-4xl font-medium text-foreground">
-                    Create <span className="text-gradient-gold italic">Account</span>
-                  </h2>
-                  <p className="mt-1.5 text-sm text-muted-foreground">Join VibeNests and start your celebration journey</p>
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h2 className="font-display text-3xl sm:text-4xl font-medium text-foreground">
+                      Create <span className="text-gradient-gold italic">Account</span>
+                    </h2>
+                    <p className="mt-1.5 text-sm text-muted-foreground">Join VibeNests and start your celebration journey</p>
+                  </div>
+                  <button
+                    onClick={() => navigate("/login")}
+                    className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0 mt-1"
+                  >
+                    <ArrowLeft className="h-3.5 w-3.5" /> Back
+                  </button>
                 </div>
 
                 {/* Social login */}
@@ -394,9 +408,9 @@ export default function RegisterPage() {
                       </button>
                       <span className="text-xs text-muted-foreground leading-relaxed">
                         I agree to the{" "}
-                        <a href="#" className="text-gold hover:underline underline-offset-2">Terms of Service</a>
+                        <a href="/terms-of-use" target="_blank" className="text-gold hover:underline underline-offset-2">Terms of Service</a>
                         {" "}and{" "}
-                        <a href="#" className="text-gold hover:underline underline-offset-2">Privacy Policy</a>
+                        <a href="/privacy-policy" target="_blank" className="text-gold hover:underline underline-offset-2">Privacy Policy</a>
                       </span>
                     </label>
                     <AnimatePresence>
@@ -430,11 +444,17 @@ export default function RegisterPage() {
 
                 {/* Mobile trust badges */}
                 <div className="flex gap-2 lg:hidden pt-1">
-                  {TRUST_BADGES.map(({ icon: Icon, label }) => (
-                    <div key={label} className="glass rounded-xl px-3 py-2 flex items-center gap-1.5 flex-1">
+                  {TRUST_BADGES.map(({ icon: Icon, label, href }) => (
+                    <a
+                      key={label}
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="glass rounded-xl px-3 py-2 flex items-center gap-1.5 flex-1 hover:border-gold/40 transition-colors"
+                    >
                       <Icon className="h-3.5 w-3.5 text-gold shrink-0" />
                       <span className="text-[10px] text-muted-foreground leading-tight">{label}</span>
-                    </div>
+                    </a>
                   ))}
                 </div>
               </div>

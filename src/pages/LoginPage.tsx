@@ -41,7 +41,7 @@ export default function LoginPage() {
 
       {/* Left - Hero Panel */}
       <div className="hidden lg:flex items-center relative z-10">
-        <HeroPanel onSignUp={() => {}} />
+        <HeroPanel onSignUp={() => navigate("/register")} />
       </div>
 
       {/* Right - Auth Card */}

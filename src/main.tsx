@@ -5,16 +5,13 @@ import App from "./App";
 import "./styles.css";
 import { AuthProvider } from "@/components/auth/AuthContext";
 import { AppDataProvider } from "@/components/admin/AppDataContext";
-import { SuitesProvider } from "@/components/admin/SuitesContext";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
       <AuthProvider>
         <AppDataProvider>
-          <SuitesProvider>
-            <App />
-          </SuitesProvider>
+          <App />
         </AppDataProvider>
       </AuthProvider>
     </BrowserRouter>
