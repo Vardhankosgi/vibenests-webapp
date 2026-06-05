@@ -50,7 +50,7 @@ export function SuitesProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     suitesApi.getAll()
       .then((list) => setSuites(list.map(mapApiSuite)))
-      .catch(() => {})
+      .catch((err) => console.error('Failed to load suites:', err))
       .finally(() => setLoading(false));
   }, []);
 
