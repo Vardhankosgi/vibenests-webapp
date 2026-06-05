@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Mail, Lock, ArrowRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { authApi } from "@/lib/api";
+import { useAuth } from "./AuthContext";
 
 export function EmailLoginForm() {
   const navigate = useNavigate();
@@ -10,8 +13,10 @@ export function EmailLoginForm() {
   const [remember, setRemember] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const { saveSession } = useAuth();
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -23,6 +28,15 @@ export function EmailLoginForm() {
       return;
     }
     setLoading(true);
+    try {
+      const data = await authApi.login(email, password);
+      saveSession(data.accessToken, data.refreshToken, data.user);
+      navigate("/dashboard");
+    } catch (err: any) {
+      setError(err.message || "Login failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
     setTimeout(() => { setLoading(false); window.location.href = "/user/dashboard"; }, 900);
   }
 

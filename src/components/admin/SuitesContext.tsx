@@ -1,4 +1,5 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
+import { suitesApi } from "@/lib/api";
 
 export type Suite = {
   id: string;
@@ -12,24 +13,74 @@ export type Suite = {
   amenities: string[];
 };
 
-const initialSuites: Suite[] = [
-  { id: "S001", name: "Royal Celebration Suite", capacity: 10, price: "₹8,500", occasions: "Birthday, Anniversary", status: "Active", description: "Luxurious suite with royal decor, perfect for grand celebrations.", images: [], amenities: ["WiFi", "Smart TV", "AC", "Music System", "Decoration", "Cake"] },
-  { id: "S002", name: "Starlight Romance Suite", capacity: 4, price: "₹6,200", occasions: "Anniversary, Proposal", status: "Active", description: "Intimate suite with starlight ambience for romantic occasions.", images: [], amenities: ["WiFi", "AC", "Music System", "Welcome Drinks", "Decoration"] },
-  { id: "S003", name: "Garden Bliss Suite", capacity: 12, price: "₹5,000", occasions: "Birthday, Surprise Party", status: "Active", description: "Garden-themed suite with natural decor and open feel.", images: [], amenities: ["WiFi", "Smart TV", "AC", "Photography", "Cake", "Decoration"] },
-  { id: "S004", name: "Midnight Luxe Suite", capacity: 6, price: "₹7,800", occasions: "Proposal, Anniversary", status: "Inactive", description: "Elegant midnight-themed suite with premium lighting.", images: [], amenities: ["WiFi", "Smart TV", "AC", "Music System", "Welcome Drinks", "Photography", "Decoration"] },
-];
+function parseImages(val: any): string[] {
+  if (Array.isArray(val)) return val;
+  try { return JSON.parse(val); } catch { return []; }
+}
+
+function mapApiSuite(s: any): Suite {
+  return {
+    id: String(s.id),
+    name: s.name ?? "",
+    capacity: s.capacity ?? 0,
+    price: s.price ? `₹${Number(s.price).toLocaleString()}` : "₹0",
+    occasions: s.themeType ?? "",
+    status: s.status === "available" ? "Active" : "Inactive",
+    description: s.description ?? "",
+    images: parseImages(s.images),
+    amenities: Array.isArray(s.amenities) ? s.amenities : [],
+  };
+}
 
 type SuitesContextType = {
   suites: Suite[];
   setSuites: React.Dispatch<React.SetStateAction<Suite[]>>;
+  saveSuite: (form: Omit<Suite, "id">, editId: string | null) => Promise<void>;
+  deleteSuite: (id: string) => Promise<void>;
+  loading: boolean;
 };
 
 const SuitesContext = createContext<SuitesContextType | null>(null);
 
 export function SuitesProvider({ children }: { children: React.ReactNode }) {
-  const [suites, setSuites] = useState<Suite[]>(initialSuites);
+  const [suites, setSuites] = useState<Suite[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setLoading(true);
+    suitesApi.getAll()
+      .then((list) => setSuites(list.map(mapApiSuite)))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const saveSuite = async (form: Omit<Suite, "id">, editId: string | null) => {
+    const payload = {
+      name: form.name,
+      capacity: form.capacity,
+      price: parseFloat(String(form.price).replace(/[₹,]/g, "")) || 0,
+      themeType: form.occasions,
+      status: form.status === "Active" ? "available" : "maintenance",
+      description: form.description,
+      images: form.images,
+      amenities: form.amenities,
+    };
+    if (editId) {
+      const updated = await suitesApi.update(Number(editId), payload);
+      setSuites((prev) => prev.map((s) => s.id === editId ? mapApiSuite(updated) : s));
+    } else {
+      const created = await suitesApi.create(payload);
+      setSuites((prev) => [...prev, mapApiSuite(created)]);
+    }
+  };
+
+  const deleteSuite = async (id: string) => {
+    await suitesApi.remove(Number(id));
+    setSuites((prev) => prev.filter((s) => s.id !== id));
+  };
+
   return (
-    <SuitesContext.Provider value={{ suites, setSuites }}>
+    <SuitesContext.Provider value={{ suites, setSuites, saveSuite, deleteSuite, loading }}>
       {children}
     </SuitesContext.Provider>
   );

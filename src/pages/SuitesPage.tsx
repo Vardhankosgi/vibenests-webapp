@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Plus, Search, Pencil, Trash2, X, BedDouble, ImagePlus, Check } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, X, BedDouble, ImagePlus, Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { useSuitesContext, type Suite } from "@/components/admin/SuitesContext";
 
@@ -68,8 +68,42 @@ function AmenitiesEditor({ amenities, onChange }: { amenities: string[]; onChang
   );
 }
 
+function ImageSlider({ images, name }: { images: string[]; name: string }) {
+  const [idx, setIdx] = useState(0);
+  if (images.length === 0) {
+    return (
+      <div className="h-44 bg-white/[0.03] flex items-center justify-center border-b border-white/[0.05]">
+        <BedDouble className="h-10 w-10 text-[var(--gold)]/30" />
+      </div>
+    );
+  }
+  return (
+    <div className="relative h-44 overflow-hidden group">
+      <img src={images[idx]} alt={name} className="w-full h-full object-cover transition-opacity duration-300" />
+      {images.length > 1 && (
+        <>
+          <button onClick={() => setIdx((i) => (i - 1 + images.length) % images.length)}
+            className="absolute left-1.5 top-1/2 -translate-y-1/2 h-6 w-6 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition hover:bg-black/70">
+            <ChevronLeft className="h-3.5 w-3.5 text-white" />
+          </button>
+          <button onClick={() => setIdx((i) => (i + 1) % images.length)}
+            className="absolute right-1.5 top-1/2 -translate-y-1/2 h-6 w-6 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition hover:bg-black/70">
+            <ChevronRight className="h-3.5 w-3.5 text-white" />
+          </button>
+          <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 flex gap-1">
+            {images.map((_, i) => (
+              <button key={i} onClick={() => setIdx(i)}
+                className={`h-1.5 rounded-full transition-all ${i === idx ? "w-4 bg-white" : "w-1.5 bg-white/50"}`} />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function SuitesPage() {
-  const { suites, setSuites } = useSuitesContext();
+  const { suites, setSuites, saveSuite, deleteSuite: apiDelete } = useSuitesContext();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [showModal, setShowModal] = useState(false);
@@ -86,18 +120,19 @@ export default function SuitesPage() {
   function openAdd() { setEditId(null); setForm(emptyForm); setShowModal(true); }
   function openEdit(s: Suite) { setEditId(s.id); setForm({ name: s.name, capacity: s.capacity, price: s.price, occasions: s.occasions, status: s.status, description: s.description, images: s.images, amenities: s.amenities }); setShowModal(true); }
 
-  function handleSave() {
+  async function handleSave() {
     if (!form.name.trim()) return;
-    if (editId) {
-      setSuites((prev) => prev.map((s) => s.id === editId ? { ...s, ...form } : s));
-    } else {
-      const newId = `S${String(suites.length + 1).padStart(3, "0")}`;
-      setSuites((prev) => [...prev, { id: newId, ...form }]);
+    try {
+      await saveSuite(form, editId);
+      setShowModal(false);
+    } catch (err: any) {
+      alert(err.message || 'Failed to save suite');
     }
-    setShowModal(false);
   }
 
-  function handleDelete(id: string) { setSuites((prev) => prev.filter((s) => s.id !== id)); }
+  async function handleDelete(id: string) {
+    try { await apiDelete(id); } catch (err: any) { alert(err.message || 'Failed to delete suite'); }
+  }
 
   function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files || []);
@@ -144,15 +179,7 @@ export default function SuitesPage() {
             <div className="col-span-3 py-16 text-center text-sm text-muted-foreground">No suites found</div>
           ) : filtered.map((s) => (
             <div key={s.id} className="glass-card rounded-2xl overflow-hidden flex flex-col border border-[var(--gold)]/10">
-              {s.images.length > 0 ? (
-                <div className="relative h-44 overflow-hidden">
-                  <img src={s.images[0]} alt={s.name} className="w-full h-full object-cover" />
-                </div>
-              ) : (
-                <div className="h-44 bg-white/[0.03] flex items-center justify-center border-b border-white/[0.05]">
-                  <BedDouble className="h-10 w-10 text-[var(--gold)]/30" />
-                </div>
-              )}
+              <ImageSlider images={s.images} name={s.name} />
               <div className="p-4 flex flex-col gap-3">
                 <div className="flex items-start justify-between gap-2">
                   <div>

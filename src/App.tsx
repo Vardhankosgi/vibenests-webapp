@@ -17,6 +17,7 @@ import SuiteBookingPage from "@/pages/SuiteBookingPage";
 import RevenuePage from "@/pages/RevenuePage";
 import CustomersPage from "@/pages/CustomersPage";
 import AvgBookingValuePage from "@/pages/AvgBookingValuePage";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import UserDashboardPage from "@/pages/UserDashboardPage";
 import WriteReviewPage from "@/pages/WriteReviewPage";
 import { SuitesProvider } from "@/components/admin/SuitesContext";
@@ -31,7 +32,7 @@ export default function App() {
       <Route path="/user/suite-booking" element={<SuitesProvider><SuiteBookingPage /></SuitesProvider>} />
       <Route path="/user/write-review" element={<WriteReviewPage />} />
       <Route path="/" element={<Navigate to="/login" replace />} />
-      <Route element={<AdminLayout />}>
+      <Route element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/revenue" element={<RevenuePage />} />
         <Route path="/customers-overview" element={<CustomersPage />} />
