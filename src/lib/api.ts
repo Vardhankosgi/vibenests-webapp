@@ -45,6 +45,8 @@ export const authApi = {
     }),
   logout: (refreshToken: string) =>
     request<{ message: string }>('/auth/logout', { method: 'POST', body: JSON.stringify({ refreshToken }) }),
+  resetPassword: (token: string, password: string) =>
+    request<{ message: string }>('/auth/reset-password', { method: 'POST', body: JSON.stringify({ token, password }) }),
 };
 
 // ── Bookings ─────────────────────────────────────────────────────────────────
@@ -76,6 +78,13 @@ export const addonsApi = {
 export const usersApi = {
   getAll: () => request<any[]>('/users'),
   me: () => request<any>('/users/me'),
+  getById: (id: string) => request<any>(`/users/${id}`),
+  create: (body: { fullName: string; email: string; phone?: string }) =>
+    request<any>('/users', { method: 'POST', body: JSON.stringify(body) }),
+  toggleStatus: (id: string) =>
+    request<any>(`/users/${id}/status`, { method: 'PATCH' }),
+  resendSetup: (id: string) =>
+    request<any>(`/users/${id}/resend-setup`, { method: 'POST' }),
 };
 
 // ── Payments ─────────────────────────────────────────────────────────────────

@@ -17,12 +17,14 @@ import CustomersPage from "@/pages/CustomersPage";
 import AvgBookingValuePage from "@/pages/AvgBookingValuePage";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import UserDashboardPage from "@/pages/UserDashboardPage";
+import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import { SuitesProvider } from "@/components/admin/SuitesContext";
 
 export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/user/dashboard" element={<SuitesProvider><UserDashboardPage /></SuitesProvider>} />
       <Route path="/user/suite-booking" element={<SuitesProvider><SuiteBookingPage /></SuitesProvider>} />
       <Route path="/" element={<Navigate to="/login" replace />} />

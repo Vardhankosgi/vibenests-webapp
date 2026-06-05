@@ -1,20 +1,18 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Mail, Lock, ArrowRight } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import { authApi } from "@/lib/api";
 import { useAuth } from "./AuthContext";
 
 export function EmailLoginForm() {
   const navigate = useNavigate();
+  const { saveSession } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
   const [remember, setRemember] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
-  const { saveSession } = useAuth();
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -31,13 +29,12 @@ export function EmailLoginForm() {
     try {
       const data = await authApi.login(email, password);
       saveSession(data.accessToken, data.refreshToken, data.user);
-      navigate("/dashboard");
+      navigate(data.user.role === 'admin' ? '/dashboard' : '/user/dashboard');
     } catch (err: any) {
       setError(err.message || "Login failed. Please try again.");
     } finally {
       setLoading(false);
     }
-    setTimeout(() => { setLoading(false); window.location.href = "/user/dashboard"; }, 900);
   }
 
   return (
