@@ -8,6 +8,7 @@ const COUNTRY_CODES = ["+91", "+1", "+44", "+61", "+971", "+65"];
 
 export function MobileOtpForm() {
   const navigate = useNavigate();
+  const { saveSession } = useAuth();
   const [code, setCode] = useState("+91");
   const [mobile, setMobile] = useState("");
   const [stage, setStage] = useState<"input" | "otp" | "success">("input");
@@ -16,7 +17,6 @@ export function MobileOtpForm() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const inputsRef = useRef<Array<HTMLInputElement | null>>([]);
-  const { saveSession } = useAuth();
 
   useEffect(() => {
     if (timer <= 0) return;
@@ -74,7 +74,8 @@ export function MobileOtpForm() {
       const data = await authApi.verifyOtp(`${code}${mobile}`, otp.join(""));
       saveSession(data.accessToken, data.refreshToken, data.user as any);
       setStage("success");
-      setTimeout(() => navigate("/user/dashboard"), 1200);
+      const dest = (data.user as any).role === 'admin' ? '/dashboard' : '/user/dashboard';
+      setTimeout(() => navigate(dest), 1200);
     } catch (err: any) {
       setError(err.message || "OTP verification failed.");
     } finally {

@@ -18,6 +18,7 @@ import RevenuePage from "@/pages/RevenuePage";
 import CustomersPage from "@/pages/CustomersPage";
 import AvgBookingValuePage from "@/pages/AvgBookingValuePage";
 import UserDashboardPage from "@/pages/UserDashboardPage";
+import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import WriteReviewPage from "@/pages/WriteReviewPage";
 import PrivacyPolicyPage from "@/pages/PrivacyPolicyPage";
 import TermsOfUsePage from "@/pages/TermsOfUsePage";
@@ -28,6 +29,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/admin/register" element={<AdminRegisterPage />} />
       <Route path="/user/dashboard" element={<SuitesProvider><UserDashboardPage /></SuitesProvider>} />

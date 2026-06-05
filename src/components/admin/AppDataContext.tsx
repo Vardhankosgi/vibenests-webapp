@@ -46,9 +46,9 @@ function mapApiUser(u: any): UserType {
     email: u.email ?? "",
     phone: u.phone ?? "",
     role: u.role === "admin" || u.role === "superadmin" ? "Admin" : "Guest",
-    status: "Active",
+    status: u.isActive ? "Active" : "Blocked",
     joined: u.createdAt ? new Date(u.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "",
-    bookings: 0,
+    bookings: u.bookingCount ?? 0,
   };
 }
 

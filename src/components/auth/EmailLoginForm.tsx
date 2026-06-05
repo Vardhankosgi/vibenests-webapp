@@ -29,7 +29,7 @@ export function EmailLoginForm() {
     try {
       const data = await authApi.login(email, password);
       saveSession(data.accessToken, data.refreshToken, data.user);
-      navigate("/dashboard");
+      navigate(data.user.role === 'admin' ? '/dashboard' : '/user/dashboard');
     } catch (err: any) {
       setError(err.message || "Login failed. Please try again.");
     } finally {
