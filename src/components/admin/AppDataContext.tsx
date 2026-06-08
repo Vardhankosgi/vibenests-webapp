@@ -83,12 +83,14 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(false);
 
   const refresh = () => {
-    const token = localStorage.getItem("accessToken");
-    if (!token) return;
     setLoading(true);
     Promise.all([
-      bookingsApi.getAll().then((list) => setBookings(list.map(mapApiBooking))).catch(() => {}),
-      usersApi.getAll().then((list) => setUsers(list.map(mapApiUser))).catch(() => {}),
+      bookingsApi.getAll()
+        .then((list) => setBookings(Array.isArray(list) ? list.map(mapApiBooking) : []))
+        .catch(() => setBookings([])),
+      usersApi.getAll()
+        .then((list) => setUsers(Array.isArray(list) ? list.map(mapApiUser) : []))
+        .catch(() => setUsers([])),
     ]).finally(() => setLoading(false));
   };
 

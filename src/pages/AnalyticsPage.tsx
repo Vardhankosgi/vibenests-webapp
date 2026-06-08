@@ -107,6 +107,20 @@ export default function AnalyticsPage() {
     return row;
   });
 
+  const hassuites = suites.length > 0;
+
+  // Static fallback radar data used when no suites are loaded from API
+  const FALLBACK_RADAR = RADAR_METRICS.map((metric, mi) => ({
+    metric,
+    "Suite A": RADAR_BASE[mi],
+    "Suite B": Math.min(100, Math.max(40, RADAR_BASE[mi] + 8)),
+  }));
+  const radarData    = hassuites ? suitePerformance : FALLBACK_RADAR;
+  const radarSeries  = hassuites
+    ? suites.map((s, i) => ({ id: s.id,   name: s.name,  color: [GOLD, BLUE, GREEN, PURPLE, RED][i % 5], opacity: i === 0 ? 0.15 : 0.1 }))
+    : [{ id: "Suite A", name: "Suite A", color: GOLD,  opacity: 0.15 },
+       { id: "Suite B", name: "Suite B", color: BLUE,  opacity: 0.1  }];
+
   return (
     <div className="flex-1 overflow-y-auto">
       <AdminHeader title="Analytics" />
@@ -189,14 +203,12 @@ export default function AnalyticsPage() {
             <h3 className="font-display text-lg font-medium text-foreground mb-1">Suite Performance Radar</h3>
             <p className="text-xs text-muted-foreground mb-4">Score out of 100 across key metrics — {suites.length} suite{suites.length !== 1 ? "s" : ""}</p>
             <ResponsiveContainer width="100%" height={280}>
-              <RadarChart data={suitePerformance} cx="50%" cy="50%" outerRadius={90}>
+              <RadarChart data={radarData} cx="50%" cy="50%" outerRadius={90}>
                 <PolarGrid stroke="oklch(1 0 0 / 0.08)" />
                 <PolarAngleAxis dataKey="metric" tick={{ fill: "oklch(0.72 0.02 90)", fontSize: 11 }} />
-                {suites.map((s, i) => {
-                  const colors = [GOLD, BLUE, GREEN, PURPLE, RED];
-                  const color = colors[i % colors.length];
-                  return <Radar key={s.id} name={s.name} dataKey={s.id} stroke={color} fill={color} fillOpacity={i === 0 ? 0.15 : 0.1} strokeWidth={2} />;
-                })}
+                {radarSeries.map((s) => (
+                  <Radar key={s.id} name={s.name} dataKey={s.id} stroke={s.color} fill={s.color} fillOpacity={s.opacity} strokeWidth={2} />
+                ))}
                 <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: "11px", color: "oklch(0.72 0.02 90)" }} />
                 <Tooltip {...tooltipStyle} formatter={(value: number, name: string) => [`${value}/100`, name]} />
               </RadarChart>
