@@ -8,28 +8,7 @@ import {
   Tooltip, ResponsiveContainer, Cell, PieChart, Pie,
 } from "recharts";
 
-const monthly = [
-  { month: "Jan", revenue: 42000, expenses: 12000 },
-  { month: "Feb", revenue: 58000, expenses: 15000 },
-  { month: "Mar", revenue: 51000, expenses: 13000 },
-  { month: "Apr", revenue: 73000, expenses: 18000 },
-  { month: "May", revenue: 68000, expenses: 17000 },
-  { month: "Jun", revenue: 91000, expenses: 22000 },
-  { month: "Jul", revenue: 87000, expenses: 21000 },
-  { month: "Aug", revenue: 105000, expenses: 26000 },
-  { month: "Sep", revenue: 98000, expenses: 24000 },
-  { month: "Oct", revenue: 112000, expenses: 28000 },
-  { month: "Nov", revenue: 124000, expenses: 31000 },
-  { month: "Dec", revenue: 138000, expenses: 35000 },
-];
-
-const pieData = [
-  { name: "Suites", value: 62, color: "oklch(0.78 0.13 80)" },
-  { name: "Add-ons", value: 21, color: "oklch(0.65 0.10 80)" },
-  { name: "Packages", value: 12, color: "oklch(0.55 0.09 75)" },
-  { name: "Others", value: 5, color: "oklch(0.42 0.07 70)" },
-];
-
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const PERIODS = ["Monthly", "Quarterly", "Yearly"];
 
 export default function RevenuePage() {
@@ -37,6 +16,29 @@ export default function RevenuePage() {
   const { bookings, stats } = useAppData();
   const [period, setPeriod] = useState("Monthly");
   const [txFilter, setTxFilter] = useState("All");
+
+  // Monthly revenue derived from real confirmed bookings
+  const monthly = MONTHS.map((month) => {
+    const rev = bookings
+      .filter((b) => b.status === "Confirmed" && b.date.includes(month))
+      .reduce((s, b) => s + parseAmount(b.amount), 0);
+    return { month, revenue: rev, expenses: Math.round(rev * 0.28) };
+  });
+
+  // Occasion-based revenue split for pie
+  const occasionRevMap: Record<string, number> = {};
+  bookings.filter((b) => b.status === "Confirmed").forEach((b) => {
+    const k = b.occasion || "Other";
+    occasionRevMap[k] = (occasionRevMap[k] || 0) + parseAmount(b.amount);
+  });
+  const totalOccRev = Object.values(occasionRevMap).reduce((s, v) => s + v, 0) || 1;
+  const PIE_COLORS = ["oklch(0.78 0.13 80)","oklch(0.65 0.10 80)","oklch(0.55 0.09 75)","oklch(0.42 0.07 70)","oklch(0.70 0.15 50)"];
+  const pieData = Object.entries(occasionRevMap)
+    .sort((a, b) => b[1] - a[1])
+    .map(([name, val], i) => ({ name, value: Math.round((val / totalOccRev) * 100), color: PIE_COLORS[i % PIE_COLORS.length] }));
+  const pieDisplay = pieData.length > 0 ? pieData : [
+    { name: "Suites", value: 100, color: "oklch(0.78 0.13 80)" },
+  ];
 
   // Derive transactions from real bookings
   const transactions = bookings.map((b, i) => ({

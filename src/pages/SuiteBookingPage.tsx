@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useMemo, useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   CalendarDays, ChevronLeft, ChevronRight, Clock, CreditCard,
   Gift, MessageSquare, Star, Sparkles, Users, User, Plus, Minus,
@@ -7,7 +7,6 @@ import {
   HelpCircle, LogOut, Package, Bell, ChevronDown, CheckCircle2,
   Building,
 } from "lucide-react";
-import { bookingsApi, paymentsApi } from "@/lib/api";
 
 /* ── Dashboard nav items ── */
 const NAV_ITEMS = [
@@ -34,7 +33,7 @@ const OCCASIONS = [
 ];
 
 const TIME_SLOTS = [
-  "09:00 AM", "11:30 AM", "02:00 PM", "04:30 PM", "07:00 PM", "09:30 PM",
+  "09:00 AM", "12:00 PM", "03:00 PM", "06:00 PM", "09:00 PM",
 ];
 
 function getEndTime(start: string): string {
@@ -49,9 +48,9 @@ function getEndTime(start: string): string {
 }
 
 const SUITES = [
-  { id: 1, name: "Royal Celebration Suite",    image: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=900&h=600&fit=crop", capacity: 60,  price: 14500, perks: ["Private lounge","VIP check-in","Ambient lighting"] },
-  { id: 2, name: "Golden Anniversary Chamber", image: "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=900&h=600&fit=crop", capacity: 24,  price: 9800,  perks: ["Romantic dinner","Rose petal setup","Suite upgrade"] },
-  { id: 3, name: "Grand Party Pavilion",       image: "https://images.unsplash.com/photo-1534161304597-5d5f70b0a8ba?w=900&h=600&fit=crop", capacity: 120, price: 17500, perks: ["Live DJ stage","Photo zone","Bar service"] },
+  { id: "S01", name: "Royal Celebration Suite",    image: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=900&h=600&fit=crop", capacity: 60,  price: 14500, perks: ["Private lounge","VIP check-in","Ambient lighting"] },
+  { id: "S02", name: "Golden Anniversary Chamber", image: "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=900&h=600&fit=crop", capacity: 24,  price: 9800,  perks: ["Romantic dinner","Rose petal setup","Suite upgrade"] },
+  { id: "S03", name: "Grand Party Pavilion",       image: "https://images.unsplash.com/photo-1534161304597-5d5f70b0a8ba?w=900&h=600&fit=crop", capacity: 120, price: 17500, perks: ["Live DJ stage","Photo zone","Bar service"] },
 ];
 
 const ADDONS = [
@@ -61,7 +60,7 @@ const ADDONS = [
 ];
 
 const STEPS = [
-  "Select Occasion", "Choose Date & Time", "Select Suite",
+  "Select Occasion", "Choose Date & Time",
   "Add-ons & Customizations", "Booking Summary", "Payment",
 ];
 
@@ -79,6 +78,8 @@ function loadRazorpay(): Promise<boolean> {
 
 export default function SuiteBookingPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { suites } = useSuitesContext();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
 
@@ -99,12 +100,12 @@ export default function SuiteBookingPage() {
   const [processing, setProcessing] = useState(false);
   const [payError, setPayError] = useState("");
 
-  const suite = SUITES.find((s) => s.id === selectedSuiteId);
+  const suite      = SUITES.find((s) => s.id === selectedSuite);
   const personsTotal = persons * 299;
   const addonsTotal = ADDONS.reduce((sum, a) => sum + a.price * (addonQty[a.id] || 0), 0) + personsTotal;
-  const basePrice = suite?.price ?? 0;
-  const subtotal = basePrice + addonsTotal;
-  const savings = Math.round(subtotal * 0.08);
+  const basePrice  = suite?.price ?? 0;
+  const subtotal   = basePrice + addonsTotal;
+  const savings    = Math.round(subtotal * 0.08);
   const serviceFee = 650;
   const taxes = Math.round((subtotal - savings + serviceFee) * 0.12);
   const grandTotal = subtotal - savings + serviceFee + taxes;
@@ -114,8 +115,8 @@ export default function SuiteBookingPage() {
   const isStepValid = useMemo(() => {
     if (step === 0) return !!selectedOccasion;
     if (step === 1) return !!bookingDate && !!startTime;
-    if (step === 2) return selectedSuiteId !== null;
-    if (step === 5) return !!paymentMode;
+    if (step === 2) return !!selectedSuite;
+    if (step === 5) return !!paymentMethod;
     return true;
   }, [step, selectedOccasion, bookingDate, startTime, selectedSuiteId, paymentMode]);
 
@@ -349,8 +350,11 @@ export default function SuiteBookingPage() {
             <div className="glass-card rounded-2xl border border-gold/15 px-6 py-5">
               <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground">Premium experience</p>
               <h2 className="font-display text-2xl lg:text-3xl text-foreground font-semibold mt-1">
-                Book a luxury suite in six effortless steps
+                {suite ? suite.name : "Book a luxury suite in six effortless steps"}
               </h2>
+              {suite && (
+                <p className="text-xs text-muted-foreground mt-1">{suiteMinCap}–{suiteMaxCap} guests · {suite.price} base rate</p>
+              )}
             </div>
 
             <div className="grid gap-5 lg:grid-cols-[200px_1fr]">
@@ -457,7 +461,7 @@ export default function SuiteBookingPage() {
                       <div className="space-y-2">
                         <label className="text-xs uppercase tracking-[0.25em] text-muted-foreground">Select Date</label>
                         <input type="date" value={bookingDate} onChange={(e) => setBookingDate(e.target.value)}
-                          className="luxury-input w-full rounded-2xl px-4 py-3 text-sm bg-black/40" />
+                          className="luxury-input w-full rounded-2xl px-4 py-3 text-sm bg-black/40" style={{ colorScheme: "dark" }} />
                       </div>
                       <div className="space-y-3">
                         <div className="flex items-center gap-2">
@@ -502,9 +506,9 @@ export default function SuiteBookingPage() {
                   {step === 2 && (
                     <div className="grid gap-4 sm:grid-cols-2">
                       {SUITES.map((s) => {
-                        const active = selectedSuiteId === s.id;
+                        const active = selectedSuite === s.id;
                         return (
-                          <button key={s.id} type="button" onClick={() => setSelectedSuiteId(s.id)}
+                          <button key={s.id} type="button" onClick={() => setSelectedSuite(s.id)}
                             className={`flex flex-col overflow-hidden rounded-2xl border transition-all text-left ${
                               active ? "border-gold bg-gold/10 shadow-[0_20px_50px_rgba(255,190,90,0.1)]"
                               : "border-white/10 bg-white/5 hover:border-gold/20"
@@ -516,7 +520,7 @@ export default function SuiteBookingPage() {
                               <div className="flex items-start justify-between gap-2">
                                 <div>
                                   <h4 className="font-display text-base text-foreground">{s.name}</h4>
-                                  <p className="text-xs text-muted-foreground">Suite ID S{String(s.id).padStart(2,"0")}</p>
+                                  <p className="text-xs text-muted-foreground">Suite ID {s.id}</p>
                                 </div>
                                 <p className="font-semibold text-gold text-sm shrink-0">₹{s.price.toLocaleString()}</p>
                               </div>
@@ -535,27 +539,39 @@ export default function SuiteBookingPage() {
                     </div>
                   )}
 
-                  {/* Step 3 – Add-ons */}
+                  {/* Step 3 */}
                   {step === 3 && (
                     <div className="space-y-5">
+                      {suite && (
+                        <div className="flex items-center gap-3 px-4 py-3 rounded-2xl border border-gold/25 bg-gold/8">
+                          <BedDouble className="h-4 w-4 text-gold shrink-0" />
+                          <p className="text-sm text-foreground">
+                            <span className="text-gold font-semibold">{suite.name}</span>
+                            <span className="text-muted-foreground ml-2 text-xs">· {suiteMinCap}–{suiteMaxCap} guests · {suite.price} base</span>
+                          </p>
+                        </div>
+                      )}
                       <div className="glass-card rounded-2xl border border-white/10 p-4">
                         <div className="flex items-center justify-between gap-4">
                           <div>
                             <h4 className="font-display text-base text-foreground">Number of Persons</h4>
-                            <p className="text-xs text-muted-foreground mt-0.5">₹299 per person</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {suite ? `Min ${suiteMinCap} · Max ${suiteMaxCap}${rateExtra > 0 ? ` · ₹${rateExtra}/extra person above min` : ""}` : "Select a suite first"}
+                            </p>
                           </div>
-                          <p className="font-semibold text-gold shrink-0">₹{(persons * 299).toLocaleString()}</p>
+                          <p className="font-semibold text-gold shrink-0">₹{personsTotal.toLocaleString()}</p>
                         </div>
                         <div className="mt-3 flex items-center gap-3">
                           <div className="flex items-center gap-2 rounded-full border border-white/10 bg-black/40 px-3 py-1.5">
-                            <button type="button" onClick={() => setPersons((p) => Math.max(1, p - 1))} className="h-7 w-7 rounded-full border border-white/10 text-muted-foreground hover:text-foreground flex items-center justify-center transition">
+                            <button type="button" onClick={() => setPersons((p) => Math.max(suiteMinCap, p - 1))} className="h-7 w-7 rounded-full border border-white/10 text-muted-foreground hover:text-foreground flex items-center justify-center transition">
                               <Minus className="h-3.5 w-3.5" />
                             </button>
                             <span className="min-w-[28px] text-center font-semibold text-foreground text-sm">{persons}</span>
-                            <button type="button" onClick={() => setPersons((p) => p + 1)} className="h-7 w-7 rounded-full border border-white/10 text-muted-foreground hover:text-foreground flex items-center justify-center transition">
+                            <button type="button" onClick={() => setPersons((p) => Math.min(suiteMaxCap, p + 1))} className="h-7 w-7 rounded-full border border-white/10 text-muted-foreground hover:text-foreground flex items-center justify-center transition">
                               <Plus className="h-3.5 w-3.5" />
                             </button>
                           </div>
+                          <span className="text-xs text-muted-foreground">{persons} / {suiteMaxCap} guests</span>
                         </div>
                       </div>
                       <div className="space-y-3">
@@ -593,7 +609,7 @@ export default function SuiteBookingPage() {
                     </div>
                   )}
 
-                  {/* Step 4 – Summary */}
+                  {/* Step 4 */}
                   {step === 4 && (
                     <div className="space-y-4">
                       <div className="grid gap-4 sm:grid-cols-2">
@@ -608,8 +624,8 @@ export default function SuiteBookingPage() {
                           {suite ? (
                             <div className="mt-3 space-y-1">
                               <p className="text-base text-foreground font-semibold">{suite.name}</p>
-                              <p className="text-xs text-muted-foreground">Capacity: {suite.capacity} guests</p>
-                              <p className="text-xs text-gold">₹{suite.price.toLocaleString()}</p>
+                              <p className="text-xs text-muted-foreground">Capacity: {suiteMinCap}–{suiteMaxCap} guests</p>
+                              <p className="text-xs text-gold">{suite.price}</p>
                             </div>
                           ) : <p className="text-xs text-muted-foreground mt-3">No suite selected.</p>}
                         </div>
@@ -617,7 +633,7 @@ export default function SuiteBookingPage() {
                       <div className="glass-card rounded-2xl border border-white/10 p-4">
                         <h4 className="text-xs uppercase tracking-[0.25em] text-muted-foreground mb-3">Add-ons</h4>
                         <div className="flex justify-between text-sm py-1">
-                          <span className="text-muted-foreground">Persons × {persons}</span>
+                          <span className="text-muted-foreground">{persons} persons ({extraPersons} extra × ₹{rateExtra})</span>
                           <span className="text-gold">₹{personsTotal.toLocaleString()}</span>
                         </div>
                         {ADDONS.filter((a) => (addonQty[a.id] ?? 0) > 0).map((a) => (
@@ -636,49 +652,11 @@ export default function SuiteBookingPage() {
                     </div>
                   )}
 
-                  {/* Step 5 – Payment */}
+                  {/* Step 5 */}
                   {step === 5 && (
-                    <div className="space-y-5">
-                      {/* Payment breakdown */}
-                      <div className="glass-card rounded-2xl border border-white/10 p-5 space-y-3">
-                        <h4 className="text-xs uppercase tracking-[0.25em] text-muted-foreground font-semibold">Payment Breakdown</h4>
-                        <div className="space-y-2">
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Suite – {suite?.name}</span>
-                            <span className="text-foreground">₹{basePrice.toLocaleString()}</span>
-                          </div>
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Persons ({persons} × ₹299)</span>
-                            <span className="text-foreground">₹{personsTotal.toLocaleString()}</span>
-                          </div>
-                          {ADDONS.filter(a => (addonQty[a.id] || 0) > 0).map(a => (
-                            <div key={a.id} className="flex justify-between text-sm">
-                              <span className="text-muted-foreground">{a.name} × {addonQty[a.id]}</span>
-                              <span className="text-foreground">₹{(a.price * addonQty[a.id]).toLocaleString()}</span>
-                            </div>
-                          ))}
-                          <div className="flex justify-between text-sm text-emerald-400">
-                            <span>Luxury Discount (8%)</span>
-                            <span>– ₹{savings.toLocaleString()}</span>
-                          </div>
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Service Fee</span>
-                            <span className="text-foreground">₹{serviceFee.toLocaleString()}</span>
-                          </div>
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">GST (12%)</span>
-                            <span className="text-foreground">₹{taxes.toLocaleString()}</span>
-                          </div>
-                          <div className="border-t border-white/10 pt-3 flex justify-between">
-                            <span className="text-base font-semibold text-foreground">Total Amount</span>
-                            <span className="font-display text-xl text-gold">₹{grandTotal.toLocaleString()}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Payment option */}
-                      <div className="glass-card rounded-2xl border border-white/10 p-5 space-y-3">
-                        <h4 className="text-xs uppercase tracking-[0.25em] text-muted-foreground font-semibold">Select Payment Option</h4>
+                    <div className="space-y-4">
+                      <div className="glass-card rounded-2xl border border-white/10 p-4">
+                        <h4 className="text-xs uppercase tracking-[0.25em] text-muted-foreground mb-4">Payment Options</h4>
                         <div className="space-y-3">
                           {[
                             { id: "pay_now" as const,   label: "Pay Now",        description: `Pay the full amount ₹${grandTotal.toLocaleString()} and confirm instantly.` },
