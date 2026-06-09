@@ -47,8 +47,8 @@ export function AdminSidebar({ collapsed, onToggle }: AdminSidebarProps) {
           </div>
         )}
         <button
-          onClick={onToggle}
-          className={`h-8 w-8 flex items-center justify-center rounded-lg hover:bg-white/[0.07] text-muted-foreground hover:text-gold transition shrink-0 ${collapsed ? "mx-auto" : ""}`}
+          onClick={(e) => { e.stopPropagation(); onToggle(); }}
+          className={`h-8 w-8 flex items-center justify-center rounded-lg hover:bg-white/[0.07] text-muted-foreground hover:text-gold transition shrink-0 cursor-pointer ${collapsed ? "mx-auto" : ""}`}
         >
           <Menu className="h-4 w-4" />
         </button>

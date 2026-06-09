@@ -10,7 +10,7 @@ import {
   X, Download, AlertTriangle, Receipt, Package, Plus, Edit3, Trash2,
   Search, TrendingUp, TrendingDown, BarChart3, Eye, RefreshCw,
   Building2, Smartphone, DollarSign, ArrowDownLeft, ArrowUpLeft,
-  Heart, ChevronLeft,
+  Heart, ChevronLeft, Menu,
 } from "lucide-react";
 import { useSuitesContext } from "@/components/admin/SuitesContext";
 
@@ -1708,6 +1708,7 @@ function HelpView() {
 export default function UserDashboardPage() {
   const [activeNav, setActiveNav] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -1732,12 +1733,19 @@ export default function UserDashboardPage() {
       {/* Top bar */}
       <header className="sticky top-0 z-50 flex items-center justify-between px-6 py-4 border-b border-white/5 glass backdrop-blur-xl">
         <div className="flex items-center gap-4">
+          {/* Mobile toggle */}
           <button onClick={() => setSidebarOpen((o) => !o)}
             className="flex lg:hidden flex-col justify-center items-center gap-[5px] p-2 rounded-lg hover:bg-white/5 transition-colors group"
             aria-label="Toggle menu">
             <span className={`block h-0.5 bg-muted-foreground group-hover:bg-gold transition-all duration-300 ${sidebarOpen ? "w-5 translate-y-[7px] rotate-45" : "w-5"}`} />
             <span className={`block h-0.5 bg-muted-foreground group-hover:bg-gold transition-all duration-300 ${sidebarOpen ? "w-0 opacity-0" : "w-5"}`} />
             <span className={`block h-0.5 bg-muted-foreground group-hover:bg-gold transition-all duration-300 ${sidebarOpen ? "w-5 -translate-y-[7px] -rotate-45" : "w-5"}`} />
+          </button>
+          {/* Desktop toggle */}
+          <button onClick={() => setSidebarCollapsed((c) => !c)}
+            className="hidden lg:flex h-8 w-8 items-center justify-center rounded-lg hover:bg-white/[0.07] text-muted-foreground hover:text-gold transition cursor-pointer"
+            aria-label="Toggle sidebar">
+            <Menu className="h-4 w-4" />
           </button>
           <div className="flex items-center gap-2.5">
             <div className="h-8 w-8 shrink-0 rounded-lg overflow-hidden">
@@ -1799,15 +1807,19 @@ export default function UserDashboardPage() {
           )}
         </AnimatePresence>
 
-        {/* Sidebar — always visible on desktop, slide-in on mobile */}
-        <aside className={`absolute lg:relative top-0 left-0 h-full w-64 z-40 flex flex-col shrink-0 glass-card border-r border-white/5 rounded-none transition-transform duration-300 ease-in-out ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}>
-          <div className="flex items-center justify-between px-4 py-4 border-b border-white/5">
-            <div>
-              <p className="text-xs text-muted-foreground">Welcome back</p>
-              <p className="text-sm font-medium text-foreground font-display">Adithya Reddy</p>
-            </div>
+        {/* Sidebar — always visible on desktop (collapsible), slide-in on mobile */}
+        <aside className={`absolute lg:relative top-0 left-0 h-full z-40 flex flex-col shrink-0 glass-card border-r border-white/5 rounded-none transition-all duration-300 ease-in-out
+          ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
+          ${sidebarCollapsed ? "lg:w-16" : "w-64"}`}>
+          <div className={`flex items-center border-b border-white/5 min-h-[64px] ${sidebarCollapsed ? "justify-center px-2 py-4" : "justify-between px-4 py-4"}`}>
+            {!sidebarCollapsed && (
+              <div>
+                <p className="text-xs text-muted-foreground">Welcome back</p>
+                <p className="text-sm font-medium text-foreground font-display">Adithya Reddy</p>
+              </div>
+            )}
             <button onClick={() => setSidebarOpen(false)}
-              className="flex flex-col justify-center items-center gap-[5px] p-2 rounded-lg hover:bg-white/5 transition-colors group"
+              className="flex lg:hidden flex-col justify-center items-center gap-[5px] p-2 rounded-lg hover:bg-white/5 transition-colors group"
               aria-label="Close menu">
               <span className="block w-5 h-0.5 bg-muted-foreground group-hover:bg-gold transition-colors" />
               <span className="block w-5 h-0.5 bg-muted-foreground group-hover:bg-gold transition-colors" />
@@ -1815,36 +1827,50 @@ export default function UserDashboardPage() {
             </button>
           </div>
 
-          <div className="px-4 py-4 border-b border-white/5">
-            <div className="flex items-center gap-3 p-3 rounded-xl glass-gold">
-              <div className="h-9 w-9 rounded-full bg-gradient-gold flex items-center justify-center font-bold text-[oklch(0.12_0.02_260)] text-sm shrink-0">A</div>
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-foreground truncate">Adithya Reddy</p>
-                <p className="text-[11px] text-gold">Gold Member</p>
+          {!sidebarCollapsed && (
+            <div className="px-4 py-4 border-b border-white/5">
+              <div className="flex items-center gap-3 p-3 rounded-xl glass-gold">
+                <div className="h-9 w-9 rounded-full bg-gradient-gold flex items-center justify-center font-bold text-[oklch(0.12_0.02_260)] text-sm shrink-0">A</div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">Adithya Reddy</p>
+                  <p className="text-[11px] text-gold">Gold Member</p>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
-          <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto scrollbar-none">
+          {sidebarCollapsed && (
+            <div className="flex justify-center py-4 border-b border-white/5">
+              <div className="h-9 w-9 rounded-full bg-gradient-gold flex items-center justify-center font-bold text-[oklch(0.12_0.02_260)] text-sm">A</div>
+            </div>
+          )}
+
+          <nav className="flex-1 px-2 py-4 space-y-0.5 overflow-y-auto scrollbar-none">
             {NAV_ITEMS.map(({ id, label, icon: Icon }) => {
               const active = activeNav === id;
               return (
-                <button key={id} onClick={() => {
+                <button key={id}
+                  title={sidebarCollapsed ? label : undefined}
+                  onClick={() => {
                     if (id === "write-review") { navigate("/user/write-review"); setSidebarOpen(false); return; }
                     setActiveNav(id); setSidebarOpen(false);
                   }}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${active ? "bg-gold/15 border border-gold/25 text-gold font-medium" : "text-muted-foreground hover:bg-white/5 hover:text-foreground"}`}>
+                  className={`w-full flex items-center gap-3 px-2.5 py-2.5 rounded-xl text-sm transition-all
+                    ${sidebarCollapsed ? "justify-center" : ""}
+                    ${active ? "bg-gold/15 border border-gold/25 text-gold font-medium" : "text-muted-foreground hover:bg-white/5 hover:text-foreground"}`}>
                   <Icon className={`h-4 w-4 shrink-0 ${active ? "text-gold" : ""}`} />
-                  {label}
+                  {!sidebarCollapsed && label}
                 </button>
               );
             })}
           </nav>
 
-          <div className="px-3 pb-6 pt-2 border-t border-white/5">
-            <button onClick={() => navigate("/login")} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10 transition-all">
+          <div className="px-2 pb-6 pt-2 border-t border-white/5">
+            <button onClick={() => navigate("/login")}
+              title={sidebarCollapsed ? "Logout" : undefined}
+              className={`w-full flex items-center gap-3 px-2.5 py-2.5 rounded-xl text-sm text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10 transition-all ${sidebarCollapsed ? "justify-center" : ""}`}>
               <LogOut className="h-4 w-4 shrink-0" />
-              Logout
+              {!sidebarCollapsed && "Logout"}
             </button>
           </div>
         </aside>
