@@ -3,7 +3,7 @@ import { Plus, Search, Pencil, Trash2, X, BedDouble, ImagePlus, Check, ChevronLe
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { useSuitesContext, type Suite } from "@/components/admin/SuitesContext";
 
-const emptyForm: Omit<Suite, "id"> = { name: "", capacity: 2, price: "", occasions: "", status: "Active", description: "", images: [], amenities: [] };
+const emptyForm: Omit<Suite, "id"> = { name: "", minCapacity: 1, capacity: 2, price: "", ratePerExtraPerson: 199, baseDiscount: 0, occasions: "", status: "Active", description: "", images: [], amenities: [] };
 
 const statusStyle: Record<string, string> = {
   Active: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
@@ -103,7 +103,7 @@ function ImageSlider({ images, name }: { images: string[]; name: string }) {
 }
 
 export default function SuitesPage() {
-  const { suites, setSuites, saveSuite, deleteSuite: apiDelete } = useSuitesContext();
+  const { suites, setSuites, saveSuite, deleteSuite: apiDelete, loading } = useSuitesContext();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [showModal, setShowModal] = useState(false);
@@ -118,7 +118,7 @@ export default function SuitesPage() {
   });
 
   function openAdd() { setEditId(null); setForm(emptyForm); setShowModal(true); }
-  function openEdit(s: Suite) { setEditId(s.id); setForm({ name: s.name, capacity: s.capacity, price: s.price, occasions: s.occasions, status: s.status, description: s.description, images: s.images, amenities: s.amenities }); setShowModal(true); }
+  function openEdit(s: Suite) { setEditId(s.id); setForm({ name: s.name, minCapacity: s.minCapacity, capacity: s.capacity, price: s.price, ratePerExtraPerson: s.ratePerExtraPerson, baseDiscount: s.baseDiscount, occasions: s.occasions, status: s.status, description: s.description, images: s.images, amenities: s.amenities }); setShowModal(true); }
 
   async function handleSave() {
     if (!form.name.trim()) return;
@@ -175,7 +175,9 @@ export default function SuitesPage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filtered.length === 0 ? (
+          {loading ? (
+            <div className="col-span-3 py-16 text-center text-sm text-muted-foreground">Loading suites...</div>
+          ) : filtered.length === 0 ? (
             <div className="col-span-3 py-16 text-center text-sm text-muted-foreground">No suites found</div>
           ) : filtered.map((s) => (
             <div key={s.id} className="glass-card rounded-2xl overflow-hidden flex flex-col border border-[var(--gold)]/10">
@@ -191,13 +193,27 @@ export default function SuitesPage() {
                 <p className="text-xs text-muted-foreground leading-relaxed">{s.description}</p>
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <div className="bg-white/[0.03] rounded-lg px-3 py-2">
-                    <p className="text-muted-foreground">Capacity</p>
+                    <p className="text-muted-foreground">Min Capacity</p>
+                    <p className="text-foreground font-medium mt-0.5">{s.minCapacity} guests</p>
+                  </div>
+                  <div className="bg-white/[0.03] rounded-lg px-3 py-2">
+                    <p className="text-muted-foreground">Max Capacity</p>
                     <p className="text-foreground font-medium mt-0.5">{s.capacity} guests</p>
                   </div>
                   <div className="bg-white/[0.03] rounded-lg px-3 py-2">
-                    <p className="text-muted-foreground">Price</p>
+                    <p className="text-muted-foreground">Base Rate</p>
                     <p className="text-gold font-medium mt-0.5">{s.price}</p>
                   </div>
+                  <div className="bg-white/[0.03] rounded-lg px-3 py-2">
+                    <p className="text-muted-foreground">Extra/Person</p>
+                    <p className="text-foreground font-medium mt-0.5">₹{s.ratePerExtraPerson}</p>
+                  </div>
+                  {s.baseDiscount > 0 && (
+                    <div className="col-span-2 bg-emerald-500/5 rounded-lg px-3 py-2">
+                      <p className="text-muted-foreground">Discount</p>
+                      <p className="text-emerald-400 font-medium mt-0.5">{s.baseDiscount}% off base rate</p>
+                    </div>
+                  )}
                 </div>
                 <div className="flex gap-2">
                   <button onClick={() => openEdit(s)} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs border border-[var(--gold)]/20 text-gold hover:bg-[var(--gold)]/10 transition">
@@ -250,8 +266,22 @@ export default function SuitesPage() {
                 </div>
               ))}
               <div>
-                <label className="text-xs text-muted-foreground uppercase tracking-wide">Capacity (guests)</label>
-                <input type="number" min={1} value={form.capacity} onChange={(e) => setForm((f) => ({ ...f, capacity: Number(e.target.value) }))} className="luxury-input w-full rounded-lg px-3 py-1.5 text-sm mt-0.5" />
+                <label className="text-xs text-muted-foreground uppercase tracking-wide">Min Capacity (guests)</label>
+                <input type="number" min={1} value={form.minCapacity} onChange={(e) => setForm((f) => ({ ...f, minCapacity: Number(e.target.value) }))} className="luxury-input w-full rounded-lg px-3 py-1.5 text-sm mt-0.5" />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground uppercase tracking-wide">Max Capacity (guests)</label>
+                <input type="number" min={form.minCapacity} value={form.capacity} onChange={(e) => setForm((f) => ({ ...f, capacity: Number(e.target.value) }))} className="luxury-input w-full rounded-lg px-3 py-1.5 text-sm mt-0.5" />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-xs text-muted-foreground uppercase tracking-wide">Rate / Extra Person (₹)</label>
+                  <input type="number" min={0} value={form.ratePerExtraPerson} onChange={(e) => setForm((f) => ({ ...f, ratePerExtraPerson: Number(e.target.value) }))} className="luxury-input w-full rounded-lg px-3 py-1.5 text-sm mt-0.5" />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground uppercase tracking-wide">Discount on Base (%)</label>
+                  <input type="number" min={0} max={100} value={form.baseDiscount} onChange={(e) => setForm((f) => ({ ...f, baseDiscount: Number(e.target.value) }))} className="luxury-input w-full rounded-lg px-3 py-1.5 text-sm mt-0.5" />
+                </div>
               </div>
               <div>
                 <label className="text-xs text-muted-foreground uppercase tracking-wide">Description</label>

@@ -613,7 +613,7 @@ function DashboardView({ onNavigate }: { onNavigate: (id: string) => void }) {
             <span className="px-2.5 py-1 rounded-full bg-emerald-400/10 border border-emerald-400/20 text-emerald-400 text-[10px] font-bold">{activeSuites.length} Available</span>
           </div>
           <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
-            {activeSuites.map((s, i) => <SuiteCard key={s.id} suite={s} index={i} onBookNow={() => navigate("/suite-booking")} />)}
+            {activeSuites.map((s, i) => <SuiteCard key={s.id} suite={s} index={i} onBookNow={() => navigate("/user/suite-booking", { state: { suiteId: s.id } })} />)}
           </div>
         </div>
       )}
@@ -625,7 +625,7 @@ function DashboardView({ onNavigate }: { onNavigate: (id: string) => void }) {
             <span className="px-2.5 py-1 rounded-full bg-amber-400/10 border border-amber-400/20 text-amber-400 text-[10px] font-bold">Coming Soon</span>
           </div>
           <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
-            {upcomingSuites.map((s, i) => <SuiteCard key={s.id} suite={s} index={i} onBookNow={() => navigate("/suite-booking")} />)}
+            {upcomingSuites.map((s, i) => <SuiteCard key={s.id} suite={s} index={i} onBookNow={() => navigate("/user/suite-booking", { state: { suiteId: s.id } })} />)}
           </div>
         </div>
       )}
@@ -694,7 +694,7 @@ function SuitesView() {
         <div className="glass-card rounded-2xl p-16 text-center text-muted-foreground text-sm">No suites found.</div>
       ) : (
         <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filtered.map((s, i) => <SuiteCard key={s.id} suite={s} index={i} onBookNow={() => navigate("/user/suite-booking")} />)}
+          {filtered.map((s, i) => <SuiteCard key={s.id} suite={s} index={i} onBookNow={() => navigate("/user/suite-booking", { state: { suiteId: s.id } })} />)}
         </div>
       )}
     </div>
