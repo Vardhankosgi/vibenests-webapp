@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -13,6 +13,7 @@ import {
   Heart, ChevronLeft, Menu,
 } from "lucide-react";
 import { useSuitesContext } from "@/components/admin/SuitesContext";
+import { bookingsApi } from "@/lib/api";
 
 /* ─── Types ─────────────────────────────────────────── */
 type NavItem = { id: string; label: string; icon: React.ElementType };
@@ -22,6 +23,7 @@ type Booking = {
   nights: number; amount: number;
   status: "confirmed" | "pending" | "completed" | "cancelled";
   image: string;
+  _raw?: any;
 };
 type Transaction = {
   id: string; desc: string; amount: number; type: "credit" | "debit";
@@ -701,17 +703,46 @@ function SuitesView() {
   );
 }
 
-function BookingListView({ bookings, title }: { bookings: Booking[]; title: string }) {
+function BookingListView({ bookings, title, fetchFromApi }: { bookings: Booking[]; title: string; fetchFromApi?: boolean }) {
   const [selected, setSelected] = useState<Booking | null>(null);
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [apiBookings, setApiBookings] = useState<Booking[]>([]);
+  const [loadingApi, setLoadingApi] = useState(false);
+
+  useEffect(() => {
+    if (!fetchFromApi) return;
+    setLoadingApi(true);
+    bookingsApi.getAll()
+      .then((list) => {
+        const mapped: Booking[] = list.map((b: any) => ({
+          id: `VN-${b.id}`,
+          suite: b.suiteName || `Suite #${b.suiteId}`,
+          location: "VibeNests, India",
+          checkIn: b.date,
+          checkOut: b.date,
+          checkInTime: b.timeSlot || "",
+          checkOutTime: b.endTimeSlot || "",
+          nights: 1,
+          amount: Number(b.totalAmount) || 0,
+          status: b.status as Booking["status"],
+          image: "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=400&q=80",
+          _raw: b,
+        }));
+        setApiBookings(mapped);
+      })
+      .catch(() => {})
+      .finally(() => setLoadingApi(false));
+  }, [fetchFromApi]);
+
+  const source = fetchFromApi ? apiBookings : bookings;
 
   function parseDate(str: string) {
     return new Date(str);
   }
 
-  const filtered = bookings.filter((b) => {
+  const filtered = source.filter((b) => {
     const checkIn = parseDate(b.checkIn);
     if (fromDate && checkIn < new Date(fromDate)) return false;
     if (toDate && checkIn > new Date(toDate)) return false;
@@ -759,7 +790,7 @@ function BookingListView({ bookings, title }: { bookings: Booking[]; title: stri
       </div>
 
       {filtered.length === 0
-        ? <div className="glass-card rounded-2xl p-12 text-center text-muted-foreground">No bookings match the selected filters.</div>
+        ? <div className="glass-card rounded-2xl p-12 text-center text-muted-foreground">{loadingApi ? "Loading bookings..." : "No bookings match the selected filters."}</div>
         : <div className="space-y-3">{filtered.map((b) => <BookingCard key={b.id} b={b} onViewDetails={setSelected} />)}</div>}
       {selected && <BookingDetailsDrawer booking={selected} onClose={() => setSelected(null)} />}
     </div>
@@ -1716,7 +1747,7 @@ export default function UserDashboardPage() {
     switch (activeNav) {
       case "dashboard":   return <DashboardView onNavigate={setActiveNav} />;
       case "suites":      return <SuitesView />;
-      case "my-bookings": return <BookingListView bookings={[...UPCOMING_BOOKINGS, ...PAST_BOOKINGS]} title="My Bookings" />;
+      case "my-bookings": return <BookingListView bookings={[]} title="My Bookings" fetchFromApi />;
       case "upcoming":    return <BookingListView bookings={UPCOMING_BOOKINGS} title="Upcoming Bookings" />;
       case "past":        return <BookingListView bookings={PAST_BOOKINGS} title="Past Bookings" />;
       case "wallet":      return <WalletView />;

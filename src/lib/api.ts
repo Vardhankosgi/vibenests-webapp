@@ -52,6 +52,7 @@ export const authApi = {
 // ── Bookings ─────────────────────────────────────────────────────────────────
 export const bookingsApi = {
   getAll: () => request<any[]>('/bookings'),
+  create: (body: any) => request<any>('/bookings', { method: 'POST', body: JSON.stringify(body) }),
   adminCreate: (body: any) => request<any>('/bookings/admin', { method: 'POST', body: JSON.stringify(body) }),
   updateStatus: (id: number, status: string) =>
     request<any>(`/bookings/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
@@ -90,6 +91,16 @@ export const usersApi = {
 // ── Payments ─────────────────────────────────────────────────────────────────
 export const paymentsApi = {
   getAll: () => request<any[]>('/payments/all'),
+  createOrder: (bookingId: number, amount: number, method: string) =>
+    request<{ paymentId: number; orderId: string; amount: number; keyId: string }>(
+      '/payments/create-order',
+      { method: 'POST', body: JSON.stringify({ bookingId, amount, method }) }
+    ),
+  verifyPayment: (paymentId: number, razorpayOrderId: string, razorpayPaymentId: string, razorpaySignature: string) =>
+    request<{ success: boolean; payment: any }>(
+      '/payments/verify-payment',
+      { method: 'POST', body: JSON.stringify({ paymentId, razorpayOrderId, razorpayPaymentId, razorpaySignature }) }
+    ),
 };
 
 // ── Reports ──────────────────────────────────────────────────────────────────

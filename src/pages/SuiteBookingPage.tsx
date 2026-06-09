@@ -4,10 +4,12 @@ import {
   CalendarDays, ChevronLeft, ChevronRight, Clock, CreditCard,
   Gift, MessageSquare, Star, Sparkles, Users, User, Plus, Minus,
   LayoutDashboard, BedDouble, History, Wallet, Tag, UserCircle,
-  HelpCircle, LogOut, Package, Bell, ChevronDown,
+  HelpCircle, LogOut, Package, Bell, ChevronDown, CheckCircle2,
+  Building,
 } from "lucide-react";
+import { bookingsApi, paymentsApi } from "@/lib/api";
 
-/* ── Dashboard nav items (mirrors UserDashboardPage) ── */
+/* ── Dashboard nav items ── */
 const NAV_ITEMS = [
   { id: "dashboard",    label: "Dashboard",               icon: LayoutDashboard, path: "/user/dashboard" },
   { id: "suites",       label: "Browse Suites",            icon: BedDouble,       path: "/user/dashboard" },
@@ -22,7 +24,6 @@ const NAV_ITEMS = [
   { id: "write-review", label: "Write a Review",           icon: Star,            path: "/user/write-review" },
 ];
 
-/* ── Booking data ── */
 const OCCASIONS = [
   { id: "birthday",    label: "Birthday",           description: "Elevate every milestone with regal decor and premium service.",    icon: Gift,         highlight: "bg-amber-500/10 text-amber-300" },
   { id: "anniversary", label: "Anniversary",        description: "Curated romance with intimate touches and champagne delights.",     icon: Sparkles,     highlight: "bg-rose-500/10 text-rose-300" },
@@ -36,7 +37,6 @@ const TIME_SLOTS = [
   "09:00 AM", "11:30 AM", "02:00 PM", "04:30 PM", "07:00 PM", "09:30 PM",
 ];
 
-// Each slot is 2h 30m — auto-calculate end time
 function getEndTime(start: string): string {
   const [time, period] = start.split(" ");
   const [h, m] = time.split(":").map(Number);
@@ -49,9 +49,9 @@ function getEndTime(start: string): string {
 }
 
 const SUITES = [
-  { id: "S01", name: "Royal Celebration Suite",    image: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=900&h=600&fit=crop", capacity: 60,  price: 14500, perks: ["Private lounge","VIP check-in","Ambient lighting"] },
-  { id: "S02", name: "Golden Anniversary Chamber", image: "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=900&h=600&fit=crop", capacity: 24,  price: 9800,  perks: ["Romantic dinner","Rose petal setup","Suite upgrade"] },
-  { id: "S03", name: "Grand Party Pavilion",       image: "https://images.unsplash.com/photo-1534161304597-5d5f70b0a8ba?w=900&h=600&fit=crop", capacity: 120, price: 17500, perks: ["Live DJ stage","Photo zone","Bar service"] },
+  { id: 1, name: "Royal Celebration Suite",    image: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=900&h=600&fit=crop", capacity: 60,  price: 14500, perks: ["Private lounge","VIP check-in","Ambient lighting"] },
+  { id: 2, name: "Golden Anniversary Chamber", image: "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=900&h=600&fit=crop", capacity: 24,  price: 9800,  perks: ["Romantic dinner","Rose petal setup","Suite upgrade"] },
+  { id: 3, name: "Grand Party Pavilion",       image: "https://images.unsplash.com/photo-1534161304597-5d5f70b0a8ba?w=900&h=600&fit=crop", capacity: 120, price: 17500, perks: ["Live DJ stage","Photo zone","Bar service"] },
 ];
 
 const ADDONS = [
@@ -65,6 +65,18 @@ const STEPS = [
   "Add-ons & Customizations", "Booking Summary", "Payment",
 ];
 
+/* Load Razorpay checkout script */
+function loadRazorpay(): Promise<boolean> {
+  return new Promise((resolve) => {
+    if ((window as any).Razorpay) { resolve(true); return; }
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+}
+
 export default function SuiteBookingPage() {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -74,48 +86,128 @@ export default function SuiteBookingPage() {
   const [selectedOccasion, setSelectedOccasion] = useState("");
   const [bookingDate, setBookingDate] = useState("");
   const [startTime, setStartTime] = useState("");
-  const [selectedSuite, setSelectedSuite] = useState("");
+  const [selectedSuiteId, setSelectedSuiteId] = useState<number | null>(null);
   const [addonQty, setAddonQty] = useState<Record<string, number>>({
     "premium-catering": 0, "flower-arrangement": 0, "live-music": 0,
   });
   const [persons, setPersons] = useState(1);
   const [specialRequests, setSpecialRequests] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<"pay-now" | "pay-venue">("pay-now");
+  const [paymentMode, setPaymentMode] = useState<"pay_now" | "pay_at_venue">("pay_now");
   const [showValidation, setShowValidation] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
+  const [confirmedBookingId, setConfirmedBookingId] = useState<number | null>(null);
+  const [processing, setProcessing] = useState(false);
+  const [payError, setPayError] = useState("");
 
-  const suite      = SUITES.find((s) => s.id === selectedSuite);
+  const suite = SUITES.find((s) => s.id === selectedSuiteId);
   const personsTotal = persons * 299;
   const addonsTotal = ADDONS.reduce((sum, a) => sum + a.price * (addonQty[a.id] || 0), 0) + personsTotal;
-  const basePrice  = suite?.price ?? 0;
-  const subtotal   = basePrice + addonsTotal;
-  const savings    = Math.round(subtotal * 0.08);
+  const basePrice = suite?.price ?? 0;
+  const subtotal = basePrice + addonsTotal;
+  const savings = Math.round(subtotal * 0.08);
   const serviceFee = 650;
-  const taxes      = Math.round((subtotal - savings + serviceFee) * 0.12);
+  const taxes = Math.round((subtotal - savings + serviceFee) * 0.12);
   const grandTotal = subtotal - savings + serviceFee + taxes;
+  const advanceAmount = Math.round(grandTotal * 0.2);
+  const payableNow = paymentMode === "pay_now" ? grandTotal : advanceAmount;
 
   const isStepValid = useMemo(() => {
     if (step === 0) return !!selectedOccasion;
     if (step === 1) return !!bookingDate && !!startTime;
-    if (step === 2) return !!selectedSuite;
-    if (step === 5) return !!paymentMethod;
+    if (step === 2) return selectedSuiteId !== null;
+    if (step === 5) return !!paymentMode;
     return true;
-  }, [step, selectedOccasion, bookingDate, startTime, selectedSuite, paymentMethod]);
+  }, [step, selectedOccasion, bookingDate, startTime, selectedSuiteId, paymentMode]);
 
   function handleNext() {
     if (!isStepValid) { setShowValidation(true); return; }
     setShowValidation(false);
-    step < STEPS.length - 1 ? setStep((v) => v + 1) : setConfirmed(true);
+    if (step < STEPS.length - 1) setStep((v) => v + 1);
   }
   function handleBack() { setShowValidation(false); if (step > 0) setStep((v) => v - 1); }
   function updateQty(id: string, delta: number) {
     setAddonQty((p) => ({ ...p, [id]: Math.max(0, (p[id] ?? 0) + delta) }));
   }
 
-  /* ── Shared sidebar JSX ── */
+  async function handleProceedToPay() {
+    if (!suite) return;
+    setPayError("");
+    setProcessing(true);
+
+    try {
+      // 1. Create booking
+      const userRaw = localStorage.getItem("authUser");
+      const user = userRaw ? JSON.parse(userRaw) : null;
+
+      const booking = await bookingsApi.create({
+        suiteId: suite.id,
+        suiteName: suite.name,
+        eventType: OCCASIONS.find(o => o.id === selectedOccasion)?.label || selectedOccasion,
+        addOns: ADDONS.filter(a => (addonQty[a.id] || 0) > 0).map(a => a.name),
+        date: bookingDate,
+        timeSlot: startTime,
+        endTimeSlot: getEndTime(startTime),
+        persons,
+        basePrice,
+        addonsTotal,
+        savings,
+        serviceFee,
+        taxes,
+        totalAmount: grandTotal,
+        paymentMode,
+        advanceAmount,
+      });
+
+      // 2. Create Razorpay order
+      const order = await paymentsApi.createOrder(booking.id, payableNow, "razorpay");
+
+      // 3. Load Razorpay & open checkout
+      const loaded = await loadRazorpay();
+      if (!loaded) throw new Error("Razorpay SDK failed to load");
+
+      const options = {
+        key: order.keyId,
+        amount: Math.round(payableNow * 100),
+        currency: "INR",
+        name: "VibeNests",
+        description: `${paymentMode === "pay_now" ? "Full Payment" : "Advance (20%)"} – #VN${booking.id}`,
+        order_id: order.orderId,
+        prefill: {
+          name: user?.fullName || "",
+          email: user?.email || "",
+        },
+        theme: { color: "#d4a93c" },
+        handler: async (response: any) => {
+          try {
+            await paymentsApi.verifyPayment(
+              order.paymentId,
+              response.razorpay_order_id,
+              response.razorpay_payment_id,
+              response.razorpay_signature,
+            );
+            setConfirmedBookingId(booking.id);
+            setConfirmed(true);
+          } catch (err: any) {
+            setPayError(err.message || "Payment verification failed");
+            setProcessing(false);
+          }
+        },
+        modal: {
+          ondismiss: () => setProcessing(false),
+        },
+      };
+
+      const rzp = new (window as any).Razorpay(options);
+      rzp.open();
+    } catch (err: any) {
+      setPayError(err.message || "Something went wrong. Please try again.");
+      setProcessing(false);
+    }
+  }
+
+  /* ── Sidebar ── */
   const Sidebar = (
     <aside className="flex flex-col h-full w-64 bg-[oklch(0.11_0.025_260)] border-r border-gold/10">
-      {/* Brand */}
       <div className="flex items-center gap-3 px-4 py-4 border-b border-gold/10">
         <div className="h-9 w-9 rounded-lg overflow-hidden shrink-0">
           <img src="/logo.png" alt="VibeNests" className="h-full w-full object-contain" />
@@ -125,8 +217,6 @@ export default function SuiteBookingPage() {
           <p className="text-[9px] tracking-[0.25em] text-muted-foreground uppercase">Private Luxury Suites</p>
         </div>
       </div>
-
-      {/* User card */}
       <div className="px-4 py-3 border-b border-gold/10">
         <div className="flex items-center gap-3 p-2.5 rounded-xl glass-gold">
           <div className="h-8 w-8 rounded-full bg-gradient-gold flex items-center justify-center font-bold text-[oklch(0.12_0.02_260)] text-xs shrink-0">A</div>
@@ -136,34 +226,20 @@ export default function SuiteBookingPage() {
           </div>
         </div>
       </div>
-
-      {/* Nav */}
       <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto scrollbar-none">
-        {NAV_ITEMS.map(({ id, label, icon: Icon, path }) => {
-          const active = id === "suites";
-          return (
-            <button
-              key={id}
-              onClick={() => { navigate(path); setSidebarOpen(false); }}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${
-                active
-                  ? "bg-gold/15 border border-gold/25 text-gold font-medium"
-                  : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
-              }`}
-            >
-              <Icon className={`h-4 w-4 shrink-0 ${active ? "text-gold" : ""}`} />
-              {label}
-            </button>
-          );
-        })}
+        {NAV_ITEMS.map(({ id, label, icon: Icon, path }) => (
+          <button key={id} onClick={() => { navigate(path); setSidebarOpen(false); }}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${
+              id === "suites" ? "bg-gold/15 border border-gold/25 text-gold font-medium" : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
+            }`}>
+            <Icon className={`h-4 w-4 shrink-0 ${id === "suites" ? "text-gold" : ""}`} />
+            {label}
+          </button>
+        ))}
       </nav>
-
-      {/* Logout */}
       <div className="px-3 pb-5 pt-2 border-t border-gold/10">
-        <button
-          onClick={() => navigate("/login")}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10 transition-all"
-        >
+        <button onClick={() => navigate("/login")}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10 transition-all">
           <LogOut className="h-4 w-4 shrink-0" /> Logout
         </button>
       </div>
@@ -177,19 +253,31 @@ export default function SuiteBookingPage() {
         <div className="hidden lg:flex shrink-0">{Sidebar}</div>
         <div className="flex-1 flex items-center justify-center p-6 overflow-y-auto">
           <div className="glass-card rounded-3xl border border-gold/20 p-10 text-center max-w-md w-full space-y-5">
-            <div className="h-16 w-16 rounded-full bg-gold/15 border border-gold/30 flex items-center justify-center mx-auto">
-              <Sparkles className="h-7 w-7 text-gold" />
+            <div className="h-16 w-16 rounded-full bg-emerald-400/15 border border-emerald-400/30 flex items-center justify-center mx-auto">
+              <CheckCircle2 className="h-7 w-7 text-emerald-400" />
             </div>
             <h2 className="font-display text-3xl text-foreground">Booking Confirmed!</h2>
-            <p className="text-sm text-muted-foreground leading-relaxed">Your luxury suite has been reserved. A confirmation will be sent to you shortly.</p>
-            <div className="glass rounded-2xl p-4 text-left space-y-2 border border-white/10">
-              <p className="text-xs text-muted-foreground">{OCCASIONS.find(o => o.id === selectedOccasion)?.label}</p>
-              <p className="text-sm text-foreground font-medium">{suite?.name}</p>
-              <p className="text-xs text-muted-foreground">{bookingDate} · {startTime}{startTime ? ` – ${getEndTime(startTime)}` : ""}</p>
-              <p className="text-gold font-semibold">₹{grandTotal.toLocaleString()}</p>
-            </div>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Your luxury suite has been reserved and payment received. A confirmation email has been sent to you.
+            </p>
+            {confirmedBookingId && (
+              <div className="glass rounded-2xl p-4 text-left space-y-2 border border-white/10">
+                <p className="text-xs text-muted-foreground font-mono">Booking ID: #VN{confirmedBookingId}</p>
+                <p className="text-sm text-foreground font-medium">{suite?.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {OCCASIONS.find(o => o.id === selectedOccasion)?.label} · {bookingDate} · {startTime} – {getEndTime(startTime)}
+                </p>
+                <div className="pt-1 border-t border-white/10 flex justify-between text-sm">
+                  <span className="text-muted-foreground">{paymentMode === "pay_now" ? "Paid in Full" : "Advance Paid (20%)"}</span>
+                  <span className="text-gold font-semibold">₹{payableNow.toLocaleString()}</span>
+                </div>
+                {paymentMode === "pay_at_venue" && (
+                  <p className="text-xs text-amber-400">Balance ₹{(grandTotal - advanceAmount).toLocaleString()} payable at venue</p>
+                )}
+              </div>
+            )}
             <button onClick={() => navigate("/user/dashboard")} className="gold-btn w-full rounded-2xl py-3 text-sm font-semibold">
-              Back to Dashboard
+              View My Bookings
             </button>
           </div>
         </div>
@@ -199,11 +287,8 @@ export default function SuiteBookingPage() {
 
   return (
     <div className="h-screen flex overflow-hidden bg-[oklch(0.08_0.015_260)]">
-
-      {/* ── Desktop sidebar ── */}
       <div className="hidden lg:flex shrink-0">{Sidebar}</div>
 
-      {/* ── Mobile sidebar overlay ── */}
       {sidebarOpen && (
         <>
           <div className="fixed inset-0 bg-black/60 z-30 lg:hidden" onClick={() => setSidebarOpen(false)} />
@@ -211,24 +296,17 @@ export default function SuiteBookingPage() {
         </>
       )}
 
-      {/* ── Main area ── */}
       <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-
-        {/* Top header */}
         <header className="sticky top-0 z-20 flex items-center justify-between px-5 py-3.5 border-b border-white/5 glass backdrop-blur-xl shrink-0">
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => setSidebarOpen((o) => !o)}
-              className="flex lg:hidden flex-col justify-center items-center gap-[5px] p-2 rounded-lg hover:bg-white/5 transition-colors"
-            >
+            <button onClick={() => setSidebarOpen((o) => !o)}
+              className="flex lg:hidden flex-col justify-center items-center gap-[5px] p-2 rounded-lg hover:bg-white/5 transition-colors">
               <span className="block w-5 h-0.5 bg-muted-foreground" />
               <span className="block w-5 h-0.5 bg-muted-foreground" />
               <span className="block w-5 h-0.5 bg-muted-foreground" />
             </button>
-            <button
-              onClick={() => navigate("/user/dashboard")}
-              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-gold transition-colors"
-            >
+            <button onClick={() => navigate("/user/dashboard")}
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-gold transition-colors">
               <ChevronLeft className="h-4 w-4" /> Dashboard
             </button>
             <span className="text-white/20">/</span>
@@ -243,26 +321,20 @@ export default function SuiteBookingPage() {
               <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-gold" />
             </button>
             <div className="relative">
-              <button
-                onClick={() => setProfileOpen((o) => !o)}
-                className="h-9 w-9 rounded-xl bg-gradient-gold flex items-center justify-center font-bold text-[oklch(0.12_0.02_260)] text-sm hover:opacity-80 transition-opacity"
-              >
+              <button onClick={() => setProfileOpen((o) => !o)}
+                className="h-9 w-9 rounded-xl bg-gradient-gold flex items-center justify-center font-bold text-[oklch(0.12_0.02_260)] text-sm hover:opacity-80 transition-opacity">
                 A
               </button>
               {profileOpen && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setProfileOpen(false)} />
                   <div className="absolute right-0 top-11 z-50 w-44 glass-card rounded-xl border border-white/10 py-1 shadow-xl">
-                    <button
-                      onClick={() => { navigate("/login"); setProfileOpen(false); }}
-                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
-                    >
+                    <button onClick={() => { navigate("/login"); setProfileOpen(false); }}
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10 transition-colors">
                       <LogOut className="h-4 w-4 shrink-0" /> Logout
                     </button>
-                    <button
-                      onClick={() => setProfileOpen(false)}
-                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
-                    >
+                    <button onClick={() => setProfileOpen(false)}
+                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors">
                       <ChevronDown className="h-4 w-4 shrink-0" /> Cancel
                     </button>
                   </div>
@@ -272,11 +344,8 @@ export default function SuiteBookingPage() {
           </div>
         </header>
 
-        {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto">
           <div className="p-5 space-y-5">
-
-            {/* Page title */}
             <div className="glass-card rounded-2xl border border-gold/15 px-6 py-5">
               <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground">Premium experience</p>
               <h2 className="font-display text-2xl lg:text-3xl text-foreground font-semibold mt-1">
@@ -284,10 +353,7 @@ export default function SuiteBookingPage() {
               </h2>
             </div>
 
-            {/* 2-col grid: step sidebar | form */}
             <div className="grid gap-5 lg:grid-cols-[200px_1fr]">
-
-              {/* ── Left step sidebar ── */}
               <aside className="hidden lg:block">
                 <div className="glass-card sticky top-5 rounded-2xl border border-gold/15 p-4 space-y-1">
                   <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground font-semibold px-2 mb-3">Your Journey</p>
@@ -295,17 +361,14 @@ export default function SuiteBookingPage() {
                     const done   = index < step;
                     const active = index === step;
                     return (
-                      <button
-                        key={label}
-                        type="button"
+                      <button key={label} type="button"
                         onClick={() => !active && index < step && setStep(index)}
                         disabled={index > step}
                         className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs transition-all ${
                           active ? "bg-gold/15 border border-gold/30 text-gold font-semibold"
                           : done  ? "bg-white/5 border border-white/8 text-foreground/70 hover:bg-gold/8 hover:text-gold"
                           : "text-muted-foreground/40 cursor-not-allowed"
-                        }`}
-                      >
+                        }`}>
                         <span className={`h-5 w-5 rounded-full border-2 flex items-center justify-center text-[9px] font-bold shrink-0 ${
                           done   ? "border-gold bg-gold text-[oklch(0.12_0.02_260)]"
                           : active ? "border-gold bg-gold/15 text-gold"
@@ -317,24 +380,19 @@ export default function SuiteBookingPage() {
                       </button>
                     );
                   })}
-
-                  {/* Progress */}
                   <div className="mt-4 px-2 space-y-1.5">
                     <div className="flex justify-between text-[10px] text-muted-foreground">
                       <span>Progress</span>
                       <span>{Math.round((step / (STEPS.length - 1)) * 100)}%</span>
                     </div>
                     <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-gradient-to-r from-gold/80 to-gold transition-all duration-500"
-                        style={{ width: `${Math.round((step / (STEPS.length - 1)) * 100)}%` }}
-                      />
+                      <div className="h-full rounded-full bg-gradient-to-r from-gold/80 to-gold transition-all duration-500"
+                        style={{ width: `${Math.round((step / (STEPS.length - 1)) * 100)}%` }} />
                     </div>
                   </div>
                 </div>
               </aside>
 
-              {/* ── Main form ── */}
               <div className="space-y-4">
                 {/* Mobile step pills */}
                 <div className="flex lg:hidden items-center gap-1 overflow-x-auto pb-1 scrollbar-none">
@@ -368,7 +426,7 @@ export default function SuiteBookingPage() {
                     </div>
                   </div>
 
-                  {/* Step 0 */}
+                  {/* Step 0 – Occasion */}
                   {step === 0 && (
                     <div className="grid gap-3 md:grid-cols-2">
                       {OCCASIONS.map((o) => {
@@ -393,17 +451,14 @@ export default function SuiteBookingPage() {
                     </div>
                   )}
 
-                  {/* Step 1 */}
+                  {/* Step 1 – Date & Time */}
                   {step === 1 && (
                     <div className="space-y-6">
-                      {/* Date */}
                       <div className="space-y-2">
                         <label className="text-xs uppercase tracking-[0.25em] text-muted-foreground">Select Date</label>
                         <input type="date" value={bookingDate} onChange={(e) => setBookingDate(e.target.value)}
                           className="luxury-input w-full rounded-2xl px-4 py-3 text-sm bg-black/40" />
                       </div>
-
-                      {/* Time slot boxes */}
                       <div className="space-y-3">
                         <div className="flex items-center gap-2">
                           <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground">Select Time Slot</p>
@@ -414,16 +469,11 @@ export default function SuiteBookingPage() {
                             const end = getEndTime(t);
                             const active = startTime === t;
                             return (
-                              <button
-                                key={t}
-                                type="button"
-                                onClick={() => setStartTime(t)}
+                              <button key={t} type="button" onClick={() => setStartTime(t)}
                                 className={`flex items-center justify-between gap-3 px-4 py-3.5 rounded-2xl border text-sm font-medium transition-all ${
-                                  active
-                                    ? "border-gold bg-gold/15 text-gold shadow-[0_0_16px_rgba(212,160,60,0.2)]"
-                                    : "border-white/10 bg-white/5 text-muted-foreground hover:border-gold/40 hover:text-foreground hover:bg-white/10"
-                                }`}
-                              >
+                                  active ? "border-gold bg-gold/15 text-gold shadow-[0_0_16px_rgba(212,160,60,0.2)]"
+                                  : "border-white/10 bg-white/5 text-muted-foreground hover:border-gold/40 hover:text-foreground hover:bg-white/10"
+                                }`}>
                                 <div className="flex items-center gap-2.5">
                                   <Clock className={`h-4 w-4 shrink-0 ${active ? "text-gold" : "text-gold/40"}`} />
                                   <span>{t} – {end}</span>
@@ -436,14 +486,11 @@ export default function SuiteBookingPage() {
                           })}
                         </div>
                       </div>
-
-                      {/* Selected slot badge */}
                       {startTime && (
                         <div className="flex items-center gap-2.5 px-4 py-3 rounded-2xl border border-gold/25 bg-gold/8">
                           <Clock className="h-4 w-4 text-gold shrink-0" />
                           <p className="text-sm text-foreground">
-                            Selected:{" "}
-                            <span className="text-gold font-semibold">{startTime} – {getEndTime(startTime)}</span>
+                            Selected: <span className="text-gold font-semibold">{startTime} – {getEndTime(startTime)}</span>
                             <span className="text-muted-foreground ml-2 text-xs">· 2 hrs 30 mins</span>
                           </p>
                         </div>
@@ -451,13 +498,13 @@ export default function SuiteBookingPage() {
                     </div>
                   )}
 
-                  {/* Step 2 */}
+                  {/* Step 2 – Suite */}
                   {step === 2 && (
                     <div className="grid gap-4 sm:grid-cols-2">
                       {SUITES.map((s) => {
-                        const active = selectedSuite === s.id;
+                        const active = selectedSuiteId === s.id;
                         return (
-                          <button key={s.id} type="button" onClick={() => setSelectedSuite(s.id)}
+                          <button key={s.id} type="button" onClick={() => setSelectedSuiteId(s.id)}
                             className={`flex flex-col overflow-hidden rounded-2xl border transition-all text-left ${
                               active ? "border-gold bg-gold/10 shadow-[0_20px_50px_rgba(255,190,90,0.1)]"
                               : "border-white/10 bg-white/5 hover:border-gold/20"
@@ -469,7 +516,7 @@ export default function SuiteBookingPage() {
                               <div className="flex items-start justify-between gap-2">
                                 <div>
                                   <h4 className="font-display text-base text-foreground">{s.name}</h4>
-                                  <p className="text-xs text-muted-foreground">Suite ID {s.id}</p>
+                                  <p className="text-xs text-muted-foreground">Suite ID S{String(s.id).padStart(2,"0")}</p>
                                 </div>
                                 <p className="font-semibold text-gold text-sm shrink-0">₹{s.price.toLocaleString()}</p>
                               </div>
@@ -488,7 +535,7 @@ export default function SuiteBookingPage() {
                     </div>
                   )}
 
-                  {/* Step 3 */}
+                  {/* Step 3 – Add-ons */}
                   {step === 3 && (
                     <div className="space-y-5">
                       <div className="glass-card rounded-2xl border border-white/10 p-4">
@@ -546,7 +593,7 @@ export default function SuiteBookingPage() {
                     </div>
                   )}
 
-                  {/* Step 4 */}
+                  {/* Step 4 – Summary */}
                   {step === 4 && (
                     <div className="space-y-4">
                       <div className="grid gap-4 sm:grid-cols-2">
@@ -589,35 +636,120 @@ export default function SuiteBookingPage() {
                     </div>
                   )}
 
-                  {/* Step 5 */}
+                  {/* Step 5 – Payment */}
                   {step === 5 && (
-                    <div className="space-y-4">
-                      <div className="glass-card rounded-2xl border border-white/10 p-4">
-                        <h4 className="text-xs uppercase tracking-[0.25em] text-muted-foreground mb-4">Payment Options</h4>
+                    <div className="space-y-5">
+                      {/* Payment breakdown */}
+                      <div className="glass-card rounded-2xl border border-white/10 p-5 space-y-3">
+                        <h4 className="text-xs uppercase tracking-[0.25em] text-muted-foreground font-semibold">Payment Breakdown</h4>
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Suite – {suite?.name}</span>
+                            <span className="text-foreground">₹{basePrice.toLocaleString()}</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Persons ({persons} × ₹299)</span>
+                            <span className="text-foreground">₹{personsTotal.toLocaleString()}</span>
+                          </div>
+                          {ADDONS.filter(a => (addonQty[a.id] || 0) > 0).map(a => (
+                            <div key={a.id} className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">{a.name} × {addonQty[a.id]}</span>
+                              <span className="text-foreground">₹{(a.price * addonQty[a.id]).toLocaleString()}</span>
+                            </div>
+                          ))}
+                          <div className="flex justify-between text-sm text-emerald-400">
+                            <span>Luxury Discount (8%)</span>
+                            <span>– ₹{savings.toLocaleString()}</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Service Fee</span>
+                            <span className="text-foreground">₹{serviceFee.toLocaleString()}</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">GST (12%)</span>
+                            <span className="text-foreground">₹{taxes.toLocaleString()}</span>
+                          </div>
+                          <div className="border-t border-white/10 pt-3 flex justify-between">
+                            <span className="text-base font-semibold text-foreground">Total Amount</span>
+                            <span className="font-display text-xl text-gold">₹{grandTotal.toLocaleString()}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Payment option */}
+                      <div className="glass-card rounded-2xl border border-white/10 p-5 space-y-3">
+                        <h4 className="text-xs uppercase tracking-[0.25em] text-muted-foreground font-semibold">Select Payment Option</h4>
                         <div className="space-y-3">
                           {[
-                            { id: "pay-now",   label: "Pay Now",      description: "Secure your booking instantly with card payment." },
-                            { id: "pay-venue", label: "Pay at Venue", description: "Reserve now and complete payment at the venue." },
+                            { id: "pay_now" as const,   label: "Pay Now",        description: `Pay the full amount ₹${grandTotal.toLocaleString()} and confirm instantly.` },
+                            { id: "pay_at_venue" as const, label: "Pay at Venue", description: `Pay 20% advance ₹${advanceAmount.toLocaleString()} now. Balance ₹${(grandTotal - advanceAmount).toLocaleString()} at venue.` },
                           ].map((opt) => (
-                            <button key={opt.id} type="button" onClick={() => setPaymentMethod(opt.id as any)}
+                            <button key={opt.id} type="button" onClick={() => setPaymentMode(opt.id)}
                               className={`w-full rounded-2xl border p-4 text-left transition ${
-                                paymentMethod === opt.id ? "border-gold bg-gold/10" : "border-white/10 bg-black/40 hover:border-gold/20"
+                                paymentMode === opt.id ? "border-gold bg-gold/10" : "border-white/10 bg-black/40 hover:border-gold/20"
                               }`}>
                               <div className="flex items-center justify-between gap-3">
                                 <div>
-                                  <p className={`font-display text-base ${paymentMethod === opt.id ? "text-gold" : "text-foreground"}`}>{opt.label}</p>
-                                  <p className="text-xs text-muted-foreground mt-0.5">{opt.description}</p>
+                                  <p className={`font-display text-base ${paymentMode === opt.id ? "text-gold" : "text-foreground"}`}>{opt.label}</p>
+                                  <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{opt.description}</p>
                                 </div>
-                                <div className={`h-5 w-5 rounded-full border-2 shrink-0 ${paymentMethod === opt.id ? "border-gold bg-gold/20" : "border-white/20"}`} />
+                                <div className={`h-5 w-5 rounded-full border-2 shrink-0 flex items-center justify-center ${paymentMode === opt.id ? "border-gold bg-gold/20" : "border-white/20"}`}>
+                                  {paymentMode === opt.id && <div className="h-2.5 w-2.5 rounded-full bg-gold" />}
+                                </div>
                               </div>
                             </button>
                           ))}
                         </div>
                       </div>
-                      <div className="rounded-2xl bg-gradient-to-r from-gold/15 to-gold/5 p-4 border border-gold/15">
-                        <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground">Savings</p>
-                        <p className="mt-1 text-base text-foreground font-semibold">₹{savings.toLocaleString()} luxury discount applied</p>
+
+                      {/* Payable summary */}
+                      <div className="rounded-2xl border border-gold/25 bg-gradient-to-r from-gold/15 to-gold/5 p-5">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-xs text-muted-foreground uppercase tracking-[0.25em]">
+                              {paymentMode === "pay_now" ? "Amount to Pay Now" : "Advance to Pay Now (20%)"}
+                            </p>
+                            <p className="font-display text-3xl text-gold mt-1">₹{payableNow.toLocaleString()}</p>
+                            {paymentMode === "pay_at_venue" && (
+                              <p className="text-xs text-muted-foreground mt-1">Balance ₹{(grandTotal - advanceAmount).toLocaleString()} payable at venue</p>
+                            )}
+                          </div>
+                          <div className="flex flex-col items-end gap-1">
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                              <CreditCard className="h-3.5 w-3.5 text-gold" /> Cards / UPI / Net Banking
+                            </div>
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                              <Building className="h-3.5 w-3.5 text-gold" /> Secured by Razorpay
+                            </div>
+                          </div>
+                        </div>
                       </div>
+
+                      {payError && (
+                        <div className="rounded-xl bg-rose-500/10 border border-rose-500/30 px-4 py-3 text-sm text-rose-400">
+                          {payError}
+                        </div>
+                      )}
+
+                      {/* Proceed to Pay button */}
+                      <button type="button" onClick={handleProceedToPay} disabled={processing}
+                        className="w-full gold-btn rounded-2xl py-4 text-base font-semibold flex items-center justify-center gap-3 disabled:opacity-60">
+                        {processing ? (
+                          <>
+                            <div className="h-5 w-5 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                            Processing...
+                          </>
+                        ) : (
+                          <>
+                            <CreditCard className="h-5 w-5" />
+                            Proceed to Pay ₹{payableNow.toLocaleString()}
+                          </>
+                        )}
+                      </button>
+
+                      <p className="text-center text-xs text-muted-foreground">
+                        Powered by Razorpay · 256-bit SSL encryption
+                      </p>
                     </div>
                   )}
 
@@ -625,21 +757,27 @@ export default function SuiteBookingPage() {
                     <p className="text-sm text-rose-400">Please complete the required selection before continuing.</p>
                   )}
 
-                  <div className="flex gap-3 pt-1">
-                    <button type="button" onClick={handleBack} disabled={step === 0}
-                      className="flex-1 rounded-2xl border border-white/10 px-5 py-3 text-sm text-muted-foreground hover:text-foreground transition disabled:opacity-40">
-                      <ChevronLeft className="inline-block h-4 w-4 mr-1" /> Back
+                  {/* Nav buttons — hide on payment step (has its own CTA) */}
+                  {step !== 5 && (
+                    <div className="flex gap-3 pt-1">
+                      <button type="button" onClick={handleBack} disabled={step === 0}
+                        className="flex-1 rounded-2xl border border-white/10 px-5 py-3 text-sm text-muted-foreground hover:text-foreground transition disabled:opacity-40">
+                        <ChevronLeft className="inline-block h-4 w-4 mr-1" /> Back
+                      </button>
+                      <button type="button" onClick={handleNext}
+                        className="flex-1 gold-btn rounded-2xl px-5 py-3 text-sm font-semibold flex items-center justify-center gap-2">
+                        Continue <ChevronRight className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
+                  {step === 5 && (
+                    <button type="button" onClick={handleBack}
+                      className="w-full rounded-2xl border border-white/10 px-5 py-3 text-sm text-muted-foreground hover:text-foreground transition">
+                      <ChevronLeft className="inline-block h-4 w-4 mr-1" /> Back to Summary
                     </button>
-                    <button type="button" onClick={handleNext}
-                      className="flex-1 gold-btn rounded-2xl px-5 py-3 text-sm font-semibold flex items-center justify-center gap-2">
-                      {step === STEPS.length - 1 ? "Confirm Booking" : "Continue"}
-                      <ChevronRight className="h-4 w-4" />
-                    </button>
-                  </div>
+                  )}
                 </div>
               </div>
-
-
             </div>
           </div>
         </div>
