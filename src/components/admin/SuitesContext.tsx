@@ -18,7 +18,14 @@ export type Suite = {
 
 function parseImages(val: any): string[] {
   if (Array.isArray(val)) return val;
+  if (!val || val === '[]' || val === '') return [];
   try { return JSON.parse(val); } catch { return []; }
+}
+
+function parseSimpleArray(val: any): string[] {
+  if (Array.isArray(val)) return val.filter(Boolean);
+  if (!val || val === '') return [];
+  return String(val).split(',').map((s) => s.trim()).filter(Boolean);
 }
 
 function mapApiSuite(s: any): Suite {
@@ -34,7 +41,7 @@ function mapApiSuite(s: any): Suite {
     status: s.status === "available" ? "Active" : "Inactive",
     description: s.description ?? "",
     images: parseImages(s.images),
-    amenities: Array.isArray(s.amenities) ? s.amenities : [],
+    amenities: parseSimpleArray(s.amenities),
   };
 }
 
