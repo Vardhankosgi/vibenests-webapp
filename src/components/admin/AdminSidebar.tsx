@@ -9,7 +9,6 @@ import { LogoPopover } from "@/components/shared/LogoPopover";
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
   { icon: CalendarDays, label: "Bookings", to: "/bookings" },
-  { icon: CreditCard, label: "Suite Booking", to: "/suite-booking" },
   { icon: BedDouble, label: "Suites", to: "/rooms" },
   { icon: Package, label: "Add-on Management", to: "/addons" },
   { icon: Gift, label: "Celebration Packages", to: "/celebration-packages" },

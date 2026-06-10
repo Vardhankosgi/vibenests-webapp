@@ -1,29 +1,33 @@
-import { useState, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { Plus, Search, Pencil, Trash2, X, ImagePlus } from "lucide-react";
+import { addonsApi } from "@/lib/api";
 
 type Addon = {
-  id: string; name: string; category: string; price: string;
-  status: "Active" | "Inactive"; image: string; description: string;
+  id: number;
+  name: string;
+  category: string;
+  price: number;
+  status: "active" | "inactive";
+  image?: string;
+  description: string;
 };
-
-const initialAddons: Addon[] = [
-  { id: "A001", name: "Birthday Cake", category: "Food & Beverage", price: "₹1,200", status: "Active", image: "", description: "Custom birthday cake with personalized message." },
-  { id: "A002", name: "Flower Decoration", category: "Decoration", price: "₹2,500", status: "Active", image: "", description: "Fresh flower arrangements for the suite." },
-  { id: "A003", name: "Romantic Setup", category: "Decoration", price: "₹3,800", status: "Active", image: "", description: "Rose petals, candles, and fairy lights setup." },
-  { id: "A004", name: "Balloon Decoration", category: "Decoration", price: "₹1,800", status: "Active", image: "", description: "Colorful balloon arrangements and arches." },
-  { id: "A005", name: "DJ Music", category: "Entertainment", price: "₹5,000", status: "Active", image: "", description: "Professional DJ with sound system for 3 hours." },
-  { id: "A006", name: "Photography", category: "Media", price: "₹4,500", status: "Active", image: "", description: "Professional photographer for event coverage." },
-  { id: "A007", name: "Live Streaming", category: "Media", price: "₹2,000", status: "Inactive", image: "", description: "Live stream your celebration with guests online." },
-  { id: "A008", name: "Chocolate Fondue", category: "Food & Beverage", price: "₹900", status: "Active", image: "", description: "Chocolate fondue set with fruits and marshmallows." },
-];
 
 const statusStyle: Record<string, string> = {
   Active: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
   Inactive: "bg-amber-500/10 text-amber-400 border-amber-500/20",
 };
 
-const emptyForm: Omit<Addon, "id"> = { name: "", category: "Decoration", price: "", status: "Active", image: "", description: "" };
+const emptyForm = {
+  name: "",
+  category: "Decoration",
+  price: "" as string | number,
+  status: "active" as Addon["status"],
+  image: "" as string,
+  description: "",
+};
+
+
 
 function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
   return (
@@ -35,38 +39,111 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
 }
 
 export default function AddonsPage() {
-  const [addons, setAddons] = useState(initialAddons);
+  const [addons, setAddons] = useState<Addon[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState("All");
   const [showModal, setShowModal] = useState(false);
-  const [editId, setEditId] = useState<string | null>(null);
+  const [editId, setEditId] = useState<number | null>(null);
   const [form, setForm] = useState(emptyForm);
+
   const fileRef = useRef<HTMLInputElement>(null);
   const [newCatInput, setNewCatInput] = useState("");
   const [allCategories, setAllCategories] = useState<string[]>(["Decoration", "Food & Beverage", "Entertainment", "Media"]);
   const [customCategories, setCustomCategories] = useState<string[]>([]);
 
-  const filtered = addons.filter((a) => {
-    const matchSearch = a.name.toLowerCase().includes(search.toLowerCase());
-    const matchCat = catFilter === "All" || a.category === catFilter;
-    return matchSearch && matchCat;
-  });
+  const filtered = useMemo(() => {
+    return addons.filter((a) => {
+      const matchSearch = a.name.toLowerCase().includes(search.toLowerCase());
+      const matchCat = catFilter === "All" || a.category === catFilter;
+      return matchSearch && matchCat;
+    });
+  }, [addons, catFilter, search]);
 
-  function openAdd() { setEditId(null); setForm(emptyForm); setShowModal(true); }
-  function openEdit(a: Addon) { setEditId(a.id); setForm({ name: a.name, category: a.category, price: a.price, status: a.status, image: a.image, description: a.description }); setShowModal(true); }
-
-  function handleSave() {
-    if (!form.name.trim()) return;
-    if (editId) {
-      setAddons((prev) => prev.map((a) => a.id === editId ? { ...a, ...form } : a));
-    } else {
-      const newId = `A${String(addons.length + 1).padStart(3, "0")}`;
-      setAddons((prev) => [...prev, { id: newId, ...form }]);
+  const fetchAddons = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await addonsApi.getAll();
+      // backend returns price as number and status as 'active' | 'inactive'
+      setAddons(data);
+    } catch (e: any) {
+      setError(e?.message || "Failed to load add-ons");
+    } finally {
+      setLoading(false);
     }
-    setShowModal(false);
+  };
+
+  useEffect(() => {
+    fetchAddons();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function openAdd() {
+    setEditId(null);
+    setForm(emptyForm);
+    setShowModal(true);
   }
 
-  function handleDelete(id: string) { setAddons((prev) => prev.filter((a) => a.id !== id)); }
+  function openEdit(a: Addon) {
+    setEditId(a.id);
+    setForm({
+      name: a.name,
+      category: a.category,
+      price: a.price,
+      status: a.status,
+      image: a.image || "",
+      description: a.description,
+    });
+    setShowModal(true);
+  }
+
+  function parsePrice(input: string | number): number {
+    if (typeof input === "number") return input;
+    const cleaned = input.replace(/[₹\s,]/g, "");
+    const n = Number(cleaned);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  async function handleSave() {
+    if (!form.name.trim()) return;
+
+    const payload = {
+      ...form,
+      price: parsePrice(form.price),
+      // backend expects 'active' | 'inactive'
+      status: form.status,
+    };
+
+    try {
+      setLoading(true);
+      if (editId) {
+        await addonsApi.update(editId, payload);
+      } else {
+        await addonsApi.create(payload);
+      }
+      setShowModal(false);
+      await fetchAddons();
+    } catch (e: any) {
+      setError(e?.message || "Failed to save add-on");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleDelete(id: number) {
+    try {
+      setLoading(true);
+      await addonsApi.remove(id);
+      await fetchAddons();
+    } catch (e: any) {
+      setError(e?.message || "Failed to delete add-on");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   function handleImage(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -77,16 +154,17 @@ export default function AddonsPage() {
     e.target.value = "";
   }
 
+
   return (
     <div className="flex-1 overflow-y-auto">
       <AdminHeader title="Add-on Management" />
       <div className="p-6 space-y-5">
         <div className="flex flex-wrap gap-3">
           {[
-            { label: "Total Add-ons", count: addons.length, color: "border-[var(--gold)]/30 text-gold" },
-            { label: "Active", count: addons.filter(a => a.status === "Active").length, color: "border-emerald-500/30 text-emerald-400" },
-            { label: "Inactive", count: addons.filter(a => a.status === "Inactive").length, color: "border-amber-500/30 text-amber-400" },
-          ].map((s) => (
+                { label: "Total Add-ons", count: addons.length, color: "border-[var(--gold)]/30 text-gold" },
+                { label: "Active", count: addons.filter((a) => a.status === "active").length, color: "border-emerald-500/30 text-emerald-400" },
+                { label: "Inactive", count: addons.filter((a) => a.status === "inactive").length, color: "border-amber-500/30 text-amber-400" },
+              ].map((s) => (
             <div key={s.label} className={`glass-card rounded-xl px-4 py-2.5 border ${s.color} flex items-center gap-2`}>
               <span className="text-xl font-display font-semibold">{s.count}</span>
               <span className="text-xs text-muted-foreground">{s.label}</span>
@@ -193,14 +271,21 @@ export default function AddonsPage() {
               </div>
               {[
                 { label: "Add-on Name", key: "name", placeholder: "e.g. Birthday Cake" },
-                { label: "Price", key: "price", placeholder: "e.g. ₹1,200" },
+                { label: "Price", key: "price", placeholder: "e.g. 1200" },
                 { label: "Description", key: "description", placeholder: "Brief description..." },
               ].map(({ label, key, placeholder }) => (
                 <div key={key}>
                   <label className="text-[11px] text-muted-foreground uppercase tracking-wide">{label}</label>
-                  <input type="text" placeholder={placeholder} value={form[key as keyof typeof form] as string} onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))} className="luxury-input w-full rounded-lg px-3 py-2 text-sm mt-0.5" />
+                  <input
+                    type="text"
+                    placeholder={placeholder}
+                    value={String(form[key as keyof typeof form] ?? "")}
+                    onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
+                    className="luxury-input w-full rounded-lg px-3 py-2 text-sm mt-0.5"
+                  />
                 </div>
               ))}
+
               <div>
                 <label className="text-[11px] text-muted-foreground uppercase tracking-wide">Category</label>
                 <select value={form.category} onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))} className="luxury-input w-full rounded-lg px-3 py-2 text-sm mt-0.5 bg-transparent cursor-pointer">

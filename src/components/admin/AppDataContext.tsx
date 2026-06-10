@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useMemo, useEffect } from "react";
 import { bookingsApi, usersApi } from "@/lib/api";
 
 export type Booking = {
+  rawId?: string;
   id: string; guest: string; phone: string; suite: string;
   occasion: string; date: string; time: string; endTime: string;
   guests: number; amount: string; status: "Confirmed" | "Pending" | "Cancelled";
@@ -24,6 +25,7 @@ function mapApiBooking(b: any): Booking {
     : (b.user?.fullName ?? 'Guest');
   return {
     id: `#VN${b.id}`,
+    rawId: String(b.id),
     guest: guestName,
     phone: b.guestPhone ?? b.user?.phone ?? '',
     suite: b.suite?.name ?? `Suite ${b.suiteId}`,

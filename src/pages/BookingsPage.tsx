@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Search, Filter, Download, Trash2, Plus, X, Check, ChevronRight, ChevronLeft } from "lucide-react";
+import { Search, Filter, Download, Plus, X, Check, ChevronRight, ChevronLeft, Eye } from "lucide-react";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { DateRangePicker } from "@/components/admin/DateRangePicker";
 import { useAppData } from "@/components/admin/AppDataContext";
@@ -353,8 +353,8 @@ export default function BookingsPage() {
 
   function toggleSelect(id: string) { setSelected((s) => s.includes(id) ? s.filter((x) => x !== id) : [...s, id]); }
   function toggleAll() { setSelected((s) => s.length === filtered.length ? [] : filtered.map((b) => b.id)); }
-  function deleteSelected() { setBookings((b) => b.filter((x) => !selected.includes(x.id))); setSelected([]); }
-  function deleteOne(id: string) { setBookings((b) => b.filter((x) => x.id !== id)); setSelected((s) => s.filter((x) => x !== id)); }
+  function deleteSelected() { /* delete removed */ }
+  function deleteOne(id: string) { /* delete removed */ }
 
   const suiteNames = ["All", ...Array.from(new Set(bookings.map((b) => b.suite)))];
 
@@ -435,11 +435,7 @@ export default function BookingsPage() {
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-display text-lg font-medium text-foreground">All Bookings</h3>
             <div className="flex items-center gap-3">
-              {selected.length > 0 && (
-                <button onClick={deleteSelected} className="flex items-center gap-1.5 text-xs text-destructive border border-destructive/30 hover:bg-destructive/10 px-3 py-1.5 rounded-lg transition">
-                  <Trash2 className="h-3.5 w-3.5" /> Delete Selected ({selected.length})
-                </button>
-              )}
+
               <span className="text-xs text-muted-foreground">{filtered.length} of {bookings.length} bookings</span>
             </div>
           </div>
@@ -478,8 +474,15 @@ export default function BookingsPage() {
                       <span className={`px-2.5 py-1 rounded-full text-[11px] font-medium border ${statusStyle[b.status]}`}>{b.status}</span>
                     </td>
                     <td className="py-3">
-                      <button onClick={() => deleteOne(b.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition">
-                        <Trash2 className="h-3.5 w-3.5" />
+                      <button
+                        onClick={() =>
+                          navigate(
+                            `/bookings/${String((b as any).rawId ?? b.id).replace(/^#VN/, "")}`
+                          )
+                        }
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs text-gold border border-gold/25 bg-gold/5 hover:bg-gold/10 hover:border-gold/40 transition"
+                      >
+                        <Eye className="h-3.5 w-3.5" /> View Details
                       </button>
                     </td>
                   </tr>

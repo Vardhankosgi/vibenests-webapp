@@ -187,7 +187,19 @@ const BOOKING_EXTRAS: Record<string, {
 function BookingDetailsDrawer({ booking, onClose }: { booking: Booking; onClose: () => void }) {
   const s = STATUS_CONFIG[booking.status];
   const SI = s.icon;
-  const extra = BOOKING_EXTRAS[booking.id];
+  const extra = BOOKING_EXTRAS[booking.id] || {
+    addOns: [],
+    paymentMethod: "—",
+    paymentBreakdown: [
+      { label: "Total", amount: booking.amount || 0 },
+    ],
+    timeline: [
+      { date: booking.checkIn || "", event: "Booking", done: true },
+    ],
+    cancellationPolicy: "—",
+    refundInfo: "—",
+  };
+
   const total = extra.paymentBreakdown.reduce((sum, r) => sum + r.amount, 0);
 
   return (

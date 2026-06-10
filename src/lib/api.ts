@@ -52,6 +52,7 @@ export const authApi = {
 // ── Bookings ─────────────────────────────────────────────────────────────────
 export const bookingsApi = {
   getAll: () => request<any[]>('/bookings'),
+  getById: (id: string | number) => request<any>(`/bookings/${id}`),
   create: (body: any) => request<any>('/bookings', { method: 'POST', body: JSON.stringify(body) }),
   adminCreate: (body: any) => request<any>('/bookings/admin', { method: 'POST', body: JSON.stringify(body) }),
   updateStatus: (id: number, status: string) =>
