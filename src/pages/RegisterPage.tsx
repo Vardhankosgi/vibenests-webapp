@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import {
   Eye, EyeOff, User, Mail, Phone, Lock, MapPin,
   ShieldCheck, Star, Headphones, ChevronDown, Check,
@@ -8,6 +9,7 @@ import {
 } from "lucide-react";
 import { BrandMark } from "@/components/auth/BrandMark";
 import { GoogleIcon } from "@/components/auth/GoogleIcon";
+import { LanguageSelector } from "@/components/shared/LanguageSelector";
 import loginbg from "@/assets/loginbg.png";
 
 /* ── Cities ─────────────────────────────────────────── */
@@ -19,36 +21,36 @@ const CITIES = [
 
 /* ── Trust badges ───────────────────────────────────── */
 const TRUST_BADGES = [
-  { icon: ShieldCheck, label: "Secure & Private", href: "/privacy-policy" },
-  { icon: Star,        label: "Exclusive Access", href: "/privacy-policy" },
-  { icon: Headphones,  label: "24/7 Support",     href: "/contact"        },
+  { icon: ShieldCheck, key: "securePrivate", label: "Secure & Private", href: "/privacy-policy" },
+  { icon: Star,        key: "exclusiveAccess", label: "Exclusive Access", href: "/privacy-policy" },
+  { icon: Headphones,  key: "support247", label: "24/7 Support",     href: "/contact"        },
 ];
 
 /* ── Validation helpers ─────────────────────────────── */
-function validateEmail(v: string) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? "" : "Enter a valid email address";
+function validateEmail(v: string, t: any) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) ? "" : t("app.validation.validEmail", "Enter a valid email address");
 }
-function validatePhone(v: string) {
-  return /^[6-9]\d{9}$/.test(v.replace(/\s/g, "")) ? "" : "Enter a valid 10-digit Indian mobile number";
+function validatePhone(v: string, t: any) {
+  return /^[6-9]\d{9}$/.test(v.replace(/\s/g, "")) ? "" : t("app.validation.validPhone", "Enter a valid 10-digit Indian mobile number");
 }
-function validatePassword(v: string) {
-  if (v.length < 8) return "Password must be at least 8 characters";
-  if (!/[A-Z]/.test(v)) return "Include at least one uppercase letter";
-  if (!/\d/.test(v)) return "Include at least one number";
+function validatePassword(v: string, t: any) {
+  if (v.length < 8) return t("app.validation.passwordMin", "Password must be at least 8 characters");
+  if (!/[A-Z]/.test(v)) return t("app.validation.passwordUpper", "Include at least one uppercase letter");
+  if (!/\d/.test(v)) return t("app.validation.passwordNumber", "Include at least one number");
   return "";
 }
 
 /* ── Password strength ──────────────────────────────── */
-function passwordStrength(v: string): { score: number; label: string; color: string } {
+function passwordStrength(v: string): { score: number; key: string; label: string; color: string } {
   let score = 0;
   if (v.length >= 8) score++;
   if (/[A-Z]/.test(v)) score++;
   if (/\d/.test(v)) score++;
   if (/[^A-Za-z0-9]/.test(v)) score++;
-  if (score <= 1) return { score, label: "Weak",   color: "bg-rose-500"   };
-  if (score === 2) return { score, label: "Fair",   color: "bg-amber-400"  };
-  if (score === 3) return { score, label: "Good",   color: "bg-sky-400"    };
-  return               { score, label: "Strong", color: "bg-emerald-400" };
+  if (score <= 1) return { score, key: "weak", label: "Weak",   color: "bg-rose-500"   };
+  if (score === 2) return { score, key: "fair", label: "Fair",   color: "bg-amber-400"  };
+  if (score === 3) return { score, key: "good", label: "Good",   color: "bg-sky-400"    };
+  return               { score, key: "strong", label: "Strong", color: "bg-emerald-400" };
 }
 
 /* ── Field wrapper ──────────────────────────────────── */
@@ -84,6 +86,7 @@ function Field({
 /* ── Main Component ─────────────────────────────────── */
 export default function RegisterPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const [form, setForm] = useState({
     name: "", email: "", phone: "", password: "", confirm: "", city: "",
@@ -105,13 +108,13 @@ export default function RegisterPage() {
 
   function validate(f = form) {
     const e: Record<string, string> = {};
-    if (!f.name.trim())       e.name     = "Full name is required";
-    const em = validateEmail(f.email);   if (em) e.email = em;
-    const ph = validatePhone(f.phone);   if (ph) e.phone = ph;
-    const pw = validatePassword(f.password); if (pw) e.password = pw;
-    if (f.confirm !== f.password)        e.confirm  = "Passwords do not match";
-    if (!f.city)                         e.city     = "Please select your city";
-    if (!agreed)                         e.terms    = "You must accept the terms to continue";
+    if (!f.name.trim())       e.name     = t("app.validation.nameRequired", "Full name is required");
+    const em = validateEmail(f.email, t);   if (em) e.email = em;
+    const ph = validatePhone(f.phone, t);   if (ph) e.phone = ph;
+    const pw = validatePassword(f.password, t); if (pw) e.password = pw;
+    if (f.confirm !== f.password)        e.confirm  = t("app.validation.passwordMismatch", "Passwords do not match");
+    if (!f.city)                         e.city     = t("app.validation.cityRequired", "Please select your city");
+    if (!agreed)                         e.terms    = t("app.validation.termsRequired", "You must accept the terms to continue");
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -130,6 +133,11 @@ export default function RegisterPage() {
       {/* Dark overlay */}
       <div className="absolute inset-0 bg-black/60 pointer-events-none" />
 
+      {/* Top-right language switcher */}
+      <div className="absolute top-5 right-5 z-20">
+        <LanguageSelector />
+      </div>
+
       {/* ── Left hero panel ── */}
       <div className="hidden lg:flex flex-col justify-between relative z-10 p-12">
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
@@ -141,23 +149,23 @@ export default function RegisterPage() {
           className="space-y-6"
         >
           <h1 className="font-display text-5xl xl:text-6xl font-medium text-foreground leading-[1.1]">
-            Begin Your<br />
-            <span className="text-gradient-gold italic">Luxury Journey</span>
+            {t("app.auth.beginJourneyPrefix", "Begin Your")}<br />
+            <span className="text-gradient-gold italic">{t("app.auth.beginJourneySuffix", "Luxury Journey")}</span>
           </h1>
           <p className="text-sm text-muted-foreground max-w-sm leading-relaxed">
-            Join thousands of guests who celebrate life's most precious moments in our handpicked private suites.
+            {t("app.auth.registerHeroDesc", "Join thousands of guests who celebrate life's most precious moments in our handpicked private suites.")}
           </p>
 
           {/* Feature list */}
           <div className="space-y-3 pt-2">
             {[
-              "Exclusive access to premium suites",
-              "Personalised celebration packages",
-              "Priority 24/7 concierge support",
-              "Members-only offers & loyalty rewards",
+              { key: "featPremiumSuites", def: "Exclusive access to premium suites" },
+              { key: "featPackages", def: "Personalised celebration packages" },
+              { key: "featConcierge", def: "Priority 24/7 concierge support" },
+              { key: "featLoyalty", def: "Members-only offers & loyalty rewards" }
             ].map((item, i) => (
               <motion.div
-                key={item}
+                key={item.key}
                 initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.4 + i * 0.08 }}
                 className="flex items-center gap-3"
@@ -165,7 +173,7 @@ export default function RegisterPage() {
                 <span className="h-5 w-5 rounded-full bg-gold/20 border border-gold/40 flex items-center justify-center shrink-0">
                   <Check className="h-3 w-3 text-gold" />
                 </span>
-                <span className="text-sm text-foreground/80">{item}</span>
+                <span className="text-sm text-foreground/80">{t("app.auth." + item.key, item.def)}</span>
               </motion.div>
             ))}
           </div>
@@ -176,7 +184,7 @@ export default function RegisterPage() {
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}
           className="flex gap-3"
         >
-          {TRUST_BADGES.map(({ icon: Icon, label, href }) => (
+          {TRUST_BADGES.map(({ icon: Icon, key, label, href }) => (
             <a
               key={label}
               href={href}
@@ -187,7 +195,7 @@ export default function RegisterPage() {
               <div className="h-8 w-8 rounded-lg bg-gold/10 border border-gold/25 flex items-center justify-center shrink-0">
                 <Icon className="h-4 w-4 text-gold" />
               </div>
-              <span className="text-xs font-medium text-foreground/80 leading-tight">{label}</span>
+              <span className="text-xs font-medium text-foreground/80 leading-tight">{t("app.auth." + key, label)}</span>
             </a>
           ))}
         </motion.div>
@@ -206,15 +214,15 @@ export default function RegisterPage() {
               <div className="h-16 w-16 rounded-full bg-emerald-400/15 border border-emerald-400/30 flex items-center justify-center mx-auto">
                 <Check className="h-8 w-8 text-emerald-400" />
               </div>
-              <h2 className="font-display text-3xl text-foreground">Account Created!</h2>
+              <h2 className="font-display text-3xl text-foreground">{t("app.auth.successTitle", "Account Created!")}</h2>
               <p className="text-sm text-muted-foreground">
-                Welcome to VibeNests, <span className="text-gold font-medium">{form.name}</span>. Your luxury journey begins now.
+                {t("app.auth.successDesc", "Welcome to VibeNests, {{name}}. Your luxury journey begins now.", { name: form.name })}
               </p>
               <button
                 onClick={() => navigate("/login")}
                 className="gold-btn w-full rounded-xl py-3 text-sm font-semibold"
               >
-                Continue to Login
+                {t("app.auth.continueLogin", "Continue to Login")}
               </button>
             </motion.div>
           ) : (
@@ -234,15 +242,15 @@ export default function RegisterPage() {
                 <div className="flex items-start justify-between">
                   <div>
                     <h2 className="font-display text-3xl sm:text-4xl font-medium text-foreground">
-                      Create <span className="text-gradient-gold italic">Account</span>
+                      {t("app.auth.registerTitlePrefix", "Create")} <span className="text-gradient-gold italic">{t("app.auth.registerTitleSuffix", "Account")}</span>
                     </h2>
-                    <p className="mt-1.5 text-sm text-muted-foreground">Join VibeNests and start your celebration journey</p>
+                    <p className="mt-1.5 text-sm text-muted-foreground">{t("app.auth.registerDesc", "Join VibeNests and start your celebration journey")}</p>
                   </div>
                   <button
                     onClick={() => navigate("/login")}
                     className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0 mt-1"
                   >
-                    <ArrowLeft className="h-3.5 w-3.5" /> Back
+                    <ArrowLeft className="h-3.5 w-3.5" /> {t("app.auth.back", "Back")}
                   </button>
                 </div>
 
@@ -252,23 +260,23 @@ export default function RegisterPage() {
                   className="w-full flex items-center justify-center gap-3 rounded-xl border border-white/12 bg-white/[0.03] py-2.5 text-sm font-medium text-muted-foreground hover:bg-white/[0.07] hover:border-gold/30 hover:text-foreground transition-all"
                 >
                   <GoogleIcon className="h-4 w-4" />
-                  Continue with Google
+                  {t("app.auth.google", "Continue with Google")}
                 </button>
 
                 {/* Divider */}
                 <div className="flex items-center gap-3 text-[11px] tracking-[0.3em] text-muted-foreground uppercase">
                   <div className="h-px flex-1 bg-gradient-to-r from-transparent to-gold/30" />
-                  <span>or register with email</span>
+                  <span>{t("app.auth.orRegisterEmail", "or register with email")}</span>
                   <div className="h-px flex-1 bg-gradient-to-l from-transparent to-gold/30" />
                 </div>
 
                 {/* Form fields */}
                 <form onSubmit={handleSubmit} noValidate className="space-y-4">
                   {/* Full Name */}
-                  <Field label="Full Name" icon={User} error={errors.name}>
+                  <Field label={t("app.auth.fullName", "Full Name")} icon={User} error={errors.name}>
                     <input
                       type="text"
-                      placeholder="Adithya Reddy"
+                      placeholder={t("app.auth.fullNamePlaceholder", "Adithya Reddy")}
                       value={form.name}
                       onChange={(e) => set("name", e.target.value)}
                       className={`luxury-input w-full rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 ${errors.name ? "border-rose-500/50" : ""}`}
@@ -276,10 +284,10 @@ export default function RegisterPage() {
                   </Field>
 
                   {/* Email */}
-                  <Field label="Email Address" icon={Mail} error={errors.email}>
+                  <Field label={t("app.auth.emailLabel", "Email Address")} icon={Mail} error={errors.email}>
                     <input
                       type="email"
-                      placeholder="you@example.com"
+                      placeholder={t("app.auth.emailPlaceholder", "you@example.com")}
                       value={form.email}
                       onChange={(e) => set("email", e.target.value)}
                       className={`luxury-input w-full rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 ${errors.email ? "border-rose-500/50" : ""}`}
@@ -287,12 +295,12 @@ export default function RegisterPage() {
                   </Field>
 
                   {/* Phone */}
-                  <Field label="Phone Number" icon={Phone} error={errors.phone}>
+                  <Field label={t("app.auth.phoneNumber", "Phone Number")} icon={Phone} error={errors.phone}>
                     <div className="flex gap-2">
                       <span className="luxury-input rounded-xl px-3 py-2.5 text-sm text-muted-foreground shrink-0 flex items-center">🇮🇳 +91</span>
                       <input
                         type="tel"
-                        placeholder="98765 43210"
+                        placeholder={t("app.auth.phonePlaceholder", "98765 43210")}
                         value={form.phone}
                         onChange={(e) => set("phone", e.target.value.replace(/\D/g, "").slice(0, 10))}
                         className={`luxury-input flex-1 rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 ${errors.phone ? "border-rose-500/50" : ""}`}
@@ -301,11 +309,11 @@ export default function RegisterPage() {
                   </Field>
 
                   {/* Password */}
-                  <Field label="Password" icon={Lock} error={errors.password}>
+                  <Field label={t("app.auth.passwordLabel", "Password")} icon={Lock} error={errors.password}>
                     <div className="relative">
                       <input
                         type={showPass ? "text" : "password"}
-                        placeholder="Min 8 chars, uppercase & number"
+                        placeholder={t("app.auth.passwordPlaceholder", "Min 8 chars, uppercase & number")}
                         value={form.password}
                         onChange={(e) => set("password", e.target.value)}
                         className={`luxury-input w-full rounded-xl px-4 py-2.5 pr-11 text-sm text-foreground placeholder:text-muted-foreground/50 ${errors.password ? "border-rose-500/50" : ""}`}
@@ -330,18 +338,18 @@ export default function RegisterPage() {
                           ))}
                         </div>
                         <p className={`text-[10px] font-medium ${strength.score <= 1 ? "text-rose-400" : strength.score === 2 ? "text-amber-400" : strength.score === 3 ? "text-sky-400" : "text-emerald-400"}`}>
-                          {strength.label} password
+                          {t("app.auth." + strength.key, strength.label)} {t("app.auth.passwordSuffix", "password")}
                         </p>
                       </motion.div>
                     )}
                   </Field>
 
                   {/* Confirm Password */}
-                  <Field label="Confirm Password" icon={Lock} error={errors.confirm}>
+                  <Field label={t("app.auth.confirmPassword", "Confirm Password")} icon={Lock} error={errors.confirm}>
                     <div className="relative">
                       <input
                         type={showConf ? "text" : "password"}
-                        placeholder="Re-enter your password"
+                        placeholder={t("app.auth.confirmPlaceholder", "Re-enter your password")}
                         value={form.confirm}
                         onChange={(e) => set("confirm", e.target.value)}
                         className={`luxury-input w-full rounded-xl px-4 py-2.5 pr-11 text-sm text-foreground placeholder:text-muted-foreground/50 ${errors.confirm ? "border-rose-500/50" : ""}`}
@@ -357,14 +365,14 @@ export default function RegisterPage() {
                   </Field>
 
                   {/* City Dropdown */}
-                  <Field label="City" icon={MapPin} error={errors.city}>
+                  <Field label={t("app.auth.city", "City")} icon={MapPin} error={errors.city}>
                     <div className="relative">
                       <button
                         type="button"
                         onClick={() => setCityOpen((o) => !o)}
                         className={`luxury-input w-full rounded-xl px-4 py-2.5 text-sm text-left flex items-center justify-between ${errors.city ? "border-rose-500/50" : ""} ${form.city ? "text-foreground" : "text-muted-foreground/50"}`}
                       >
-                        {form.city || "Select your city"}
+                        {form.city || t("app.auth.selectCity", "Select your city")}
                         <ChevronDown className={`h-4 w-4 text-gold/60 transition-transform duration-200 ${cityOpen ? "rotate-180" : ""}`} />
                       </button>
                       <AnimatePresence>
@@ -401,16 +409,16 @@ export default function RegisterPage() {
                     <label className="flex items-start gap-3 cursor-pointer group">
                       <button
                         type="button"
-                        onClick={() => { setAgreed((v) => !v); if (submitted) setErrors((p) => ({ ...p, terms: agreed ? "You must accept the terms to continue" : "" })); }}
+                        onClick={() => { setAgreed((v) => !v); if (submitted) setErrors((p) => ({ ...p, terms: agreed ? t("app.validation.termsRequired", "You must accept the terms to continue") : "" })); }}
                         className={`mt-0.5 h-4 w-4 rounded border shrink-0 flex items-center justify-center transition-all ${agreed ? "bg-gold border-gold" : "border-white/25 bg-white/5 group-hover:border-gold/50"}`}
                       >
                         {agreed && <Check className="h-2.5 w-2.5 text-[oklch(0.12_0.02_260)]" />}
                       </button>
                       <span className="text-xs text-muted-foreground leading-relaxed">
-                        I agree to the{" "}
-                        <a href="/terms-of-use" target="_blank" className="text-gold hover:underline underline-offset-2">Terms of Service</a>
-                        {" "}and{" "}
-                        <a href="/privacy-policy" target="_blank" className="text-gold hover:underline underline-offset-2">Privacy Policy</a>
+                        {t("app.auth.agreePrefix", "I agree to the")}{" "}
+                        <a href="/terms-of-use" target="_blank" className="text-gold hover:underline underline-offset-2">{t("app.auth.termsOfService", "Terms of Service")}</a>
+                        {" "}{t("app.auth.and", "and")}{" "}
+                        <a href="/privacy-policy" target="_blank" className="text-gold hover:underline underline-offset-2">{t("app.auth.privacyPolicy", "Privacy Policy")}</a>
                       </span>
                     </label>
                     <AnimatePresence>
@@ -430,21 +438,21 @@ export default function RegisterPage() {
                     type="submit"
                     className="gold-btn w-full rounded-xl py-3 text-sm font-semibold tracking-wide mt-2"
                   >
-                    Create My Account
+                    {t("app.auth.createAccount", "Create My Account")}
                   </button>
                 </form>
 
                 {/* Login link */}
                 <p className="text-center text-sm text-muted-foreground">
-                  Already have an account?{" "}
+                  {t("app.auth.haveAccount", "Already have an account?")}{" "}
                   <button onClick={() => navigate("/login")} className="text-gold font-medium hover:underline underline-offset-4">
-                    Sign In
+                    {t("app.auth.signInLink", "Sign In")}
                   </button>
                 </p>
 
                 {/* Mobile trust badges */}
                 <div className="flex gap-2 lg:hidden pt-1">
-                  {TRUST_BADGES.map(({ icon: Icon, label, href }) => (
+                  {TRUST_BADGES.map(({ icon: Icon, key, label, href }) => (
                     <a
                       key={label}
                       href={href}
@@ -453,7 +461,7 @@ export default function RegisterPage() {
                       className="glass rounded-xl px-3 py-2 flex items-center gap-1.5 flex-1 hover:border-gold/40 transition-colors"
                     >
                       <Icon className="h-3.5 w-3.5 text-gold shrink-0" />
-                      <span className="text-[10px] text-muted-foreground leading-tight">{label}</span>
+                      <span className="text-[10px] text-muted-foreground leading-tight">{t("app.auth." + key, label)}</span>
                     </a>
                   ))}
                 </div>

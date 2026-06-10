@@ -5,6 +5,7 @@ import {
   Plus, Search, Pencil, Trash2, X, Copy, ImagePlus,
   Package, Users, IndianRupee, CalendarDays, ChevronLeft, ChevronRight,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 type Amenity = string;
 const AMENITY_OPTIONS: Amenity[] = ["Balloons", "Cake", "Decoration", "Music", "LED Lights"];
@@ -62,6 +63,7 @@ function StatCard({ icon: Icon, label, value, color }: { icon: React.ElementType
 
 export default function PackagesPage() {
   const { suites } = useSuitesContext();
+  const { t } = useTranslation();
   const occasions = Array.from(
     new Set(suites.flatMap((s) => s.occasions.split(",").map((o) => o.trim()).filter(Boolean)))
   );
@@ -179,10 +181,10 @@ export default function PackagesPage() {
 
         {/* Stats */}
         <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
-          <StatCard icon={Package} label="Total Packages" value={packages.length} color="bg-[var(--gold)]/10 text-gold" />
-          <StatCard icon={Package} label="Active Packages" value={packages.filter((p) => p.status === "Active").length} color="bg-emerald-500/10 text-emerald-400" />
-          <StatCard icon={CalendarDays} label="Bookings This Month" value={totalBookings} color="bg-blue-500/10 text-blue-400" />
-          <StatCard icon={IndianRupee} label="Revenue This Month" value={`₹${(revenue / 1000).toFixed(1)}L`} color="bg-purple-500/10 text-purple-400" />
+          <StatCard icon={Package} label={t("app.admin.totalPackages","Total Packages")} value={packages.length} color="bg-[var(--gold)]/10 text-gold" />
+          <StatCard icon={Package} label={t("app.admin.activePackages","Active Packages")} value={packages.filter((p) => p.status === "Active").length} color="bg-emerald-500/10 text-emerald-400" />
+          <StatCard icon={CalendarDays} label={t("app.admin.bookingsThisMonth","Bookings This Month")} value={totalBookings} color="bg-blue-500/10 text-blue-400" />
+          <StatCard icon={IndianRupee} label={t("app.admin.revenueThisMonth","Revenue This Month")} value={`₹${(revenue / 1000).toFixed(1)}L`} color="bg-purple-500/10 text-purple-400" />
         </div>
 
         {/* Main split layout */}
@@ -194,10 +196,10 @@ export default function PackagesPage() {
             <div className="glass-card rounded-2xl p-4 flex flex-wrap items-center gap-3">
               <div className="relative flex-1 min-w-44">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-                <input type="text" placeholder="Search packages..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} className="luxury-input w-full rounded-lg pl-9 pr-4 py-2 text-xs" />
+                <input type="text" placeholder={t("app.admin.searchPackages","Search packages...")} value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} className="luxury-input w-full rounded-lg pl-9 pr-4 py-2 text-xs" />
               </div>
               <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }} className="luxury-input rounded-lg px-3 py-2 text-xs bg-transparent cursor-pointer">
-                {["All", "Active", "Inactive"].map((s) => <option key={s} value={s} className="bg-[oklch(0.13_0.025_260)]">{s === "All" ? "All Statuses" : s}</option>)}
+                {["All", "Active", "Inactive"].map((s) => <option key={s} value={s} className="bg-[oklch(0.13_0.025_260)]">{s === "All" ? t("app.admin.allStatuses","All Statuses") : s === "Active" ? t("app.admin.active","Active") : t("app.admin.inactive","Inactive")}</option>)}
               </select>
               <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="luxury-input rounded-lg px-3 py-2 text-xs bg-transparent cursor-pointer">
                 {["Default", "Name", "Amount ↑", "Amount ↓"].map((s) => <option key={s} value={s} className="bg-[oklch(0.13_0.025_260)]">{s}</option>)}
@@ -207,7 +209,7 @@ export default function PackagesPage() {
             {/* Cards */}
             <div className="space-y-3">
               {paginated.length === 0 ? (
-                <div className="glass-card rounded-2xl py-16 text-center text-sm text-muted-foreground">No packages found</div>
+                <div className="glass-card rounded-2xl py-16 text-center text-sm text-muted-foreground">{t("app.admin.noPackagesFound","No packages found")}</div>
               ) : paginated.map((p) => (
                 <div key={p.id} className="glass-card rounded-2xl border border-[var(--gold)]/10 hover:border-[var(--gold)]/25 transition-all duration-200 overflow-hidden">
                   <div className="flex gap-4 p-4">
@@ -272,14 +274,14 @@ export default function PackagesPage() {
             <div className="w-full max-w-sm shrink-0 glass-card rounded-2xl border border-[var(--gold)]/20 overflow-hidden flex flex-col max-h-[calc(100vh-10rem)] sticky top-6">
               {/* Panel header */}
               <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
-                <h3 className="font-display text-base font-semibold text-foreground">{editId ? "Edit Package" : "Add New Package"}</h3>
+                <h3 className="font-display text-base font-semibold text-foreground">{editId ? t("app.admin.editPackage","Edit Package") : t("app.admin.addNewPackage","Add New Package")}</h3>
                 <button onClick={() => setPanelOpen(false)} className="text-muted-foreground hover:text-foreground transition"><X className="h-5 w-5" /></button>
               </div>
 
               <div className="overflow-y-auto flex-1 px-5 py-4 space-y-3">
                 {/* Image upload */}
                 <div>
-                  <label className="text-[11px] text-muted-foreground uppercase tracking-wide">Package Image</label>
+                  <label className="text-[11px] text-muted-foreground uppercase tracking-wide">{t("app.admin.packageImage","Package Image")}</label>
                   <div className="mt-1.5">
                     {form.image ? (
                       <div className="relative h-32 rounded-xl overflow-hidden border border-[var(--gold)]/20">
@@ -291,7 +293,7 @@ export default function PackagesPage() {
                     ) : (
                       <button type="button" onClick={() => fileRef.current?.click()} className="w-full h-24 rounded-xl border border-dashed border-[var(--gold)]/30 flex flex-col items-center justify-center gap-1.5 hover:border-[var(--gold)]/60 hover:bg-[var(--gold)]/5 transition">
                         <ImagePlus className="h-6 w-6 text-gold/50" />
-                        <span className="text-xs text-muted-foreground">Click to upload image</span>
+                        <span className="text-xs text-muted-foreground">{t("app.admin.upload","Click to upload image")}</span>
                       </button>
                     )}
                     <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImage} />
@@ -300,14 +302,14 @@ export default function PackagesPage() {
 
                 {/* Name */}
                 <div>
-                  <label className="text-[11px] text-muted-foreground uppercase tracking-wide">Package Name</label>
+                  <label className="text-[11px] text-muted-foreground uppercase tracking-wide">{t("app.admin.packageName","Package Name")}</label>
                   <input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="e.g. Gold Festivity" className="luxury-input w-full rounded-lg px-3 py-2 text-sm mt-1" />
                   {errors.name && <p className="text-[11px] text-destructive mt-0.5">{errors.name}</p>}
                 </div>
 
                 {/* Tier */}
                 <div>
-                  <label className="text-[11px] text-muted-foreground uppercase tracking-wide">Package Tier</label>
+                  <label className="text-[11px] text-muted-foreground uppercase tracking-wide">{t("app.admin.packageTier","Package Tier")}</label>
                   <select value={form.tier} onChange={(e) => setForm((f) => ({ ...f, tier: e.target.value as typeof TIERS[number] }))} className="luxury-input w-full rounded-lg px-3 py-2 text-sm mt-1 bg-transparent cursor-pointer">
                     {TIERS.map((t) => <option key={t} value={t} className="bg-[oklch(0.13_0.025_260)]">{t}</option>)}
                   </select>
@@ -316,12 +318,12 @@ export default function PackagesPage() {
                 {/* Parties */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-[11px] text-muted-foreground uppercase tracking-wide">Min Parties</label>
+                    <label className="text-[11px] text-muted-foreground uppercase tracking-wide">{t("app.admin.minParties","Min Parties")}</label>
                     <input type="number" min={1} value={form.minParties} onChange={(e) => setForm((f) => ({ ...f, minParties: Number(e.target.value) }))} className="luxury-input w-full rounded-lg px-3 py-2 text-sm mt-1" />
                     {errors.minParties && <p className="text-[11px] text-destructive mt-0.5">{errors.minParties}</p>}
                   </div>
                   <div>
-                    <label className="text-[11px] text-muted-foreground uppercase tracking-wide">Max Parties</label>
+                    <label className="text-[11px] text-muted-foreground uppercase tracking-wide">{t("app.admin.maxParties","Max Parties")}</label>
                     <input type="number" min={1} value={form.maxParties} onChange={(e) => setForm((f) => ({ ...f, maxParties: Number(e.target.value) }))} className="luxury-input w-full rounded-lg px-3 py-2 text-sm mt-1" />
                     {errors.maxParties && <p className="text-[11px] text-destructive mt-0.5">{errors.maxParties}</p>}
                   </div>
@@ -329,14 +331,14 @@ export default function PackagesPage() {
 
                 {/* Amount */}
                 <div>
-                  <label className="text-[11px] text-muted-foreground uppercase tracking-wide">Amount (₹)</label>
+                  <label className="text-[11px] text-muted-foreground uppercase tracking-wide">{t("app.admin.amountLabel","Amount (₹)")}</label>
                   <input type="number" min={0} value={form.amount} onChange={(e) => setForm((f) => ({ ...f, amount: Number(e.target.value) }))} placeholder="e.g. 6500" className="luxury-input w-full rounded-lg px-3 py-2 text-sm mt-1" />
                   {errors.amount && <p className="text-[11px] text-destructive mt-0.5">{errors.amount}</p>}
                 </div>
 
                 {/* Occasion */}
                 <div>
-                  <label className="text-[11px] text-muted-foreground uppercase tracking-wide">Occasion Applicable</label>
+                  <label className="text-[11px] text-muted-foreground uppercase tracking-wide">{t("app.admin.occasionApplicable","Occasion Applicable")}</label>
                   <select value={form.occasion} onChange={(e) => setForm((f) => ({ ...f, occasion: e.target.value }))} className="luxury-input w-full rounded-lg px-3 py-2 text-sm mt-1 bg-transparent cursor-pointer">
                     {occasions.map((o) => <option key={o} value={o} className="bg-[oklch(0.13_0.025_260)]">{o}</option>)}
                   </select>
@@ -344,13 +346,13 @@ export default function PackagesPage() {
 
                 {/* Description */}
                 <div>
-                  <label className="text-[11px] text-muted-foreground uppercase tracking-wide">Short Description</label>
+                  <label className="text-[11px] text-muted-foreground uppercase tracking-wide">{t("app.admin.shortDescription","Short Description")}</label>
                   <textarea rows={2} value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} placeholder="Brief description..." className="luxury-input w-full rounded-lg px-3 py-2 text-sm mt-1 resize-none" />
                 </div>
 
                 {/* Included Items */}
                 <div>
-                  <label className="text-[11px] text-muted-foreground uppercase tracking-wide">Included Items</label>
+                  <label className="text-[11px] text-muted-foreground uppercase tracking-wide">{t("app.admin.includedItems","Included Items")}</label>
                   <div className="flex gap-2 mt-1.5">
                     <input
                       value={newItem}
@@ -379,10 +381,10 @@ export default function PackagesPage() {
 
                 {/* Status */}
                 <div>
-                  <label className="text-[11px] text-muted-foreground uppercase tracking-wide">Status</label>
+                  <label className="text-[11px] text-muted-foreground uppercase tracking-wide">{t("app.admin.statusLabel","Status")}</label>
                   <select value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as "Active" | "Inactive" }))} className="luxury-input w-full rounded-lg px-3 py-2 text-sm mt-1 bg-transparent cursor-pointer">
-                    <option value="Active" className="bg-[oklch(0.13_0.025_260)]">Active</option>
-                    <option value="Inactive" className="bg-[oklch(0.13_0.025_260)]">Inactive</option>
+                    <option value="Active" className="bg-[oklch(0.13_0.025_260)]">{t("app.admin.active","Active")}</option>
+                    <option value="Inactive" className="bg-[oklch(0.13_0.025_260)]">{t("app.admin.inactive","Inactive")}</option>
                   </select>
                 </div>
               </div>
@@ -390,10 +392,10 @@ export default function PackagesPage() {
               {/* Panel footer */}
               <div className="px-5 py-4 border-t border-white/[0.06] flex gap-3">
                 <button onClick={handleSave} className="gold-btn flex-1 rounded-xl py-2.5 text-sm font-semibold">
-                  {editId ? "Save Changes" : "Save Package"}
+                  {editId ? t("app.admin.saveChanges","Save Changes") : t("app.admin.savePackage","Save Package")}
                 </button>
                 <button onClick={() => setPanelOpen(false)} className="flex-1 rounded-xl py-2.5 text-sm border border-white/10 text-muted-foreground hover:text-foreground transition">
-                  Cancel
+                  {t("app.admin.cancel","Cancel")}
                 </button>
               </div>
             </div>

@@ -3,12 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { Phone, CheckCircle2, ArrowRight } from "lucide-react";
 import { authApi } from "@/lib/api";
 import { useAuth } from "./AuthContext";
+import { useTranslation } from "react-i18next";
 
 const COUNTRY_CODES = ["+91", "+1", "+44", "+61", "+971", "+65"];
 
 export function MobileOtpForm() {
   const navigate = useNavigate();
   const { saveSession } = useAuth();
+  const { t } = useTranslation();
   const [code, setCode] = useState("+91");
   const [mobile, setMobile] = useState("");
   const [stage, setStage] = useState<"input" | "otp" | "success">("input");
@@ -89,8 +91,8 @@ export function MobileOtpForm() {
         <div className="mx-auto h-14 w-14 rounded-full bg-gradient-gold flex items-center justify-center">
           <CheckCircle2 className="h-7 w-7 text-[oklch(0.14_0.03_260)]" />
         </div>
-        <h3 className="font-display text-2xl text-gradient-gold">Verified</h3>
-        <p className="text-sm text-muted-foreground">Welcome back to VIBENESTS. Redirecting you...</p>
+        <h3 className="font-display text-2xl text-gradient-gold">{t("app.auth.verified")}</h3>
+        <p className="text-sm text-muted-foreground">{t("app.auth.welcomeBackRedirect")}</p>
       </div>
     );
   }
@@ -98,7 +100,7 @@ export function MobileOtpForm() {
   return (
     <form onSubmit={stage === "input" ? sendOtp : verify} className="space-y-5">
       <div className="space-y-2">
-        <label className="text-xs font-medium tracking-wide text-muted-foreground uppercase">Mobile Number</label>
+        <label className="text-xs font-medium tracking-wide text-muted-foreground uppercase">{t("app.auth.mobileLabel")}</label>
         <div className="flex gap-2">
           <select
             value={code}
@@ -126,7 +128,7 @@ export function MobileOtpForm() {
 
       {stage === "otp" && (
         <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-500">
-          <label className="text-xs font-medium tracking-wide text-muted-foreground uppercase">Enter 6-digit OTP</label>
+          <label className="text-xs font-medium tracking-wide text-muted-foreground uppercase">{t("app.auth.otpLabel")}</label>
           <div className="flex justify-between gap-2">
             {otp.map((d, i) => (
               <input
@@ -143,13 +145,13 @@ export function MobileOtpForm() {
           </div>
           <div className="flex items-center justify-between text-xs">
             <span className="text-muted-foreground">
-              OTP sent to <span className="text-foreground">{code} {mobile}</span>
+              {t("app.auth.otpSent")} <span className="text-foreground">{code} {mobile}</span>
             </span>
             {timer > 0 ? (
-              <span className="text-muted-foreground">Resend in {timer}s</span>
+              <span className="text-muted-foreground">{t("app.auth.resendIn", { timer })}</span>
             ) : (
               <button type="button" onClick={() => sendOtp()} className="text-gold hover:underline underline-offset-4">
-                Resend OTP
+                {t("app.auth.resendOtp")}
               </button>
             )}
           </div>
@@ -167,7 +169,9 @@ export function MobileOtpForm() {
         disabled={loading}
         className="gold-btn group w-full rounded-lg py-3.5 text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-70"
       >
-        {loading ? (stage === "input" ? "Sending..." : "Verifying...") : (stage === "input" ? "Send OTP" : "Verify OTP")}
+        {loading 
+          ? (stage === "input" ? t("app.auth.sending") : t("app.auth.verifying")) 
+          : (stage === "input" ? t("app.auth.sendOtp") : t("app.auth.verifyOtp"))}
         {!loading && <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />}
       </button>
     </form>

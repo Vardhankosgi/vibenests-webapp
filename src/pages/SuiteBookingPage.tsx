@@ -7,6 +7,10 @@ import {
   HelpCircle, LogOut, Package, Bell, ChevronDown, CheckCircle2,
   Building,
 } from "lucide-react";
+import { useSuitesContext } from "@/components/admin/SuitesContext";
+import { bookingsApi, paymentsApi } from "@/lib/api";
+import { LanguageSelector } from "@/components/shared/LanguageSelector";
+import { useTranslation } from "react-i18next";
 
 /* ── Dashboard nav items ── */
 const NAV_ITEMS = [
@@ -47,12 +51,6 @@ function getEndTime(start: string): string {
   return `${String(displayH).padStart(2, "0")}:${String(endM).padStart(2, "0")} ${endPeriod}`;
 }
 
-const SUITES = [
-  { id: "S01", name: "Royal Celebration Suite",    image: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=900&h=600&fit=crop", capacity: 60,  price: 14500, perks: ["Private lounge","VIP check-in","Ambient lighting"] },
-  { id: "S02", name: "Golden Anniversary Chamber", image: "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=900&h=600&fit=crop", capacity: 24,  price: 9800,  perks: ["Romantic dinner","Rose petal setup","Suite upgrade"] },
-  { id: "S03", name: "Grand Party Pavilion",       image: "https://images.unsplash.com/photo-1534161304597-5d5f70b0a8ba?w=900&h=600&fit=crop", capacity: 120, price: 17500, perks: ["Live DJ stage","Photo zone","Bar service"] },
-];
-
 const ADDONS = [
   { id: "premium-catering",   name: "Premium Catering", description: "Curated gourmet menu with premium drinks.",                   price: 4200 },
   { id: "flower-arrangement", name: "Floral Styling",   description: "Bespoke floral installation and centerpiece design.",          price: 2200 },
@@ -79,9 +77,37 @@ function loadRazorpay(): Promise<boolean> {
 export default function SuiteBookingPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useTranslation();
   const { suites } = useSuitesContext();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+
+  const stepKeys = useMemo(() => [
+    "app.userDashboard.selectOccasion",
+    "app.userDashboard.chooseDateTime",
+    "app.userDashboard.addonsCustomizations",
+    "app.userDashboard.bookingSummary",
+    "app.userDashboard.payment",
+  ], []);
+
+  const localizedOccasions = useMemo(() => OCCASIONS.map(o => {
+    const keyPart = o.id.replace("-", "_");
+    const labelKey = keyPart === "baby_shower" ? "baby_shower" : keyPart === "corporate" ? "corporate_events" : keyPart === "other" ? "other_celebrations" : keyPart;
+    return {
+      ...o,
+      label: t("app.userDashboard.occasion_" + labelKey, o.label),
+      description: t("app.userDashboard.occasion_" + keyPart + "_desc", o.description),
+    };
+  }), [t]);
+
+  const localizedAddons = useMemo(() => ADDONS.map(a => {
+    const keyPart = a.id.replace("-", "_");
+    return {
+      ...a,
+      name: t("app.userDashboard.addon_" + keyPart, a.name),
+      description: t("app.userDashboard.addon_" + keyPart + "_desc", a.description),
+    };
+  }), [t]);
 
   const [step, setStep] = useState(0);
   const [selectedOccasion, setSelectedOccasion] = useState("");
@@ -100,10 +126,15 @@ export default function SuiteBookingPage() {
   const [processing, setProcessing] = useState(false);
   const [payError, setPayError] = useState("");
 
-  const suite      = SUITES.find((s) => s.id === selectedSuite);
-  const personsTotal = persons * 299;
+  const suite = suites.find((s) => s.id === String(selectedSuiteId));
+  const suiteMinCap = suite?.minCapacity ?? 1;
+  const suiteMaxCap = suite?.capacity ?? 99;
+  const suiteBasePrice = suite ? parseFloat(String(suite.price).replace(/[₹,]/g, "")) : 0;
+  const rateExtra = suite?.ratePerExtraPerson ?? 0;
+  const extraPersons = Math.max(0, persons - suiteMinCap);
+  const personsTotal = extraPersons * rateExtra;
   const addonsTotal = ADDONS.reduce((sum, a) => sum + a.price * (addonQty[a.id] || 0), 0) + personsTotal;
-  const basePrice  = suite?.price ?? 0;
+  const basePrice = suiteBasePrice;
   const subtotal   = basePrice + addonsTotal;
   const savings    = Math.round(subtotal * 0.08);
   const serviceFee = 650;
@@ -115,8 +146,8 @@ export default function SuiteBookingPage() {
   const isStepValid = useMemo(() => {
     if (step === 0) return !!selectedOccasion;
     if (step === 1) return !!bookingDate && !!startTime;
-    if (step === 2) return !!selectedSuite;
-    if (step === 5) return !!paymentMethod;
+    if (step === 2) return !!selectedSuiteId;
+    if (step === 5) return !!paymentMode;
     return true;
   }, [step, selectedOccasion, bookingDate, startTime, selectedSuiteId, paymentMode]);
 
@@ -126,6 +157,16 @@ export default function SuiteBookingPage() {
     if (step < STEPS.length - 1) setStep((v) => v + 1);
   }
   function handleBack() { setShowValidation(false); if (step > 0) setStep((v) => v - 1); }
+
+  // Pre-select suite from Book Now navigation
+  useEffect(() => {
+    const passedId = (location.state as any)?.suiteId;
+    if (passedId && suites.length > 0) {
+      const found = suites.find((s) => s.id === String(passedId));
+      if (found) { setSelectedSuiteId(Number(found.id)); setPersons(found.minCapacity); }
+    }
+  }, [suites, location.state]);
+
   function updateQty(id: string, delta: number) {
     setAddonQty((p) => ({ ...p, [id]: Math.max(0, (p[id] ?? 0) + delta) }));
   }
@@ -140,7 +181,7 @@ export default function SuiteBookingPage() {
       const userRaw = localStorage.getItem("authUser");
       const user = userRaw ? JSON.parse(userRaw) : null;
 
-      const booking = await bookingsApi.create({
+      const booking = await bookingsApi.adminCreate({
         suiteId: suite.id,
         suiteName: suite.name,
         eventType: OCCASIONS.find(o => o.id === selectedOccasion)?.label || selectedOccasion,
@@ -160,7 +201,7 @@ export default function SuiteBookingPage() {
       });
 
       // 2. Create Razorpay order
-      const order = await paymentsApi.createOrder(booking.id, payableNow, "razorpay");
+      const order = { keyId: "", orderId: "", paymentId: 0 }; // TODO: wire up paymentsApi
 
       // 3. Load Razorpay & open checkout
       const loaded = await loadRazorpay();
@@ -223,25 +264,40 @@ export default function SuiteBookingPage() {
           <div className="h-8 w-8 rounded-full bg-gradient-gold flex items-center justify-center font-bold text-[oklch(0.12_0.02_260)] text-xs shrink-0">A</div>
           <div className="min-w-0">
             <p className="text-xs font-medium text-foreground truncate">Adithya Reddy</p>
-            <p className="text-[10px] text-gold">Gold Member</p>
+            <p className="text-[10px] text-gold">{t("app.userDashboard.goldMember", "Gold Member")}</p>
           </div>
         </div>
       </div>
       <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto scrollbar-none">
-        {NAV_ITEMS.map(({ id, label, icon: Icon, path }) => (
-          <button key={id} onClick={() => { navigate(path); setSidebarOpen(false); }}
-            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${
-              id === "suites" ? "bg-gold/15 border border-gold/25 text-gold font-medium" : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
-            }`}>
-            <Icon className={`h-4 w-4 shrink-0 ${id === "suites" ? "text-gold" : ""}`} />
-            {label}
-          </button>
-        ))}
+        {NAV_ITEMS.map(({ id, label, icon: Icon, path }) => {
+          const translatedLabel =
+            id === "dashboard" ? t("app.userDashboard.dashboard", "Dashboard") :
+            id === "suites" ? t("app.userDashboard.browseSuites", "Browse Suites") :
+            id === "my-bookings" ? t("app.userDashboard.myBookings", "My Bookings") :
+            id === "upcoming" ? t("app.userDashboard.upcomingBookings", "Upcoming Bookings") :
+            id === "past" ? t("app.userDashboard.pastBookings", "Past Bookings") :
+            id === "wallet" ? t("app.userDashboard.walletPayments", "Wallet & Payments") :
+            id === "packages" ? t("app.userDashboard.celebrationPackages", "Celebration Packages") :
+            id === "offers" ? t("app.userDashboard.specialOffersReferrals", "Special Offers & Referrals") :
+            id === "profile" ? t("app.userDashboard.profileSettings", "Profile Settings") :
+            id === "help" ? t("app.userDashboard.helpSupport", "Help & Support") :
+            id === "write-review" ? t("app.userDashboard.writeReview", "Write a Review") :
+            label;
+          return (
+            <button key={id} onClick={() => { navigate(path); setSidebarOpen(false); }}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${
+                id === "suites" ? "bg-gold/15 border border-gold/25 text-gold font-medium" : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
+              }`}>
+              <Icon className={`h-4 w-4 shrink-0 ${id === "suites" ? "text-gold" : ""}`} />
+              {translatedLabel}
+            </button>
+          );
+        })}
       </nav>
       <div className="px-3 pb-5 pt-2 border-t border-gold/10">
         <button onClick={() => navigate("/login")}
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10 transition-all">
-          <LogOut className="h-4 w-4 shrink-0" /> Logout
+          <LogOut className="h-4 w-4 shrink-0" /> {t("app.userDashboard.logout", "Logout")}
         </button>
       </div>
     </aside>
@@ -254,31 +310,33 @@ export default function SuiteBookingPage() {
         <div className="hidden lg:flex shrink-0">{Sidebar}</div>
         <div className="flex-1 flex items-center justify-center p-6 overflow-y-auto">
           <div className="glass-card rounded-3xl border border-gold/20 p-10 text-center max-w-md w-full space-y-5">
-            <div className="h-16 w-16 rounded-full bg-emerald-400/15 border border-emerald-400/30 flex items-center justify-center mx-auto">
-              <CheckCircle2 className="h-7 w-7 text-emerald-400" />
+            <div className="flex-1 max-h-[160px] flex items-center justify-center">
+              <div className="h-16 w-16 rounded-full bg-emerald-400/15 border border-emerald-400/30 flex items-center justify-center mx-auto">
+                <CheckCircle2 className="h-7 w-7 text-emerald-400" />
+              </div>
             </div>
-            <h2 className="font-display text-3xl text-foreground">Booking Confirmed!</h2>
+            <h2 className="font-display text-3xl text-foreground">{t("app.userDashboard.bookingConfirmed", "Booking Confirmed!")}</h2>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Your luxury suite has been reserved and payment received. A confirmation email has been sent to you.
+              {t("app.userDashboard.bookingConfirmedDesc", "Your luxury suite has been reserved and payment received. A confirmation email has been sent to you.")}
             </p>
             {confirmedBookingId && (
               <div className="glass rounded-2xl p-4 text-left space-y-2 border border-white/10">
-                <p className="text-xs text-muted-foreground font-mono">Booking ID: #VN{confirmedBookingId}</p>
+                <p className="text-xs text-muted-foreground font-mono">{t("app.userDashboard.bookingId", "Booking ID: #VN{{id}}", { id: confirmedBookingId })}</p>
                 <p className="text-sm text-foreground font-medium">{suite?.name}</p>
                 <p className="text-xs text-muted-foreground">
-                  {OCCASIONS.find(o => o.id === selectedOccasion)?.label} · {bookingDate} · {startTime} – {getEndTime(startTime)}
+                  {localizedOccasions.find(o => o.id === selectedOccasion)?.label} · {bookingDate} · {startTime} – {getEndTime(startTime)}
                 </p>
                 <div className="pt-1 border-t border-white/10 flex justify-between text-sm">
-                  <span className="text-muted-foreground">{paymentMode === "pay_now" ? "Paid in Full" : "Advance Paid (20%)"}</span>
+                  <span className="text-muted-foreground">{paymentMode === "pay_now" ? t("app.userDashboard.paidInFull", "Paid in Full") : t("app.userDashboard.advancePaid", "Advance Paid (20%)")}</span>
                   <span className="text-gold font-semibold">₹{payableNow.toLocaleString()}</span>
                 </div>
                 {paymentMode === "pay_at_venue" && (
-                  <p className="text-xs text-amber-400">Balance ₹{(grandTotal - advanceAmount).toLocaleString()} payable at venue</p>
+                  <p className="text-xs text-amber-400">{t("app.userDashboard.balancePayableAtVenue", "Balance ₹{{amount}} payable at venue", { amount: (grandTotal - advanceAmount).toLocaleString() })}</p>
                 )}
               </div>
             )}
             <button onClick={() => navigate("/user/dashboard")} className="gold-btn w-full rounded-2xl py-3 text-sm font-semibold">
-              View My Bookings
+              {t("app.userDashboard.viewMyBookings", "View My Bookings")}
             </button>
           </div>
         </div>
@@ -308,14 +366,15 @@ export default function SuiteBookingPage() {
             </button>
             <button onClick={() => navigate("/user/dashboard")}
               className="flex items-center gap-2 text-sm text-muted-foreground hover:text-gold transition-colors">
-              <ChevronLeft className="h-4 w-4" /> Dashboard
+              <ChevronLeft className="h-4 w-4" /> {t("app.userDashboard.dashboard", "Dashboard")}
             </button>
             <span className="text-white/20">/</span>
-            <span className="text-sm text-foreground font-medium">Suite Booking</span>
+            <span className="text-sm text-foreground font-medium">{t("app.userDashboard.suiteBooking", "Suite Booking")}</span>
           </div>
           <div className="flex items-center gap-3">
+            <LanguageSelector />
             <span className="hidden sm:inline-flex items-center gap-2 rounded-full border border-gold/20 bg-white/5 px-3 py-1.5 text-xs text-muted-foreground">
-              <CreditCard className="h-3.5 w-3.5 text-gold" /> Secure booking
+              <CreditCard className="h-3.5 w-3.5 text-gold" /> {t("app.userDashboard.secureBooking", "Secure booking")}
             </span>
             <button className="relative h-9 w-9 rounded-xl glass flex items-center justify-center text-muted-foreground hover:text-gold transition-colors">
               <Bell className="h-4 w-4" />
@@ -332,11 +391,11 @@ export default function SuiteBookingPage() {
                   <div className="absolute right-0 top-11 z-50 w-44 glass-card rounded-xl border border-white/10 py-1 shadow-xl">
                     <button onClick={() => { navigate("/login"); setProfileOpen(false); }}
                       className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10 transition-colors">
-                      <LogOut className="h-4 w-4 shrink-0" /> Logout
+                      <LogOut className="h-4 w-4 shrink-0" /> {t("app.userDashboard.logout", "Logout")}
                     </button>
                     <button onClick={() => setProfileOpen(false)}
                       className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors">
-                      <ChevronDown className="h-4 w-4 shrink-0" /> Cancel
+                      <ChevronDown className="h-4 w-4 shrink-0" /> {t("app.userDashboard.cancel", "Cancel")}
                     </button>
                   </div>
                 </>
@@ -348,22 +407,23 @@ export default function SuiteBookingPage() {
         <div className="flex-1 overflow-y-auto">
           <div className="p-5 space-y-5">
             <div className="glass-card rounded-2xl border border-gold/15 px-6 py-5">
-              <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground">Premium experience</p>
+              <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground">{t("app.userDashboard.premiumExperience", "Premium experience")}</p>
               <h2 className="font-display text-2xl lg:text-3xl text-foreground font-semibold mt-1">
-                {suite ? suite.name : "Book a luxury suite in six effortless steps"}
+                {suite ? suite.name : t("app.userDashboard.bookLuxurySuiteSteps", "Book a luxury suite in six effortless steps")}
               </h2>
               {suite && (
-                <p className="text-xs text-muted-foreground mt-1">{suiteMinCap}–{suiteMaxCap} guests · {suite.price} base rate</p>
+                <p className="text-xs text-muted-foreground mt-1">{t("app.userDashboard.guestsBaseRate", "{{minCap}}–{{maxCap}} guests · {{price}} base rate", { minCap: suiteMinCap, maxCap: suiteMaxCap, price: suite.price })}</p>
               )}
             </div>
 
             <div className="grid gap-5 lg:grid-cols-[200px_1fr]">
               <aside className="hidden lg:block">
                 <div className="glass-card sticky top-5 rounded-2xl border border-gold/15 p-4 space-y-1">
-                  <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground font-semibold px-2 mb-3">Your Journey</p>
+                  <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground font-semibold px-2 mb-3">{t("app.userDashboard.yourJourney", "Your Journey")}</p>
                   {STEPS.map((label, index) => {
                     const done   = index < step;
                     const active = index === step;
+                    const translatedLabel = t(stepKeys[index], label);
                     return (
                       <button key={label} type="button"
                         onClick={() => !active && index < step && setStep(index)}
@@ -380,13 +440,13 @@ export default function SuiteBookingPage() {
                         }`}>
                           {done ? "✓" : index + 1}
                         </span>
-                        <span className="text-left leading-tight">{label}</span>
+                        <span className="text-left leading-tight">{translatedLabel}</span>
                       </button>
                     );
                   })}
                   <div className="mt-4 px-2 space-y-1.5">
                     <div className="flex justify-between text-[10px] text-muted-foreground">
-                      <span>Progress</span>
+                      <span>{t("app.userDashboard.progress", "Progress")}</span>
                       <span>{Math.round((step / (STEPS.length - 1)) * 100)}%</span>
                     </div>
                     <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
@@ -400,30 +460,33 @@ export default function SuiteBookingPage() {
               <div className="space-y-4">
                 {/* Mobile step pills */}
                 <div className="flex lg:hidden items-center gap-1 overflow-x-auto pb-1 scrollbar-none">
-                  {STEPS.map((label, index) => (
-                    <div key={label} className="flex items-center shrink-0">
-                      <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] font-medium border transition-all ${
-                        index === step ? "border-gold bg-gold/15 text-gold"
-                        : index < step ? "border-gold/30 bg-gold/8 text-gold/70"
-                        : "border-white/10 bg-white/5 text-muted-foreground"
-                      }`}>
-                        <span className={`h-4 w-4 rounded-full border flex items-center justify-center text-[9px] font-bold shrink-0 ${
-                          index < step ? "border-gold bg-gold text-[oklch(0.12_0.02_260)]" : "border-current"
-                        }`}>{index < step ? "✓" : index + 1}</span>
-                        {index === step && <span>{label}</span>}
+                  {STEPS.map((label, index) => {
+                    const translatedLabel = t(stepKeys[index], label);
+                    return (
+                      <div key={label} className="flex items-center shrink-0">
+                        <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] font-medium border transition-all ${
+                          index === step ? "border-gold bg-gold/15 text-gold"
+                          : index < step ? "border-gold/30 bg-gold/8 text-gold/70"
+                          : "border-white/10 bg-white/5 text-muted-foreground"
+                        }`}>
+                          <span className={`h-4 w-4 rounded-full border flex items-center justify-center text-[9px] font-bold shrink-0 ${
+                            index < step ? "border-gold bg-gold text-[oklch(0.12_0.02_260)]" : "border-current"
+                          }`}>{index < step ? "✓" : index + 1}</span>
+                          {index === step && <span>{translatedLabel}</span>}
+                        </div>
+                        {index < STEPS.length - 1 && (
+                          <div className={`w-3 h-px mx-0.5 shrink-0 ${index < step ? "bg-gold/50" : "bg-white/10"}`} />
+                        )}
                       </div>
-                      {index < STEPS.length - 1 && (
-                        <div className={`w-3 h-px mx-0.5 shrink-0 ${index < step ? "bg-gold/50" : "bg-white/10"}`} />
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 <div className="glass-card rounded-2xl border border-gold/15 p-5 space-y-5">
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">Step {step + 1}</p>
-                      <h3 className="font-display text-xl text-foreground font-semibold mt-1">{STEPS[step]}</h3>
+                      <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">{t("app.userDashboard.stepText", "Step {{step}}", { step: step + 1 })}</p>
+                      <h3 className="font-display text-xl text-foreground font-semibold mt-1">{t(stepKeys[step], STEPS[step])}</h3>
                     </div>
                     <div className="rounded-xl bg-white/5 px-3 py-1.5 text-xs uppercase tracking-[0.25em] text-muted-foreground border border-white/10">
                       {step + 1} / {STEPS.length}
@@ -433,7 +496,7 @@ export default function SuiteBookingPage() {
                   {/* Step 0 – Occasion */}
                   {step === 0 && (
                     <div className="grid gap-3 md:grid-cols-2">
-                      {OCCASIONS.map((o) => {
+                      {localizedOccasions.map((o) => {
                         const Icon = o.icon;
                         const active = o.id === selectedOccasion;
                         return (
@@ -459,32 +522,32 @@ export default function SuiteBookingPage() {
                   {step === 1 && (
                     <div className="space-y-6">
                       <div className="space-y-2">
-                        <label className="text-xs uppercase tracking-[0.25em] text-muted-foreground">Select Date</label>
+                        <label className="text-xs uppercase tracking-[0.25em] text-muted-foreground">{t("app.userDashboard.selectDate", "Select Date")}</label>
                         <input type="date" value={bookingDate} onChange={(e) => setBookingDate(e.target.value)}
                           className="luxury-input w-full rounded-2xl px-4 py-3 text-sm bg-black/40" style={{ colorScheme: "dark" }} />
                       </div>
                       <div className="space-y-3">
                         <div className="flex items-center gap-2">
-                          <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground">Select Time Slot</p>
-                          <span className="px-2 py-0.5 rounded-full bg-gold/10 border border-gold/25 text-[10px] text-gold font-semibold">2h 30m per slot</span>
+                          <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground">{t("app.userDashboard.selectTimeSlot", "Select Time Slot")}</p>
+                          <span className="px-2 py-0.5 rounded-full bg-gold/10 border border-gold/25 text-[10px] text-gold font-semibold">{t("app.userDashboard.slotDuration", "2h 30m per slot")}</span>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          {TIME_SLOTS.map((t) => {
-                            const end = getEndTime(t);
-                            const active = startTime === t;
+                          {TIME_SLOTS.map((slot) => {
+                            const end = getEndTime(slot);
+                            const active = startTime === slot;
                             return (
-                              <button key={t} type="button" onClick={() => setStartTime(t)}
+                              <button key={slot} type="button" onClick={() => setStartTime(slot)}
                                 className={`flex items-center justify-between gap-3 px-4 py-3.5 rounded-2xl border text-sm font-medium transition-all ${
                                   active ? "border-gold bg-gold/15 text-gold shadow-[0_0_16px_rgba(212,160,60,0.2)]"
                                   : "border-white/10 bg-white/5 text-muted-foreground hover:border-gold/40 hover:text-foreground hover:bg-white/10"
                                 }`}>
                                 <div className="flex items-center gap-2.5">
                                   <Clock className={`h-4 w-4 shrink-0 ${active ? "text-gold" : "text-gold/40"}`} />
-                                  <span>{t} – {end}</span>
+                                  <span>{slot} – {end}</span>
                                 </div>
                                 <span className={`text-[10px] px-2 py-0.5 rounded-full border ${
                                   active ? "border-gold/40 bg-gold/10 text-gold" : "border-white/10 bg-white/5 text-muted-foreground"
-                                }`}>2h 30m</span>
+                                }`}>{t("app.userDashboard.slotDurationShort", "2h 30m")}</span>
                               </button>
                             );
                           })}
@@ -494,8 +557,8 @@ export default function SuiteBookingPage() {
                         <div className="flex items-center gap-2.5 px-4 py-3 rounded-2xl border border-gold/25 bg-gold/8">
                           <Clock className="h-4 w-4 text-gold shrink-0" />
                           <p className="text-sm text-foreground">
-                            Selected: <span className="text-gold font-semibold">{startTime} – {getEndTime(startTime)}</span>
-                            <span className="text-muted-foreground ml-2 text-xs">· 2 hrs 30 mins</span>
+                            {t("app.userDashboard.selectedSlot", "Selected: {{start}} – {{end}}", { start: startTime, end: getEndTime(startTime) })}
+                            <span className="text-muted-foreground ml-2 text-xs">{t("app.userDashboard.durationShort", "· 2 hrs 30 mins")}</span>
                           </p>
                         </div>
                       )}
@@ -505,33 +568,41 @@ export default function SuiteBookingPage() {
                   {/* Step 2 – Suite */}
                   {step === 2 && (
                     <div className="grid gap-4 sm:grid-cols-2">
-                      {SUITES.map((s) => {
-                        const active = selectedSuite === s.id;
+                      {suites.map((s) => {
+                        const active = selectedSuiteId === Number(s.id);
                         return (
-                          <button key={s.id} type="button" onClick={() => setSelectedSuite(s.id)}
+                          <button key={s.id} type="button" onClick={() => { setSelectedSuiteId(Number(s.id)); setPersons(s.minCapacity); }}
                             className={`flex flex-col overflow-hidden rounded-2xl border transition-all text-left ${
                               active ? "border-gold bg-gold/10 shadow-[0_20px_50px_rgba(255,190,90,0.1)]"
                               : "border-white/10 bg-white/5 hover:border-gold/20"
                             }`}>
-                            <div className="h-44 overflow-hidden">
-                              <img src={s.image} alt={s.name} className="h-full w-full object-cover transition-transform duration-500 hover:scale-105" />
-                            </div>
+                            {s.images.length > 0 ? (
+                              <div className="h-44 overflow-hidden">
+                                <img src={s.images[0]} alt={s.name} className="h-full w-full object-cover transition-transform duration-500 hover:scale-105" />
+                              </div>
+                            ) : (
+                              <div className="h-44 bg-white/[0.03] flex items-center justify-center border-b border-white/5">
+                                <BedDouble className="h-10 w-10 text-gold/20" />
+                              </div>
+                            )}
                             <div className="p-4 space-y-2">
                               <div className="flex items-start justify-between gap-2">
                                 <div>
                                   <h4 className="font-display text-base text-foreground">{s.name}</h4>
-                                  <p className="text-xs text-muted-foreground">Suite ID {s.id}</p>
+                                  <p className="text-xs text-muted-foreground">{s.occasions}</p>
                                 </div>
-                                <p className="font-semibold text-gold text-sm shrink-0">₹{s.price.toLocaleString()}</p>
+                                <p className="font-semibold text-gold text-sm shrink-0">{s.price}</p>
                               </div>
                               <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                <Users className="h-3.5 w-3.5 text-gold/70" /> Up to {s.capacity} guests
+                                <Users className="h-3.5 w-3.5 text-gold/70" /> {s.minCapacity}–{s.capacity} {t("app.userDashboard.guests", "guests")}
                               </div>
-                              <div className="flex flex-wrap gap-1.5">
-                                {s.perks.map((p) => (
-                                  <span key={p} className="rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-[10px] text-muted-foreground">{p}</span>
-                                ))}
-                              </div>
+                              {s.amenities.length > 0 && (
+                                <div className="flex flex-wrap gap-1.5">
+                                  {s.amenities.slice(0, 3).map((a) => (
+                                    <span key={a} className="rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-[10px] text-muted-foreground">{a}</span>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           </button>
                         );
@@ -547,16 +618,20 @@ export default function SuiteBookingPage() {
                           <BedDouble className="h-4 w-4 text-gold shrink-0" />
                           <p className="text-sm text-foreground">
                             <span className="text-gold font-semibold">{suite.name}</span>
-                            <span className="text-muted-foreground ml-2 text-xs">· {suiteMinCap}–{suiteMaxCap} guests · {suite.price} base</span>
+                            <span className="text-muted-foreground ml-2 text-xs">· {suiteMinCap}–{suiteMaxCap} {t("app.userDashboard.guests", "guests")} · {suite.price} {t("app.userDashboard.priceBase", "base")}</span>
                           </p>
                         </div>
                       )}
                       <div className="glass-card rounded-2xl border border-white/10 p-4">
                         <div className="flex items-center justify-between gap-4">
                           <div>
-                            <h4 className="font-display text-base text-foreground">Number of Persons</h4>
+                            <h4 className="font-display text-base text-foreground">{t("app.userDashboard.numberOfPersons", "Number of Persons")}</h4>
                             <p className="text-xs text-muted-foreground mt-0.5">
-                              {suite ? `Min ${suiteMinCap} · Max ${suiteMaxCap}${rateExtra > 0 ? ` · ₹${rateExtra}/extra person above min` : ""}` : "Select a suite first"}
+                              {suite
+                                ? rateExtra > 0
+                                  ? t("app.userDashboard.personsLimitDesc", "Min {{min}} · Max {{max}} · ₹{{rate}}/extra person above min", { min: suiteMinCap, max: suiteMaxCap, rate: rateExtra })
+                                  : t("app.userDashboard.personsLimitDescNoExtra", "Min {{min}} · Max {{max}}", { min: suiteMinCap, max: suiteMaxCap })
+                                : t("app.userDashboard.selectSuiteFirst", "Select a suite first")}
                             </p>
                           </div>
                           <p className="font-semibold text-gold shrink-0">₹{personsTotal.toLocaleString()}</p>
@@ -571,11 +646,11 @@ export default function SuiteBookingPage() {
                               <Plus className="h-3.5 w-3.5" />
                             </button>
                           </div>
-                          <span className="text-xs text-muted-foreground">{persons} / {suiteMaxCap} guests</span>
+                          <span className="text-xs text-muted-foreground">{t("app.userDashboard.guestsLimitText", "{{count}} / {{max}} guests", { count: persons, max: suiteMaxCap })}</span>
                         </div>
                       </div>
                       <div className="space-y-3">
-                        {ADDONS.map((addon) => (
+                        {localizedAddons.map((addon) => (
                           <div key={addon.id} className="glass-card rounded-2xl border border-white/10 p-4">
                             <div className="flex items-center justify-between gap-4">
                               <div>
@@ -600,10 +675,10 @@ export default function SuiteBookingPage() {
                       </div>
                       <div className="space-y-2">
                         <div className="flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-muted-foreground font-semibold">
-                          <MessageSquare className="h-4 w-4 text-gold" /> Special Requests
+                          <MessageSquare className="h-4 w-4 text-gold" /> {t("app.userDashboard.specialRequests", "Special Requests")}
                         </div>
                         <textarea value={specialRequests} onChange={(e) => setSpecialRequests(e.target.value)} rows={4}
-                          placeholder="Add any special instructions..."
+                          placeholder={t("app.userDashboard.specialRequestsPlaceholder", "Add any special instructions...")}
                           className="luxury-input w-full rounded-2xl px-4 py-3 text-sm bg-black/40 resize-none" />
                       </div>
                     </div>
@@ -614,29 +689,33 @@ export default function SuiteBookingPage() {
                     <div className="space-y-4">
                       <div className="grid gap-4 sm:grid-cols-2">
                         <div className="glass-card rounded-2xl border border-white/10 p-4">
-                          <h4 className="text-xs uppercase tracking-[0.25em] text-muted-foreground">Your Celebration</h4>
-                          <p className="mt-3 text-base text-foreground font-semibold">{OCCASIONS.find((o) => o.id === selectedOccasion)?.label ?? "No occasion"}</p>
-                          <p className="text-xs text-muted-foreground mt-1">{bookingDate ? new Date(bookingDate).toLocaleDateString() : "No date"}</p>
-                          <p className="text-xs text-muted-foreground">{startTime ? `${startTime} – ${getEndTime(startTime)}` : "No time"}</p>
+                          <h4 className="text-xs uppercase tracking-[0.25em] text-muted-foreground">{t("app.userDashboard.yourCelebration", "Your Celebration")}</h4>
+                          <p className="mt-3 text-base text-foreground font-semibold">{localizedOccasions.find((o) => o.id === selectedOccasion)?.label ?? t("app.userDashboard.noOccasion", "No occasion")}</p>
+                          <p className="text-xs text-muted-foreground mt-1">{bookingDate ? new Date(bookingDate).toLocaleDateString() : t("app.userDashboard.noDate", "No date")}</p>
+                          <p className="text-xs text-muted-foreground">{startTime ? `${startTime} – ${getEndTime(startTime)}` : t("app.userDashboard.noTime", "No time")}</p>
                         </div>
                         <div className="glass-card rounded-2xl border border-white/10 p-4">
-                          <h4 className="text-xs uppercase tracking-[0.25em] text-muted-foreground">Suite</h4>
+                          <h4 className="text-xs uppercase tracking-[0.25em] text-muted-foreground">{t("app.userDashboard.suite", "Suite")}</h4>
                           {suite ? (
                             <div className="mt-3 space-y-1">
                               <p className="text-base text-foreground font-semibold">{suite.name}</p>
-                              <p className="text-xs text-muted-foreground">Capacity: {suiteMinCap}–{suiteMaxCap} guests</p>
+                              <p className="text-xs text-muted-foreground">{t("app.userDashboard.capacityGuests", "Capacity: {{min}}–{{max}} guests", { min: suiteMinCap, max: suiteMaxCap })}</p>
                               <p className="text-xs text-gold">{suite.price}</p>
                             </div>
-                          ) : <p className="text-xs text-muted-foreground mt-3">No suite selected.</p>}
+                          ) : <p className="text-xs text-muted-foreground mt-3">{t("app.userDashboard.noSuiteSelected", "No suite selected.")}</p>}
                         </div>
                       </div>
                       <div className="glass-card rounded-2xl border border-white/10 p-4">
-                        <h4 className="text-xs uppercase tracking-[0.25em] text-muted-foreground mb-3">Add-ons</h4>
+                        <h4 className="text-xs uppercase tracking-[0.25em] text-muted-foreground mb-3">{t("app.userDashboard.addons", "Add-ons")}</h4>
                         <div className="flex justify-between text-sm py-1">
-                          <span className="text-muted-foreground">{persons} persons ({extraPersons} extra × ₹{rateExtra})</span>
+                          <span className="text-muted-foreground">
+                            {extraPersons > 0
+                              ? t("app.userDashboard.personsExtraRate", "{{count}} persons ({{extra}} extra × ₹{{rate}})", { count: persons, extra: extraPersons, rate: rateExtra })
+                              : t("app.userDashboard.guestsCount", "{{count}} guests", { count: persons })}
+                          </span>
                           <span className="text-gold">₹{personsTotal.toLocaleString()}</span>
                         </div>
-                        {ADDONS.filter((a) => (addonQty[a.id] ?? 0) > 0).map((a) => (
+                        {localizedAddons.filter((a) => (addonQty[a.id] ?? 0) > 0).map((a) => (
                           <div key={a.id} className="flex justify-between text-sm py-1">
                             <span className="text-muted-foreground">{a.name} × {addonQty[a.id]}</span>
                             <span className="text-gold">₹{(a.price * addonQty[a.id]).toLocaleString()}</span>
@@ -645,7 +724,7 @@ export default function SuiteBookingPage() {
                       </div>
                       {specialRequests && (
                         <div className="glass-card rounded-2xl border border-white/10 p-4">
-                          <h4 className="text-xs uppercase tracking-[0.25em] text-muted-foreground mb-2">Special Requests</h4>
+                          <h4 className="text-xs uppercase tracking-[0.25em] text-muted-foreground mb-2">{t("app.userDashboard.specialRequests", "Special Requests")}</h4>
                           <p className="text-xs text-muted-foreground">{specialRequests}</p>
                         </div>
                       )}
@@ -656,11 +735,11 @@ export default function SuiteBookingPage() {
                   {step === 5 && (
                     <div className="space-y-4">
                       <div className="glass-card rounded-2xl border border-white/10 p-4">
-                        <h4 className="text-xs uppercase tracking-[0.25em] text-muted-foreground mb-4">Payment Options</h4>
+                        <h4 className="text-xs uppercase tracking-[0.25em] text-muted-foreground mb-4">{t("app.userDashboard.paymentOptions", "Payment Options")}</h4>
                         <div className="space-y-3">
                           {[
-                            { id: "pay_now" as const,   label: "Pay Now",        description: `Pay the full amount ₹${grandTotal.toLocaleString()} and confirm instantly.` },
-                            { id: "pay_at_venue" as const, label: "Pay at Venue", description: `Pay 20% advance ₹${advanceAmount.toLocaleString()} now. Balance ₹${(grandTotal - advanceAmount).toLocaleString()} at venue.` },
+                            { id: "pay_now" as const,   label: t("app.userDashboard.payNow", "Pay Now"),        description: t("app.userDashboard.payNowDesc", "Pay the full amount ₹{{total}} and confirm instantly.", { total: grandTotal.toLocaleString() }) },
+                            { id: "pay_at_venue" as const, label: t("app.userDashboard.payAtVenue", "Pay at Venue"), description: t("app.userDashboard.payAtVenueDesc", "Pay 20% advance ₹{{advance}} now. Balance ₹{{balance}} at venue.", { advance: advanceAmount.toLocaleString(), balance: (grandTotal - advanceAmount).toLocaleString() }) },
                           ].map((opt) => (
                             <button key={opt.id} type="button" onClick={() => setPaymentMode(opt.id)}
                               className={`w-full rounded-2xl border p-4 text-left transition ${
@@ -685,19 +764,19 @@ export default function SuiteBookingPage() {
                         <div className="flex items-center justify-between">
                           <div>
                             <p className="text-xs text-muted-foreground uppercase tracking-[0.25em]">
-                              {paymentMode === "pay_now" ? "Amount to Pay Now" : "Advance to Pay Now (20%)"}
+                              {paymentMode === "pay_now" ? t("app.userDashboard.amountToPayNow", "Amount to Pay Now") : t("app.userDashboard.advanceToPayNow", "Advance to Pay Now (20%)")}
                             </p>
                             <p className="font-display text-3xl text-gold mt-1">₹{payableNow.toLocaleString()}</p>
                             {paymentMode === "pay_at_venue" && (
-                              <p className="text-xs text-muted-foreground mt-1">Balance ₹{(grandTotal - advanceAmount).toLocaleString()} payable at venue</p>
+                              <p className="text-xs text-muted-foreground mt-1">{t("app.userDashboard.balancePayableAtVenue", "Balance ₹{{amount}} payable at venue", { amount: (grandTotal - advanceAmount).toLocaleString() })}</p>
                             )}
                           </div>
                           <div className="flex flex-col items-end gap-1">
                             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                              <CreditCard className="h-3.5 w-3.5 text-gold" /> Cards / UPI / Net Banking
+                              <CreditCard className="h-3.5 w-3.5 text-gold" /> {t("app.userDashboard.cardsUpiNetBanking", "Cards / UPI / Net Banking")}
                             </div>
                             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                              <Building className="h-3.5 w-3.5 text-gold" /> Secured by Razorpay
+                              <Building className="h-3.5 w-3.5 text-gold" /> {t("app.userDashboard.securedByRazorpay", "Secured by Razorpay")}
                             </div>
                           </div>
                         </div>
@@ -715,24 +794,24 @@ export default function SuiteBookingPage() {
                         {processing ? (
                           <>
                             <div className="h-5 w-5 rounded-full border-2 border-current border-t-transparent animate-spin" />
-                            Processing...
+                            {t("app.userDashboard.processing", "Processing...")}
                           </>
                         ) : (
                           <>
                             <CreditCard className="h-5 w-5" />
-                            Proceed to Pay ₹{payableNow.toLocaleString()}
+                            {t("app.userDashboard.proceedToPay", "Proceed to Pay ₹{{amount}}", { amount: payableNow.toLocaleString() })}
                           </>
                         )}
                       </button>
 
                       <p className="text-center text-xs text-muted-foreground">
-                        Powered by Razorpay · 256-bit SSL encryption
+                        {t("app.userDashboard.razorpayEncryption", "Powered by Razorpay · 256-bit SSL encryption")}
                       </p>
                     </div>
                   )}
 
                   {showValidation && !isStepValid && (
-                    <p className="text-sm text-rose-400">Please complete the required selection before continuing.</p>
+                    <p className="text-sm text-rose-400">{t("app.userDashboard.validationError", "Please complete the required selection before continuing.")}</p>
                   )}
 
                   {/* Nav buttons — hide on payment step (has its own CTA) */}
@@ -740,18 +819,18 @@ export default function SuiteBookingPage() {
                     <div className="flex gap-3 pt-1">
                       <button type="button" onClick={handleBack} disabled={step === 0}
                         className="flex-1 rounded-2xl border border-white/10 px-5 py-3 text-sm text-muted-foreground hover:text-foreground transition disabled:opacity-40">
-                        <ChevronLeft className="inline-block h-4 w-4 mr-1" /> Back
+                        <ChevronLeft className="inline-block h-4 w-4 mr-1" /> {t("app.userDashboard.back", "Back")}
                       </button>
                       <button type="button" onClick={handleNext}
                         className="flex-1 gold-btn rounded-2xl px-5 py-3 text-sm font-semibold flex items-center justify-center gap-2">
-                        Continue <ChevronRight className="h-4 w-4" />
+                        {t("app.userDashboard.continue", "Continue")} <ChevronRight className="h-4 w-4" />
                       </button>
                     </div>
                   )}
                   {step === 5 && (
                     <button type="button" onClick={handleBack}
                       className="w-full rounded-2xl border border-white/10 px-5 py-3 text-sm text-muted-foreground hover:text-foreground transition">
-                      <ChevronLeft className="inline-block h-4 w-4 mr-1" /> Back to Summary
+                      <ChevronLeft className="inline-block h-4 w-4 mr-1" /> {t("app.userDashboard.backToSummary", "Back to Summary")}
                     </button>
                   )}
                 </div>

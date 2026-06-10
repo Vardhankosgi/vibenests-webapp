@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Users, UserCheck, UserX, TrendingUp, Download, Mail, Phone, User, Star } from "lucide-react";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { useAppData } from "@/components/admin/AppDataContext";
+import { useTranslation } from "react-i18next";
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, PieChart, Pie, Cell,
@@ -40,6 +41,7 @@ const acquisitionData = [
 
 export default function CustomersPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { users, stats } = useAppData();
   const [sortBy, setSortBy] = useState<"bookings" | "spent">("spent");
 
@@ -65,20 +67,20 @@ export default function CustomersPage() {
         {/* Back + actions */}
         <div className="flex items-center justify-between">
           <button onClick={() => navigate("/dashboard")} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-gold transition">
-            <ArrowLeft className="h-4 w-4" /> Back to Dashboard
+            <ArrowLeft className="h-4 w-4" /> {t("app.admin.backToDashboard", "Back to Dashboard")}
           </button>
           <button className="flex items-center gap-2 text-xs gold-btn px-4 py-2 rounded-lg font-medium">
-            <Download className="h-3.5 w-3.5" /> Export Report
+            <Download className="h-3.5 w-3.5" /> {t("app.admin.exportReport", "Export Report")}
           </button>
         </div>
 
         {/* KPI Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
           {[
-            { label: "Total Customers", value: totalCustomers, sub: "+9% vs last month", up: true, icon: Users, accent: "border-[var(--gold)]/30", onClick: () => navigate("/customers") },
-            { label: "Active Customers", value: activeCustomers, sub: `${Math.round((activeCustomers / totalCustomers) * 100)}% of total`, up: true, icon: UserCheck, accent: "border-emerald-500/30" },
-            { label: "Blocked", value: blockedCustomers, sub: `${Math.round((blockedCustomers / totalCustomers) * 100)}% of total`, up: false, icon: UserX, accent: "border-destructive/30" },
-            { label: "New This Month", value: newThisMonth, sub: "+33% vs last month", up: true, icon: TrendingUp, accent: "border-[var(--gold)]/20" },
+            { label: t("app.admin.totalCustomersLabel", "Total Customers"), value: totalCustomers, sub: "+9% vs last month", up: true, icon: Users, accent: "border-[var(--gold)]/30", onClick: () => navigate("/customers") },
+            { label: t("app.admin.activeCustomers", "Active Customers"), value: activeCustomers, sub: `${Math.round((activeCustomers / totalCustomers) * 100)}% of total`, up: true, icon: UserCheck, accent: "border-emerald-500/30" },
+            { label: t("app.admin.blocked", "Blocked"), value: blockedCustomers, sub: `${Math.round((blockedCustomers / totalCustomers) * 100)}% of total`, up: false, icon: UserX, accent: "border-destructive/30" },
+            { label: t("app.admin.newThisMonth", "New This Month"), value: newThisMonth, sub: "+33% vs last month", up: true, icon: TrendingUp, accent: "border-[var(--gold)]/20" },
           ].map((c) => (
             <div key={c.label} onClick={c.onClick}
               className={`glass-card rounded-2xl p-5 border ${c.accent} flex items-start justify-between gap-4 ${c.onClick ? "cursor-pointer hover:border-[var(--gold)]/50 transition" : ""}`}>
@@ -97,7 +99,7 @@ export default function CustomersPage() {
         {/* Growth Chart + Acquisition Pie */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
           <div className="xl:col-span-2 glass-card rounded-2xl p-5">
-            <h3 className="font-display text-lg font-medium mb-4">Customer Growth</h3>
+            <h3 className="font-display text-lg font-medium mb-4">{t("app.admin.customerGrowthTitle", "Customer Growth")}</h3>
             <ResponsiveContainer width="100%" height={260}>
               <AreaChart data={monthlyGrowth}>
                 <defs>
@@ -132,7 +134,7 @@ export default function CustomersPage() {
           </div>
 
           <div className="glass-card rounded-2xl p-5">
-            <h3 className="font-display text-lg font-medium mb-4">Acquisition</h3>
+            <h3 className="font-display text-lg font-medium mb-4">{t("app.admin.acquisition", "Acquisition")}</h3>
             <ResponsiveContainer width="100%" height={190}>
               <PieChart>
                 <Pie data={acquisitionData} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={3} dataKey="value">
@@ -160,7 +162,7 @@ export default function CustomersPage() {
 
         {/* Booking Frequency */}
         <div className="glass-card rounded-2xl p-5">
-          <h3 className="font-display text-lg font-medium mb-4">Booking Frequency Distribution</h3>
+          <h3 className="font-display text-lg font-medium mb-4">{t("app.admin.bookingFreqDist", "Booking Frequency Distribution")}</h3>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={bookingFreq}>
               <CartesianGrid strokeDasharray="3 3" stroke="oklch(1 0 0 / 0.06)" vertical={false} />
@@ -183,13 +185,13 @@ export default function CustomersPage() {
         <div className="glass-card rounded-2xl p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-display text-lg font-medium flex items-center gap-2">
-              <Star className="h-4 w-4 text-gold" /> Top Customers
+              <Star className="h-4 w-4 text-gold" /> {t("app.admin.topCustomers", "Top Customers")}
             </h3>
             <div className="flex gap-1 p-1 rounded-lg bg-white/[0.04] border border-white/[0.06]">
               {(["spent", "bookings"] as const).map((s) => (
                 <button key={s} onClick={() => setSortBy(s)}
                   className={`px-3 py-1 rounded-md text-xs font-medium capitalize transition ${sortBy === s ? "bg-[var(--gold)]/20 text-gold border border-[var(--gold)]/30" : "text-muted-foreground hover:text-foreground"}`}>
-                  {s === "spent" ? "By Spend" : "By Bookings"}
+                  {s === "spent" ? t("app.admin.bySpend", "By Spend") : t("app.admin.byBookings", "By Bookings")}
                 </button>
               ))}
             </div>
@@ -198,13 +200,13 @@ export default function CustomersPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-xs text-muted-foreground uppercase tracking-wide border-b border-white/[0.06]">
-                  <th className="pb-3 pr-4">Rank</th>
-                  <th className="pb-3 pr-4">Customer</th>
-                  <th className="pb-3 pr-4">Contact</th>
-                  <th className="pb-3 pr-4">Joined</th>
-                  <th className="pb-3 pr-4">Bookings</th>
-                  <th className="pb-3 pr-4">Total Spent</th>
-                  <th className="pb-3">Status</th>
+                  <th className="pb-3 pr-4">{t("app.admin.rank", "Rank")}</th>
+                  <th className="pb-3 pr-4">{t("app.admin.customer", "Customer")}</th>
+                  <th className="pb-3 pr-4">{t("app.admin.contact", "Contact")}</th>
+                  <th className="pb-3 pr-4">{t("app.admin.joined", "Joined")}</th>
+                  <th className="pb-3 pr-4">{t("app.admin.bookings", "Bookings")}</th>
+                  <th className="pb-3 pr-4">{t("app.admin.totalSpent", "Total Spent")}</th>
+                  <th className="pb-3">{t("app.admin.status", "Status")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/[0.04]">
@@ -237,7 +239,7 @@ export default function CustomersPage() {
                     <td className="py-3 pr-4 text-gold font-medium">₹{u.spent.toLocaleString()}</td>
                     <td className="py-3">
                       <span className={`px-2.5 py-1 rounded-full text-[11px] font-medium border ${u.status === "Active" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-destructive/10 text-destructive border-destructive/20"}`}>
-                        {u.status}
+                        {u.status === "Active" ? t("app.admin.active", "Active") : t("app.admin.blocked", "Blocked")}
                       </span>
                     </td>
                   </tr>
@@ -246,7 +248,7 @@ export default function CustomersPage() {
             </table>
           </div>
           <button onClick={() => navigate("/customers")} className="mt-4 w-full py-2.5 rounded-xl text-xs text-gold border border-[var(--gold)]/20 hover:bg-[var(--gold)]/5 transition">
-            View All Customers →
+            {t("app.admin.viewAllCustomers", "View All Customers →")}
           </button>
         </div>
 

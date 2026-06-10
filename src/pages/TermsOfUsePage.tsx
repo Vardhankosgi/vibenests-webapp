@@ -2,66 +2,69 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { ScrollText, ArrowLeft } from "lucide-react";
 import { BrandMark } from "@/components/auth/BrandMark";
+import { LanguageSelector } from "@/components/shared/LanguageSelector";
+import { useTranslation } from "react-i18next";
 import loginbg from "@/assets/loginbg.png";
-
-const sections = [
-  {
-    title: "1. Acceptance",
-    content: `By accessing or using Vibenests, you agree to these Terms of Use. If you do not agree, please discontinue use immediately.`,
-  },
-  {
-    title: "2. Services",
-    content: `Vibenests provides:\n• Private Suite Bookings\n• Celebration Packages\n• Event Add-ons\n• Live Celebration Sharing\n• Promotional Offers`,
-  },
-  {
-    title: "3. User Responsibilities",
-    content: `Users agree to:\n• Provide accurate information\n• Use services lawfully\n• Respect venue rules\n• Do not damage property\n• Do not engage in illegal activities`,
-  },
-  {
-    title: "4. Booking Rules",
-    content: `Bookings are confirmed only after:\n• Successful payment\n• Booking confirmation issued by Vibenests\n\nAvailability is subject to change until confirmation.`,
-  },
-  {
-    title: "5. Guest Conduct",
-    content: `Users are responsible for:\n• Their guests\n• Property damage caused by guests\n• Compliance with local laws\n\nVibenests reserves the right to terminate bookings for misconduct.`,
-  },
-  {
-    title: "6. Live Celebration Sharing",
-    content: `Users may share meeting links with relatives and friends. Users are solely responsible for:\n• Recipients of the shared links\n• Content shared during livestreams\n• Obtaining consent from attendees\n\nVibenests is not responsible for the actions of third-party streaming providers.`,
-  },
-  {
-    title: "7. Pricing",
-    content: `Prices may include:\n• Suite charges\n• Add-on charges\n• Taxes\n• Service fees\n\nApplicable taxes shall be displayed before checkout.`,
-  },
-  {
-    title: "8. Offers & Discounts",
-    content: `Offers:\n• Cannot be combined unless specified\n• Are subject to validity periods\n• May be modified or withdrawn`,
-  },
-  {
-    title: "9. Intellectual Property",
-    content: `All content, including Logos, Images, Designs, Text, and Software, belongs to Vibenests and may not be copied without authorization.`,
-  },
-  {
-    title: "10. Limitation of Liability",
-    content: `Vibenests shall not be liable for:\n• Internet interruptions\n• Third-party service failures\n• Force majeure events\n• Losses caused by user negligence`,
-  },
-  {
-    title: "11. Suspension & Termination",
-    content: `We may suspend or terminate accounts for:\n• Fraud\n• Abuse\n• Illegal activities\n• Violation of these Terms`,
-  },
-  {
-    title: "12. Governing Law",
-    content: `These Terms shall be governed by the laws of India. Any disputes shall be subject to the jurisdiction of courts located in Hyderabad, Telangana.`,
-  },
-];
 
 export default function TermsOfUsePage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   function handleBack() {
     if (window.history.length > 1) navigate(-1);
     else window.close();
   }
+
+  const sections = [
+    {
+      title: t("legal.terms.acceptance.title"),
+      content: t("legal.terms.acceptance.p1"),
+    },
+    {
+      title: t("legal.terms.services.title"),
+      content: `${t("legal.terms.services.p1")}\n• ${t("legal.terms.services.li1")}\n• ${t("legal.terms.services.li2")}\n• ${t("legal.terms.services.li3")}\n• ${t("legal.terms.services.li4")}\n• ${t("legal.terms.services.li5")}`,
+    },
+    {
+      title: t("legal.terms.responsibilities.title"),
+      content: `${t("legal.terms.responsibilities.p1")}\n• ${t("legal.terms.responsibilities.li1")}\n• ${t("legal.terms.responsibilities.li2")}\n• ${t("legal.terms.responsibilities.li3")}\n• ${t("legal.terms.responsibilities.li4")}\n• ${t("legal.terms.responsibilities.li5")}`,
+    },
+    {
+      title: t("legal.terms.booking.title"),
+      content: `${t("legal.terms.booking.p1")}\n• ${t("legal.terms.booking.li1")}\n• ${t("legal.terms.booking.li2")}\n\n${t("legal.terms.booking.p2")}`,
+    },
+    {
+      title: t("legal.terms.conduct.title"),
+      content: `${t("legal.terms.conduct.p1")}\n• ${t("legal.terms.conduct.li1")}\n• ${t("legal.terms.conduct.li2")}\n• ${t("legal.terms.conduct.li3")}\n\n${t("legal.terms.conduct.p2")}`,
+    },
+    {
+      title: t("legal.terms.live.title"),
+      content: `${t("legal.terms.live.p1")}\n• ${t("legal.terms.live.li1")}\n• ${t("legal.terms.live.li2")}\n• ${t("legal.terms.live.li3")}\n\n${t("legal.terms.live.p2")}`,
+    },
+    {
+      title: t("legal.terms.pricing.title"),
+      content: `${t("legal.terms.pricing.p1")}\n• ${t("legal.terms.pricing.li1")}\n• ${t("legal.terms.pricing.li2")}\n• ${t("legal.terms.pricing.li3")}\n• ${t("legal.terms.pricing.li4")}\n\n${t("legal.terms.pricing.p2")}`,
+    },
+    {
+      title: t("legal.terms.offers.title"),
+      content: `${t("legal.terms.offers.p1")}\n• ${t("legal.terms.offers.li1")}\n• ${t("legal.terms.offers.li2")}\n• ${t("legal.terms.offers.li3")}`,
+    },
+    {
+      title: t("legal.terms.ip.title"),
+      content: `${t("legal.terms.ip.p1")}\n• ${t("legal.terms.ip.li1")}\n• ${t("legal.terms.ip.li2")}\n• ${t("legal.terms.ip.li3")}\n• ${t("legal.terms.ip.li4")}\n• ${t("legal.terms.ip.li5")}\n\n${t("legal.terms.ip.p2")}`,
+    },
+    {
+      title: t("legal.terms.liability.title"),
+      content: `${t("legal.terms.liability.p1")}\n• ${t("legal.terms.liability.li1")}\n• ${t("legal.terms.liability.li2")}\n• ${t("legal.terms.liability.li3")}\n• ${t("legal.terms.liability.li4")}`,
+    },
+    {
+      title: t("legal.terms.termination.title"),
+      content: `${t("legal.terms.termination.p1")}\n• ${t("legal.terms.termination.li1")}\n• ${t("legal.terms.termination.li2")}\n• ${t("legal.terms.termination.li3")}\n• ${t("legal.terms.termination.li4")}`,
+    },
+    {
+      title: t("legal.terms.law.title"),
+      content: t("legal.terms.law.p1"),
+    },
+  ];
 
   return (
     <div
@@ -80,12 +83,15 @@ export default function TermsOfUsePage() {
         {/* Header */}
         <header className="flex items-center justify-between px-6 py-5 border-b border-white/8">
           <BrandMark />
-          <button
-            onClick={handleBack}
-            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4" /> Back
-          </button>
+          <div className="flex items-center gap-4">
+            <LanguageSelector />
+            <button
+              onClick={handleBack}
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" /> {t("common.back", "Back")}
+            </button>
+          </div>
         </header>
 
         {/* Content */}
@@ -100,12 +106,12 @@ export default function TermsOfUsePage() {
             <div className="space-y-3">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-gold/30 bg-gold/10">
                 <ScrollText className="h-3.5 w-3.5 text-gold" />
-                <span className="text-[11px] font-bold tracking-widest text-gold uppercase">Terms of Use</span>
+                <span className="text-[11px] font-bold tracking-widest text-gold uppercase">{t("legal.terms.title").replace(/^\d+\.\s/, "")}</span>
               </div>
               <h1 className="font-display text-4xl font-medium text-foreground">
-                Our <span className="text-gradient-gold italic">Terms & Conditions</span>
+                {t("seo.termsTitle").split(" - ")[0]}
               </h1>
-              <p className="text-sm text-muted-foreground">Effective Date: 01/06/2026</p>
+              <p className="text-sm text-muted-foreground">{t("legal.effectiveDate", { date: "01/06/2026" })}</p>
             </div>
 
             {/* Sections */}
@@ -131,9 +137,9 @@ export default function TermsOfUsePage() {
               transition={{ delay: 0.55 }}
               className="flex flex-wrap gap-4 text-xs text-muted-foreground pt-2"
             >
-              <a href="/privacy-policy" className="hover:text-gold transition-colors">Privacy Policy</a>
+              <a href="/privacy-policy" className="hover:text-gold transition-colors">{t("footer.privacy")}</a>
               <span className="text-white/15">|</span>
-              <a href="/contact" className="hover:text-gold transition-colors">Contact Us</a>
+              <a href="/contact" className="hover:text-gold transition-colors">{t("footer.contact")}</a>
             </motion.div>
           </motion.div>
         </main>

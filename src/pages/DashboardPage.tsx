@@ -9,6 +9,7 @@ import { TopSuites } from "@/components/admin/TopSuites";
 import { RecentBookings } from "@/components/admin/RecentBookings";
 import { DateRangePicker } from "@/components/admin/DateRangePicker";
 import { useAppData } from "@/components/admin/AppDataContext";
+import { useTranslation } from "react-i18next";
 
 function fmtRevenue(n: number) {
   if (n >= 100000) return `₹${(n / 100000).toFixed(1)}L`;
@@ -19,12 +20,13 @@ function fmtRevenue(n: number) {
 export default function DashboardPage() {
   const navigate = useNavigate();
   const { stats } = useAppData();
+  const { t } = useTranslation();
 
   const cards = [
-    { title: "Total Revenue",      value: fmtRevenue(stats.totalRevenue),               change: "+18%", positive: true,  icon: IndianRupee,  onClick: () => navigate("/revenue") },
-    { title: "Total Bookings",     value: String(stats.totalBookings),                  change: "+12%", positive: true,  icon: CalendarDays, onClick: () => navigate("/bookings") },
-    { title: "Total Customers",    value: String(stats.totalCustomers),                 change: "+9%",  positive: true,  icon: Users,        onClick: () => navigate("/customers-overview") },
-    { title: "Avg. Booking Value", value: `₹${stats.avgBookingValue.toLocaleString()}`, change: "+5%",  positive: true,  icon: TrendingUp,   onClick: () => navigate("/avg-booking-value") },
+    { title: t("app.admin.totalRevenue", "Total Revenue"),      value: fmtRevenue(stats.totalRevenue),               change: "+18%", positive: true,  icon: IndianRupee,  onClick: () => navigate("/revenue") },
+    { title: t("app.admin.totalBookings", "Total Bookings"),     value: String(stats.totalBookings),                  change: "+12%", positive: true,  icon: CalendarDays, onClick: () => navigate("/bookings") },
+    { title: t("app.admin.totalCustomers", "Total Customers"),    value: String(stats.totalCustomers),                 change: "+9%",  positive: true,  icon: Users,        onClick: () => navigate("/customers-overview") },
+    { title: t("app.admin.avgBookingValue", "Avg. Booking Value"), value: `₹${stats.avgBookingValue.toLocaleString()}`, change: "+5%",  positive: true,  icon: TrendingUp,   onClick: () => navigate("/avg-booking-value") },
   ];
 
   return (
@@ -32,7 +34,7 @@ export default function DashboardPage() {
       <AdminHeader title="Dashboard" />
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">Overview for selected period</p>
+          <p className="text-sm text-muted-foreground">{t("app.admin.overviewPeriod", "Overview for selected period")}</p>
           <DateRangePicker />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">

@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { useAppData, type UserType } from "@/components/admin/AppDataContext";
 import { usersApi } from "@/lib/api";
+import { useTranslation } from "react-i18next";
 
 const emptyForm = { name: "", email: "", phone: "" };
 
@@ -26,6 +27,7 @@ type DetailUser = UserType & { isVerified?: boolean; rawBookings?: any[] };
 
 export default function UsersPage() {
   const { users, setUsers, stats, refresh } = useAppData();
+  const { t } = useTranslation();
 
   const [search, setSearch]         = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
@@ -105,9 +107,9 @@ export default function UsersPage() {
         {/* Stats */}
         <div className="flex flex-wrap gap-3">
           {[
-            { label: "Total Customers", count: nonAdmins.length,      color: "border-[var(--gold)]/30 text-gold" },
-            { label: "Active",          count: stats.activeCustomers,  color: "border-emerald-500/30 text-emerald-400" },
-            { label: "Blocked",         count: stats.blockedCustomers, color: "border-destructive/30 text-destructive" },
+            { label: t("app.admin.totalCustomersStats","Total Customers"), count: nonAdmins.length, color: "border-[var(--gold)]/30 text-gold" },
+            { label: t("app.admin.activeStats","Active"), count: stats.activeCustomers, color: "border-emerald-500/30 text-emerald-400" },
+            { label: t("app.admin.blocked","Blocked"), count: stats.blockedCustomers, color: "border-destructive/30 text-destructive" },
           ].map((s) => (
             <div key={s.label} className={`glass-card rounded-xl px-4 py-2.5 border ${s.color} flex items-center gap-2`}>
               <span className="text-xl font-display font-semibold">{s.count}</span>
@@ -120,38 +122,38 @@ export default function UsersPage() {
         <div className="glass-card rounded-2xl p-4 flex flex-wrap items-center gap-3">
           <div className="relative flex-1 min-w-48">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-            <input type="text" placeholder="Search by name, email, phone or ID..." value={search} onChange={(e) => setSearch(e.target.value)} className="luxury-input w-full rounded-lg pl-9 pr-4 py-2 text-xs" />
+            <input type="text" placeholder={t("app.admin.searchCustomers","Search by name, email, phone or ID...")} value={search} onChange={(e) => setSearch(e.target.value)} className="luxury-input w-full rounded-lg pl-9 pr-4 py-2 text-xs" />
           </div>
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="luxury-input rounded-lg px-3 py-2 text-xs text-foreground bg-transparent cursor-pointer">
-            {["All", "Active", "Blocked"].map((s) => <option key={s} value={s} className="bg-[oklch(0.13_0.025_260)]">{s === "All" ? "All Statuses" : s}</option>)}
+            {["All", "Active", "Blocked"].map((s) => <option key={s} value={s} className="bg-[oklch(0.13_0.025_260)]">{s === "All" ? t("app.admin.allStatuses","All Statuses") : s === "Active" ? t("app.admin.active","Active") : t("app.admin.blocked","Blocked")}</option>)}
           </select>
-          <button onClick={() => { setSearch(""); setStatusFilter("All"); }} className="text-xs text-muted-foreground hover:text-gold transition px-3 py-2 rounded-lg border border-white/10 hover:border-[var(--gold)]/30">Clear</button>
+          <button onClick={() => { setSearch(""); setStatusFilter("All"); }} className="text-xs text-muted-foreground hover:text-gold transition px-3 py-2 rounded-lg border border-white/10 hover:border-[var(--gold)]/30">{t("app.admin.clear","Clear")}</button>
           <button onClick={() => { setForm(emptyForm); setFormError(null); setShowAdd(true); }} className="flex items-center gap-2 gold-btn px-4 py-2 rounded-lg text-xs font-semibold ml-auto">
-            <Plus className="h-3.5 w-3.5" /> Add Customer
+            <Plus className="h-3.5 w-3.5" /> {t("app.admin.addCustomerBtn","Add Customer")}
           </button>
         </div>
 
         {/* Table */}
         <div className="glass-card rounded-2xl p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-display text-lg font-medium text-foreground">All Customers</h3>
+            <h3 className="font-display text-lg font-medium text-foreground">{t("app.admin.allCustomersTitle","All Customers")}</h3>
             <span className="text-xs text-muted-foreground">{filtered.length} of {nonAdmins.length}</span>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-xs text-muted-foreground uppercase tracking-wide border-b border-white/[0.06]">
-                  <th className="pb-3 pr-4">Customer</th>
-                  <th className="pb-3 pr-4">Contact</th>
-                  <th className="pb-3 pr-4">Status</th>
-                  <th className="pb-3 pr-4">Joined</th>
-                  <th className="pb-3 pr-4 text-center">Bookings</th>
-                  <th className="pb-3">Actions</th>
+                  <th className="pb-3 pr-4">{t("app.admin.customer","Customer")}</th>
+                  <th className="pb-3 pr-4">{t("app.admin.contact","Contact")}</th>
+                  <th className="pb-3 pr-4">{t("app.admin.status","Status")}</th>
+                  <th className="pb-3 pr-4">{t("app.admin.joined","Joined")}</th>
+                  <th className="pb-3 pr-4 text-center">{t("app.admin.bookings","Bookings")}</th>
+                  <th className="pb-3">{t("app.admin.actions","Actions")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/[0.04]">
                 {filtered.length === 0 ? (
-                  <tr><td colSpan={6} className="py-12 text-center text-sm text-muted-foreground">No customers found</td></tr>
+                  <tr><td colSpan={6} className="py-12 text-center text-sm text-muted-foreground">{t("app.admin.noCustomersFound","No customers found")}</td></tr>
                 ) : filtered.map((u) => (
                   <tr key={u.id} className="hover:bg-white/[0.02] transition">
                     <td className="py-3 pr-4">
@@ -201,7 +203,7 @@ export default function UsersPage() {
 
             {/* Header */}
             <div className="flex items-center justify-between">
-              <h3 className="font-display text-xl text-foreground">Customer Details</h3>
+              <h3 className="font-display text-xl text-foreground">{t("app.admin.customerDetailsTitle","Customer Details")}</h3>
               <button onClick={() => setViewUser(null)} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground transition"><X className="h-5 w-5" /></button>
             </div>
 
@@ -240,12 +242,12 @@ export default function UsersPage() {
             {/* Actions */}
             <div className="flex gap-2">
               <button onClick={() => toggleBlock(viewUser)} className={`flex-1 flex items-center justify-center gap-2 rounded-lg py-2.5 text-xs font-semibold border transition ${viewUser.status === "Active" ? "border-amber-400/30 text-amber-400 hover:bg-amber-400/10" : "border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"}`}>
-                {viewUser.status === "Active" ? <><ShieldOff className="h-3.5 w-3.5" />Block Customer</> : <><Shield className="h-3.5 w-3.5" />Unblock Customer</>}
+                {viewUser.status === "Active" ? <><ShieldOff className="h-3.5 w-3.5" />{t("app.admin.blockCustomer","Block Customer")}</> : <><Shield className="h-3.5 w-3.5" />{t("app.admin.unblockCustomer","Unblock Customer")}</>}
               </button>
               {!viewUser.isVerified && (
                 <button onClick={resendSetup} disabled={resending || resendDone} className="flex-1 flex items-center justify-center gap-2 rounded-lg py-2.5 text-xs font-semibold border border-[var(--gold)]/30 text-gold hover:bg-[var(--gold)]/10 transition disabled:opacity-60">
                   {resending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <MailCheck className="h-3.5 w-3.5" />}
-                  {resendDone ? "Email Sent!" : resending ? "Sending..." : "Resend Setup Email"}
+                  {resendDone ? t("app.admin.emailSentMsg","Email Sent!") : resending ? t("app.admin.sendingLabel","Sending...") : t("app.admin.resendSetupEmail","Resend Setup Email")}
                 </button>
               )}
             </div>
@@ -253,16 +255,16 @@ export default function UsersPage() {
             {/* Booking History */}
             <div>
               <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                <CalendarDays className="h-4 w-4 text-gold" /> Booking History
+                <CalendarDays className="h-4 w-4 text-gold" /> {t("app.userDashboard.bookingDetails","Booking History")}
                 <span className="ml-auto text-xs text-muted-foreground font-normal">{viewUser.rawBookings?.length ?? viewUser.bookings} bookings</span>
               </h4>
 
               {detailLoading ? (
                 <div className="flex items-center justify-center py-8 gap-2 text-muted-foreground text-sm">
-                  <Loader2 className="h-4 w-4 animate-spin" /> Loading bookings...
+                  <Loader2 className="h-4 w-4 animate-spin" /> {t("app.admin.loadingBookingsMsg","Loading bookings...")}
                 </div>
               ) : !viewUser.rawBookings?.length ? (
-                <div className="text-center py-8 text-sm text-muted-foreground border border-white/[0.06] rounded-xl">No bookings yet</div>
+                <div className="text-center py-8 text-sm text-muted-foreground border border-white/[0.06] rounded-xl">{t("app.admin.noBookingsYet","No bookings yet")}</div>
               ) : (
                 <div className="space-y-2">
                   {viewUser.rawBookings.map((b: any) => (
@@ -290,7 +292,7 @@ export default function UsersPage() {
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
           <div className="glass-card rounded-2xl p-6 w-full max-w-md border border-[var(--gold)]/20">
             <div className="flex items-center justify-between mb-5">
-              <h3 className="font-display text-lg text-foreground">Add New Customer</h3>
+              <h3 className="font-display text-lg text-foreground">{t("app.admin.addCustomerTitle","Add New Customer")}</h3>
               <button onClick={() => setShowAdd(false)} className="text-muted-foreground hover:text-foreground transition"><X className="h-5 w-5" /></button>
             </div>
             <div className="space-y-3">
@@ -305,13 +307,13 @@ export default function UsersPage() {
                 </div>
               ))}
             </div>
-            <p className="text-[11px] text-muted-foreground mt-3 flex items-center gap-1.5"><MailCheck className="h-3 w-3 text-gold" />A password setup email will be sent to this customer automatically.</p>
+            <p className="text-[11px] text-muted-foreground mt-3 flex items-center gap-1.5"><MailCheck className="h-3 w-3 text-gold" />{t("app.admin.setupEmailNote","A password setup email will be sent to this customer automatically.")}</p>
             {formError && <p className="text-xs text-destructive bg-destructive/10 border border-destructive/30 rounded-md px-3 py-2 mt-2">{formError}</p>}
             <div className="flex gap-3 mt-5">
               <button onClick={handleSave} disabled={saving} className="gold-btn flex-1 rounded-lg py-2.5 text-sm font-semibold disabled:opacity-70 flex items-center justify-center gap-2">
-                {saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}{saving ? "Sending..." : "Add Customer"}
+                {saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}{saving ? t("app.admin.sendingLabel","Sending...") : t("app.admin.addCustomerBtn","Add Customer")}
               </button>
-              <button onClick={() => setShowAdd(false)} className="flex-1 rounded-lg py-2.5 text-sm border border-white/10 text-muted-foreground hover:text-foreground transition">Cancel</button>
+              <button onClick={() => setShowAdd(false)} className="flex-1 rounded-lg py-2.5 text-sm border border-white/10 text-muted-foreground hover:text-foreground transition">{t("app.admin.cancel","Cancel")}</button>
             </div>
           </div>
         </div>

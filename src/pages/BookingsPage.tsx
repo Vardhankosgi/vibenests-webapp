@@ -5,6 +5,7 @@ import { AdminHeader } from "@/components/admin/AdminHeader";
 import { DateRangePicker } from "@/components/admin/DateRangePicker";
 import { useAppData } from "@/components/admin/AppDataContext";
 import { suitesApi, addonsApi, bookingsApi } from "@/lib/api";
+import { useTranslation } from "react-i18next";
 
 const statusStyle: Record<string, string> = {
   Confirmed: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
@@ -21,17 +22,15 @@ const TIME_SLOTS = [
   "20:00", "21:00", "22:00",
 ];
 
-const STEP_LABELS = ["Schedule & Suite", "Guest Details", "Review & Confirm"];
-
 type ApiSuite = { id: number; name: string; price: number; capacity: number; themeType: string };
 type ApiAddon = { id: number; name: string; price: number; category: string };
 
 const emptyGuest = { firstName: "", lastName: "", email: "", phone: "" };
 
-function StepIndicator({ step }: { step: number }) {
+function StepIndicator({ step, stepLabels }: { step: number; stepLabels: string[] }) {
   return (
     <div className="flex items-center gap-1 mb-5">
-      {STEP_LABELS.map((label, i) => (
+      {stepLabels.map((label, i) => (
         <div key={i} className="flex items-center gap-1 flex-1">
           <div className={`flex items-center justify-center h-6 w-6 rounded-full text-[11px] font-semibold shrink-0 border transition-all
             ${i < step ? "bg-[var(--gold)] border-[var(--gold)] text-black" :
@@ -40,7 +39,7 @@ function StepIndicator({ step }: { step: number }) {
             {i < step ? <Check className="h-3 w-3" /> : i + 1}
           </div>
           <span className={`text-[11px] hidden sm:block ${i === step ? "text-gold" : "text-muted-foreground"}`}>{label}</span>
-          {i < STEP_LABELS.length - 1 && <div className={`h-px flex-1 ${i < step ? "bg-[var(--gold)]/50" : "bg-white/10"}`} />}
+          {i < stepLabels.length - 1 && <div className={`h-px flex-1 ${i < step ? "bg-[var(--gold)]/50" : "bg-white/10"}`} />}
         </div>
       ))}
     </div>
@@ -48,6 +47,12 @@ function StepIndicator({ step }: { step: number }) {
 }
 
 function NewBookingModal({ onClose, onCreated }: { onClose: () => void; onCreated: (b: any) => void }) {
+  const { t } = useTranslation();
+  const stepLabels = [
+    t("app.admin.scheduleAndSuite", "Schedule & Suite"),
+    t("app.admin.guestDetails", "Guest Details"),
+    t("app.admin.reviewAndConfirm", "Review & Confirm"),
+  ];
   const [step, setStep] = useState(0);
   const [suites, setSuites] = useState<ApiSuite[]>([]);
   const [addons, setAddons] = useState<ApiAddon[]>([]);
@@ -81,19 +86,19 @@ function NewBookingModal({ onClose, onCreated }: { onClose: () => void; onCreate
   const totalAmount = suitePrice + addonsTotal;
 
   function validateStep0() {
-    if (!date) return "Please select a date.";
-    if (!startTime) return "Please select a start time.";
-    if (!endTime) return "Please select an end time.";
-    if (startTime >= endTime) return "End time must be after start time.";
-    if (!selectedSuite) return "Please select a suite.";
+    if (!date) return t("app.admin.selectDate", "Please select a date.");
+    if (!startTime) return t("app.admin.startTime", "Please select a start time.");
+    if (!endTime) return t("app.admin.endTime", "Please select an end time.");
+    if (startTime >= endTime) return t("app.admin.endAfterStart", "End time must be after start time.");
+    if (!selectedSuite) return t("app.admin.selectSuite", "Please select a suite.");
     return "";
   }
 
   function validateStep1() {
-    if (!guest.firstName.trim()) return "First name is required.";
-    if (!guest.lastName.trim()) return "Last name is required.";
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guest.email)) return "Valid email is required.";
-    if (guest.phone.length < 6) return "Valid phone number is required.";
+    if (!guest.firstName.trim()) return t("app.admin.firstName", "First name is required.");
+    if (!guest.lastName.trim()) return t("app.admin.lastName", "Last name is required.");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guest.email)) return t("app.admin.email", "Valid email is required.");
+    if (guest.phone.length < 6) return t("app.admin.phone", "Valid phone number is required.");
     return "";
   }
 
@@ -134,11 +139,11 @@ function NewBookingModal({ onClose, onCreated }: { onClose: () => void; onCreate
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
       <div className="glass-card rounded-2xl p-5 w-full max-w-lg border border-[var(--gold)]/20 max-h-[92vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-display text-lg text-foreground">New Booking</h3>
+          <h3 className="font-display text-lg text-foreground">{t("app.admin.newBooking", "New Booking")}</h3>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition"><X className="h-5 w-5" /></button>
         </div>
 
-        <StepIndicator step={step} />
+        <StepIndicator step={step} stepLabels={stepLabels} />
 
         {error && (
           <div className="mb-3 text-xs text-destructive bg-destructive/10 border border-destructive/30 rounded-lg px-3 py-2">{error}</div>
@@ -149,31 +154,31 @@ function NewBookingModal({ onClose, onCreated }: { onClose: () => void; onCreate
           <div className="space-y-4">
             <div className="grid grid-cols-3 gap-3">
               <div className="col-span-3">
-                <label className="text-xs text-muted-foreground uppercase tracking-wide">Date</label>
+                <label className="text-xs text-muted-foreground uppercase tracking-wide">{t("app.admin.selectDate", "Date")}</label>
                 <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
                   min={new Date().toISOString().split("T")[0]}
                   className="luxury-input w-full rounded-lg px-3 py-1.5 text-sm mt-0.5" />
               </div>
               <div>
-                <label className="text-xs text-muted-foreground uppercase tracking-wide">Start Time</label>
+                <label className="text-xs text-muted-foreground uppercase tracking-wide">{t("app.admin.startTime", "Start Time")}</label>
                 <select value={startTime} onChange={(e) => setStartTime(e.target.value)}
                   className="luxury-input w-full rounded-lg px-3 py-1.5 text-sm mt-0.5 bg-transparent cursor-pointer">
                   <option value="" className="bg-[oklch(0.13_0.025_260)]">--</option>
-                  {TIME_SLOTS.map((t) => <option key={t} value={t} className="bg-[oklch(0.13_0.025_260)]">{t}</option>)}
+                  {TIME_SLOTS.map((ts) => <option key={ts} value={ts} className="bg-[oklch(0.13_0.025_260)]">{ts}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-xs text-muted-foreground uppercase tracking-wide">End Time</label>
+                <label className="text-xs text-muted-foreground uppercase tracking-wide">{t("app.admin.endTime", "End Time")}</label>
                 <select value={endTime} onChange={(e) => setEndTime(e.target.value)}
                   className="luxury-input w-full rounded-lg px-3 py-1.5 text-sm mt-0.5 bg-transparent cursor-pointer">
                   <option value="" className="bg-[oklch(0.13_0.025_260)]">--</option>
-                  {TIME_SLOTS.filter((t) => !startTime || t > startTime).map((t) => (
-                    <option key={t} value={t} className="bg-[oklch(0.13_0.025_260)]">{t}</option>
+                  {TIME_SLOTS.filter((ts) => !startTime || ts > startTime).map((ts) => (
+                    <option key={ts} value={ts} className="bg-[oklch(0.13_0.025_260)]">{ts}</option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="text-xs text-muted-foreground uppercase tracking-wide">Occasion</label>
+                <label className="text-xs text-muted-foreground uppercase tracking-wide">{t("app.admin.occasion", "Occasion")}</label>
                 <select value={occasion} onChange={(e) => setOccasion(e.target.value)}
                   className="luxury-input w-full rounded-lg px-3 py-1.5 text-sm mt-0.5 bg-transparent cursor-pointer">
                   {occasions.filter((o) => o !== "All").map((o) => (
@@ -184,7 +189,7 @@ function NewBookingModal({ onClose, onCreated }: { onClose: () => void; onCreate
             </div>
 
             <div>
-              <label className="text-xs text-muted-foreground uppercase tracking-wide">Select Suite</label>
+              <label className="text-xs text-muted-foreground uppercase tracking-wide">{t("app.admin.selectSuite", "Select Suite")}</label>
               <div className="mt-1.5 space-y-2">
                 {suites.map((s) => (
                   <div key={s.id}
@@ -208,7 +213,7 @@ function NewBookingModal({ onClose, onCreated }: { onClose: () => void; onCreate
 
             {addons.length > 0 && (
               <div>
-                <label className="text-xs text-muted-foreground uppercase tracking-wide">Add-ons (optional)</label>
+                <label className="text-xs text-muted-foreground uppercase tracking-wide">{t("app.admin.addonsOptional", "Add-ons (optional)")}</label>
                 <div className="mt-1.5 grid grid-cols-2 gap-2">
                   {addons.map((a) => {
                     const sel = !!selectedAddons.find((x) => x.id === a.id);
@@ -235,8 +240,8 @@ function NewBookingModal({ onClose, onCreated }: { onClose: () => void; onCreate
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               {[
-                { label: "First Name", key: "firstName", placeholder: "John" },
-                { label: "Last Name",  key: "lastName",  placeholder: "Doe" },
+                { label: t("app.admin.firstName", "First Name"), key: "firstName", placeholder: "John" },
+                { label: t("app.admin.lastName", "Last Name"),  key: "lastName",  placeholder: "Doe" },
               ].map(({ label, key, placeholder }) => (
                 <div key={key}>
                   <label className="text-xs text-muted-foreground uppercase tracking-wide">{label}</label>
@@ -248,13 +253,13 @@ function NewBookingModal({ onClose, onCreated }: { onClose: () => void; onCreate
               ))}
             </div>
             <div>
-              <label className="text-xs text-muted-foreground uppercase tracking-wide">Email</label>
+              <label className="text-xs text-muted-foreground uppercase tracking-wide">{t("app.admin.email", "Email")}</label>
               <input type="email" placeholder="guest@example.com"
                 value={guest.email} onChange={(e) => setGuest((g) => ({ ...g, email: e.target.value }))}
                 className="luxury-input w-full rounded-lg px-3 py-1.5 text-sm mt-0.5" />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground uppercase tracking-wide">Phone</label>
+              <label className="text-xs text-muted-foreground uppercase tracking-wide">{t("app.admin.phone", "Phone")}</label>
               <input type="tel" placeholder="+91 98765 43210"
                 value={guest.phone} onChange={(e) => setGuest((g) => ({ ...g, phone: e.target.value }))}
                 className="luxury-input w-full rounded-lg px-3 py-1.5 text-sm mt-0.5" />
@@ -266,15 +271,15 @@ function NewBookingModal({ onClose, onCreated }: { onClose: () => void; onCreate
         {step === 2 && (
           <div className="space-y-4">
             <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4 space-y-2 text-sm">
-              <p className="text-xs text-muted-foreground uppercase tracking-wide mb-3">Booking Summary</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wide mb-3">{t("app.admin.bookingSummary", "Booking Summary")}</p>
               {[
-                ["Guest",   `${guest.firstName} ${guest.lastName}`],
-                ["Email",   guest.email],
-                ["Phone",   guest.phone],
-                ["Date",    date],
-                ["Time",    `${startTime} – ${endTime}`],
-                ["Occasion", occasion],
-                ["Suite",   selectedSuite?.name ?? ""],
+                [t("app.admin.guest", "Guest"),   `${guest.firstName} ${guest.lastName}`],
+                [t("app.admin.email", "Email"),   guest.email],
+                [t("app.admin.phone", "Phone"),   guest.phone],
+                [t("app.admin.date", "Date"),    date],
+                [t("app.admin.time", "Time"),    `${startTime} – ${endTime}`],
+                [t("app.admin.occasion", "Occasion"), occasion],
+                [t("app.admin.suite", "Suite"),   selectedSuite?.name ?? ""],
               ].map(([k, v]) => (
                 <div key={k} className="flex justify-between gap-4">
                   <span className="text-muted-foreground">{k}</span>
@@ -283,14 +288,14 @@ function NewBookingModal({ onClose, onCreated }: { onClose: () => void; onCreate
               ))}
               {selectedAddons.length > 0 && (
                 <div className="flex justify-between gap-4">
-                  <span className="text-muted-foreground">Add-ons</span>
+                  <span className="text-muted-foreground">{t("app.admin.addonsOptional", "Add-ons")}</span>
                   <span className="text-foreground text-right">{selectedAddons.map((a) => a.name).join(", ")}</span>
                 </div>
               )}
             </div>
 
             <div className="rounded-xl border border-[var(--gold)]/20 bg-[var(--gold)]/5 p-4 space-y-1.5 text-sm">
-              <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">Payment Breakdown</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">{t("app.admin.paymentBreakdown", "Payment Breakdown")}</p>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Suite ({selectedSuite?.name})</span>
                 <span>₹{suitePrice.toLocaleString()}</span>
@@ -302,7 +307,7 @@ function NewBookingModal({ onClose, onCreated }: { onClose: () => void; onCreate
                 </div>
               ))}
               <div className="border-t border-[var(--gold)]/20 pt-2 flex justify-between font-semibold text-gold">
-                <span>Total</span>
+                <span>{t("app.admin.total", "Total")}</span>
                 <span>₹{totalAmount.toLocaleString()}</span>
               </div>
             </div>
@@ -314,18 +319,18 @@ function NewBookingModal({ onClose, onCreated }: { onClose: () => void; onCreate
           {step > 0 && (
             <button onClick={() => { setStep((s) => s - 1); setError(""); }}
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm border border-white/10 text-muted-foreground hover:text-foreground transition">
-              <ChevronLeft className="h-4 w-4" /> Back
+              <ChevronLeft className="h-4 w-4" /> {t("app.admin.back", "Back")}
             </button>
           )}
           {step < 2 ? (
             <button onClick={handleNext}
               className="gold-btn flex-1 flex items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-semibold">
-              Next <ChevronRight className="h-4 w-4" />
+              {t("app.admin.next", "Next")} <ChevronRight className="h-4 w-4" />
             </button>
           ) : (
             <button onClick={handleConfirm} disabled={loading}
               className="gold-btn flex-1 flex items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-semibold disabled:opacity-70">
-              {loading ? "Confirming..." : <><Check className="h-4 w-4" /> Confirm Booking</>}
+              {loading ? t("app.admin.confirming", "Confirming...") : <><Check className="h-4 w-4" /> {t("app.admin.confirmBooking", "Confirm Booking")}</>}
             </button>
           )}
         </div>
@@ -376,6 +381,8 @@ export default function BookingsPage() {
 
   const selectClass = "luxury-input rounded-lg px-3 py-2 text-xs text-foreground bg-transparent cursor-pointer";
 
+  const { t } = useTranslation();
+
   return (
     <div className="flex-1 overflow-y-auto">
       <AdminHeader title="Bookings" />
@@ -383,10 +390,10 @@ export default function BookingsPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap gap-3">
             {[
-              { label: "Total",     count: bookings.length,        color: "border-[var(--gold)]/30 text-gold" },
-              { label: "Confirmed", count: stats.confirmedBookings, color: "border-emerald-500/30 text-emerald-400" },
-              { label: "Pending",   count: stats.pendingBookings,   color: "border-amber-500/30 text-amber-400" },
-              { label: "Cancelled", count: stats.cancelledBookings, color: "border-destructive/30 text-destructive" },
+              { label: t("app.admin.total", "Total"),     count: bookings.length,        color: "border-[var(--gold)]/30 text-gold" },
+              { label: t("app.admin.confirmed", "Confirmed"), count: stats.confirmedBookings, color: "border-emerald-500/30 text-emerald-400" },
+              { label: t("app.admin.pending", "Pending"),   count: stats.pendingBookings,   color: "border-amber-500/30 text-amber-400" },
+              { label: t("app.admin.cancelled", "Cancelled"), count: stats.cancelledBookings, color: "border-destructive/30 text-destructive" },
             ].map((s) => (
               <div key={s.label} className={`glass-card rounded-xl px-4 py-2.5 border ${s.color} flex items-center gap-2`}>
                 <span className="text-xl font-display font-semibold">{s.count}</span>
@@ -398,7 +405,7 @@ export default function BookingsPage() {
             <DateRangePicker />
             <button onClick={() => setShowNewBooking(true)}
               className="flex items-center gap-2 gold-btn px-4 py-2 rounded-lg text-xs font-semibold">
-              <Plus className="h-3.5 w-3.5" /> New Booking
+              <Plus className="h-3.5 w-3.5" /> {t("app.admin.newBooking", "New Booking")}
             </button>
           </div>
         </div>
@@ -407,16 +414,16 @@ export default function BookingsPage() {
           <Filter className="h-4 w-4 text-gold shrink-0" />
           <div className="relative flex-1 min-w-48">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-            <input type="text" placeholder="Search by name, ID or phone..." value={search} onChange={(e) => setSearch(e.target.value)} className="luxury-input w-full rounded-lg pl-9 pr-4 py-2 text-xs" />
+            <input type="text" placeholder={t("app.admin.searchBookings", "Search by name, ID or phone...")} value={search} onChange={(e) => setSearch(e.target.value)} className="luxury-input w-full rounded-lg pl-9 pr-4 py-2 text-xs" />
           </div>
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className={selectClass}>
-            {statuses.map((s) => <option key={s} value={s} className="bg-[oklch(0.13_0.025_260)]">{s === "All" ? "All Statuses" : s}</option>)}
+            {statuses.map((s) => <option key={s} value={s} className="bg-[oklch(0.13_0.025_260)]">{s === "All" ? t("app.admin.allStatuses", "All Statuses") : s}</option>)}
           </select>
           <select value={occasionFilter} onChange={(e) => setOccasionFilter(e.target.value)} className={selectClass}>
-            {occasions.map((o) => <option key={o} value={o} className="bg-[oklch(0.13_0.025_260)]">{o === "All" ? "All Occasions" : o}</option>)}
+            {occasions.map((o) => <option key={o} value={o} className="bg-[oklch(0.13_0.025_260)]">{o === "All" ? t("app.admin.allOccasions", "All Occasions") : o}</option>)}
           </select>
           <select value={suiteFilter} onChange={(e) => setSuiteFilter(e.target.value)} className={selectClass}>
-            {suiteNames.map((s) => <option key={s} value={s} className="bg-[oklch(0.13_0.025_260)]">{s === "All" ? "All Suites" : s}</option>)}
+            {suiteNames.map((s) => <option key={s} value={s} className="bg-[oklch(0.13_0.025_260)]">{s === "All" ? t("app.admin.allSuites", "All Suites") : s}</option>)}
           </select>
           {dateFilter && (
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[var(--gold)]/30 bg-[var(--gold)]/5 text-xs text-gold">
@@ -425,22 +432,22 @@ export default function BookingsPage() {
             </div>
           )}
           <button onClick={() => { setSearch(""); setStatusFilter("All"); setOccasionFilter("All"); setSuiteFilter("All"); setDateFilter(""); }}
-            className="text-xs text-muted-foreground hover:text-gold transition px-3 py-2 rounded-lg border border-white/10 hover:border-[var(--gold)]/30">Clear</button>
+            className="text-xs text-muted-foreground hover:text-gold transition px-3 py-2 rounded-lg border border-white/10 hover:border-[var(--gold)]/30">{t("app.admin.clear", "Clear")}</button>
           <button className="flex items-center gap-2 text-xs gold-btn px-3 py-2 rounded-lg font-medium ml-auto">
-            <Download className="h-3.5 w-3.5" /> Export
+            <Download className="h-3.5 w-3.5" /> {t("app.admin.export", "Export")}
           </button>
         </div>
 
         <div className="glass-card rounded-2xl p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-display text-lg font-medium text-foreground">All Bookings</h3>
+            <h3 className="font-display text-lg font-medium text-foreground">{t("app.admin.allBookings", "All Bookings")}</h3>
             <div className="flex items-center gap-3">
               {selected.length > 0 && (
                 <button onClick={deleteSelected} className="flex items-center gap-1.5 text-xs text-destructive border border-destructive/30 hover:bg-destructive/10 px-3 py-1.5 rounded-lg transition">
-                  <Trash2 className="h-3.5 w-3.5" /> Delete Selected ({selected.length})
+                  <Trash2 className="h-3.5 w-3.5" /> {t("app.admin.deleteSelected", "Delete Selected ({{count}})", { count: selected.length })}
                 </button>
               )}
-              <span className="text-xs text-muted-foreground">{filtered.length} of {bookings.length} bookings</span>
+              <span className="text-xs text-muted-foreground">{t("app.admin.bookingOf", "{{count}} of {{total}} bookings", { count: filtered.length, total: bookings.length })}</span>
             </div>
           </div>
           <div className="overflow-x-auto">
@@ -448,20 +455,20 @@ export default function BookingsPage() {
               <thead>
                 <tr className="text-left text-xs text-muted-foreground uppercase tracking-wide border-b border-white/[0.06]">
                   <th className="pb-3 pr-3"><input type="checkbox" checked={selected.length === filtered.length && filtered.length > 0} onChange={toggleAll} className="h-3.5 w-3.5 accent-[var(--gold)] cursor-pointer" /></th>
-                  <th className="pb-3 pr-4">ID</th>
-                  <th className="pb-3 pr-4">Guest</th>
-                  <th className="pb-3 pr-4">Suite</th>
-                  <th className="pb-3 pr-4">Occasion</th>
-                  <th className="pb-3 pr-4">Date</th>
-                  <th className="pb-3 pr-4">Time</th>
-                  <th className="pb-3 pr-4">Amount</th>
-                  <th className="pb-3 pr-4">Status</th>
-                  <th className="pb-3">Action</th>
+                  <th className="pb-3 pr-4">{t("app.admin.id", "ID")}</th>
+                  <th className="pb-3 pr-4">{t("app.admin.guest", "Guest")}</th>
+                  <th className="pb-3 pr-4">{t("app.admin.suite", "Suite")}</th>
+                  <th className="pb-3 pr-4">{t("app.admin.occasion", "Occasion")}</th>
+                  <th className="pb-3 pr-4">{t("app.admin.date", "Date")}</th>
+                  <th className="pb-3 pr-4">{t("app.admin.time", "Time")}</th>
+                  <th className="pb-3 pr-4">{t("app.admin.amount", "Amount")}</th>
+                  <th className="pb-3 pr-4">{t("app.admin.status", "Status")}</th>
+                  <th className="pb-3">{t("app.admin.action", "Action")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/[0.04]">
                 {filtered.length === 0 ? (
-                  <tr><td colSpan={10} className="py-10 text-center text-sm text-muted-foreground">No bookings found</td></tr>
+                  <tr><td colSpan={10} className="py-10 text-center text-sm text-muted-foreground">{t("app.admin.noBookingsFound", "No bookings found")}</td></tr>
                 ) : filtered.map((b) => (
                   <tr key={b.id} className={`hover:bg-white/[0.02] transition ${selected.includes(b.id) ? "bg-[var(--gold)]/5" : ""}`}>
                     <td className="py-3 pr-3"><input type="checkbox" checked={selected.includes(b.id)} onChange={() => toggleSelect(b.id)} className="h-3.5 w-3.5 accent-[var(--gold)] cursor-pointer" /></td>
@@ -475,7 +482,9 @@ export default function BookingsPage() {
                     <td className="py-3 pr-4 text-muted-foreground text-xs">{b.time}{b.endTime ? ` – ${b.endTime}` : ""}</td>
                     <td className="py-3 pr-4 text-foreground font-medium">{b.amount}</td>
                     <td className="py-3 pr-4">
-                      <span className={`px-2.5 py-1 rounded-full text-[11px] font-medium border ${statusStyle[b.status]}`}>{b.status}</span>
+                      <span className={`px-2.5 py-1 rounded-full text-[11px] font-medium border ${statusStyle[b.status]}`}>
+                        {b.status === "Confirmed" ? t("app.admin.confirmed", "Confirmed") : b.status === "Pending" ? t("app.admin.pending", "Pending") : t("app.admin.cancelled", "Cancelled")}
+                      </span>
                     </td>
                     <td className="py-3">
                       <button onClick={() => deleteOne(b.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition">

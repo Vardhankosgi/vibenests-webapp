@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { Save, X, Building2, Bell, Palette, Shield, Plug, Upload } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
   return (
@@ -52,6 +53,7 @@ function ToggleRow({ label, desc, checked, onChange }: { label: string; desc?: s
 }
 
 export default function SettingsPage() {
+  const { t } = useTranslation();
   const [saved, setSaved] = useState(false);
   const [businessName, setBusinessName] = useState("VibeNests Luxury");
   const [email, setEmail] = useState("admin@vibenests.com");
@@ -89,107 +91,107 @@ export default function SettingsPage() {
       <AdminHeader title="Settings" />
       <div className="p-6 space-y-6">
         <div className="flex items-start justify-between gap-4 flex-wrap">
-          <p className="text-sm text-muted-foreground">Manage your business profile, preferences, and integrations.</p>
+          <p className="text-sm text-muted-foreground">{t("app.admin.settingsDesc", "Manage your business profile, preferences, and integrations.")}</p>
           <div className="flex gap-3">
-            <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm border border-white/10 text-muted-foreground hover:text-foreground transition"><X className="h-4 w-4" /> Cancel</button>
-            <button onClick={handleSave} className="flex items-center gap-2 gold-btn px-4 py-2 rounded-lg text-sm font-semibold"><Save className="h-4 w-4" /> {saved ? "Saved!" : "Save Changes"}</button>
+            <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm border border-white/10 text-muted-foreground hover:text-foreground transition"><X className="h-4 w-4" /> {t("app.admin.cancelBtn", "Cancel")}</button>
+            <button onClick={handleSave} className="flex items-center gap-2 gold-btn px-4 py-2 rounded-lg text-sm font-semibold"><Save className="h-4 w-4" /> {saved ? t("app.admin.saved", "Saved!") : t("app.admin.saveChanges", "Save Changes")}</button>
           </div>
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-          <Card title="Business Profile" icon={Building2}>
+          <Card title={t("app.admin.businessProfile", "Business Profile")} icon={Building2}>
             <div className="space-y-4">
               <div className="flex items-center gap-4">
                 <div className="h-16 w-16 rounded-xl bg-[var(--gold)]/10 border border-[var(--gold)]/20 flex items-center justify-center shrink-0">
                   <Building2 className="h-7 w-7 text-gold" />
                 </div>
                 <div>
-                  <p className="text-sm text-foreground/80 mb-1">Business Logo</p>
-                  <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs border border-white/10 text-muted-foreground hover:text-foreground transition"><Upload className="h-3.5 w-3.5" /> Upload Logo</button>
+                  <p className="text-sm text-foreground/80 mb-1">{t("app.admin.businessLogo", "Business Logo")}</p>
+                  <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs border border-white/10 text-muted-foreground hover:text-foreground transition"><Upload className="h-3.5 w-3.5" /> {t("app.admin.uploadLogo", "Upload Logo")}</button>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Business Name"><Input value={businessName} onChange={setBusinessName} placeholder="Your business name" /></Field>
-                <Field label="Contact Email"><Input value={email} onChange={setEmail} type="email" placeholder="admin@example.com" /></Field>
-                <Field label="Phone Number"><Input value={phone} onChange={setPhone} placeholder="+91 XXXXX XXXXX" /></Field>
-                <Field label="Currency"><Select value={currency} onChange={setCurrency} options={["INR (₹)", "USD ($)", "EUR (€)", "GBP (£)"]} /></Field>
-                <Field label="Timezone"><Select value={timezone} onChange={setTimezone} options={["Asia/Kolkata (IST)", "UTC", "America/New_York", "Europe/London"]} /></Field>
-                <Field label="Language"><Select value={language} onChange={setLanguage} options={["English", "Hindi", "Telugu", "Tamil"]} /></Field>
+                <Field label={t("app.admin.businessName", "Business Name")}><Input value={businessName} onChange={setBusinessName} placeholder="Your business name" /></Field>
+                <Field label={t("app.admin.contactEmail", "Contact Email")}><Input value={email} onChange={setEmail} type="email" placeholder="admin@example.com" /></Field>
+                <Field label={t("app.admin.phoneNumber", "Phone Number")}><Input value={phone} onChange={setPhone} placeholder="+91 XXXXX XXXXX" /></Field>
+                <Field label={t("app.admin.currency", "Currency")}><Select value={currency} onChange={setCurrency} options={["INR (₹)", "USD ($)", "EUR (€)", "GBP (£)"]} /></Field>
+                <Field label={t("app.admin.timezone", "Timezone")}><Select value={timezone} onChange={setTimezone} options={["Asia/Kolkata (IST)", "UTC", "America/New_York", "Europe/London"]} /></Field>
+                <Field label={t("app.admin.language", "Language")}><Select value={language} onChange={setLanguage} options={["English", "Hindi", "Telugu", "Tamil"]} /></Field>
               </div>
-              <Field label="Business Address">
+              <Field label={t("app.admin.businessAddress", "Business Address")}>
                 <textarea value={address} onChange={(e) => setAddress(e.target.value)} rows={2} className="luxury-input rounded-lg px-3 py-2 text-sm w-full resize-none" />
               </Field>
             </div>
           </Card>
 
-          <Card title="Notifications" icon={Bell}>
+          <Card title={t("app.admin.notifications", "Notifications")} icon={Bell}>
             <div className="space-y-1 divide-y divide-white/[0.04]">
-              <p className="text-[11px] text-muted-foreground uppercase tracking-wide pb-2">Email Alerts</p>
-              <ToggleRow label="New Booking" desc="Notify on every new booking" checked={emailBooking} onChange={setEmailBooking} />
-              <ToggleRow label="Cancellation" checked={emailCancellation} onChange={setEmailCancellation} />
-              <ToggleRow label="Payment Received" checked={emailPayment} onChange={setEmailPayment} />
-              <div className="pt-3"><p className="text-[11px] text-muted-foreground uppercase tracking-wide pb-2">SMS & Push</p></div>
-              <ToggleRow label="SMS on Booking" checked={smsBooking} onChange={setSmsBooking} />
-              <ToggleRow label="Push Notifications" checked={pushAlerts} onChange={setPushAlerts} />
-              <ToggleRow label="Daily Summary Report" checked={dailyReport} onChange={setDailyReport} />
+              <p className="text-[11px] text-muted-foreground uppercase tracking-wide pb-2">{t("app.admin.emailAlerts", "Email Alerts")}</p>
+              <ToggleRow label={t("app.admin.newBookingNotif", "New Booking")} desc={t("app.admin.newBookingDesc", "Notify on every new booking")} checked={emailBooking} onChange={setEmailBooking} />
+              <ToggleRow label={t("app.admin.cancellationNotif", "Cancellation")} checked={emailCancellation} onChange={setEmailCancellation} />
+              <ToggleRow label={t("app.admin.paymentReceived", "Payment Received")} checked={emailPayment} onChange={setEmailPayment} />
+              <div className="pt-3"><p className="text-[11px] text-muted-foreground uppercase tracking-wide pb-2">{t("app.admin.smsAndPush", "SMS & Push")}</p></div>
+              <ToggleRow label={t("app.admin.smsOnBooking", "SMS on Booking")} checked={smsBooking} onChange={setSmsBooking} />
+              <ToggleRow label={t("app.admin.pushNotifications", "Push Notifications")} checked={pushAlerts} onChange={setPushAlerts} />
+              <ToggleRow label={t("app.admin.dailySummary", "Daily Summary Report")} checked={dailyReport} onChange={setDailyReport} />
             </div>
           </Card>
 
-          <Card title="Appearance" icon={Palette}>
+          <Card title={t("app.admin.appearance", "Appearance")} icon={Palette}>
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Theme"><Select value={theme} onChange={setTheme} options={["Dark", "Light", "System"]} /></Field>
-                <Field label="Accent Color"><Select value={accentColor} onChange={setAccentColor} options={["Gold", "Blue", "Purple", "Emerald"]} /></Field>
+                <Field label={t("app.admin.theme", "Theme")}><Select value={theme} onChange={setTheme} options={["Dark", "Light", "System"]} /></Field>
+                <Field label={t("app.admin.accentColor", "Accent Color")}><Select value={accentColor} onChange={setAccentColor} options={["Gold", "Blue", "Purple", "Emerald"]} /></Field>
               </div>
-              <ToggleRow label="Compact Mode" desc="Reduce spacing for denser layout" checked={compactMode} onChange={setCompactMode} />
-              <ToggleRow label="Enable Animations" desc="Smooth transitions and effects" checked={animationsEnabled} onChange={setAnimationsEnabled} />
+              <ToggleRow label={t("app.admin.compactMode", "Compact Mode")} desc={t("app.admin.compactModeDesc", "Reduce spacing for denser layout")} checked={compactMode} onChange={setCompactMode} />
+              <ToggleRow label={t("app.admin.enableAnimations", "Enable Animations")} desc={t("app.admin.enableAnimationsDesc", "Smooth transitions and effects")} checked={animationsEnabled} onChange={setAnimationsEnabled} />
             </div>
           </Card>
 
-          <Card title="Security" icon={Shield}>
+          <Card title={t("app.admin.security", "Security")} icon={Shield}>
             <div className="space-y-3">
-              <ToggleRow label="Two-Factor Authentication" desc="Add an extra layer of security" checked={twoFactor} onChange={setTwoFactor} />
-              <ToggleRow label="Login Alerts" desc="Email on new device login" checked={loginAlerts} onChange={setLoginAlerts} />
-              <Field label="Session Timeout (Minutes)"><Select value={sessionTimeout} onChange={setSessionTimeout} options={["15", "30", "60", "120", "Never"]} /></Field>
+              <ToggleRow label={t("app.admin.twoFactor", "Two-Factor Authentication")} desc={t("app.admin.twoFactorDesc", "Add an extra layer of security")} checked={twoFactor} onChange={setTwoFactor} />
+              <ToggleRow label={t("app.admin.loginAlerts", "Login Alerts")} desc={t("app.admin.loginAlertsDesc", "Email on new device login")} checked={loginAlerts} onChange={setLoginAlerts} />
+              <Field label={t("app.admin.sessionTimeout", "Session Timeout (Minutes)")}><Select value={sessionTimeout} onChange={setSessionTimeout} options={["15", "30", "60", "120", "Never"]} /></Field>
               <div className="pt-2 border-t border-white/[0.06]">
-                <p className="text-[11px] text-muted-foreground uppercase tracking-wide mb-3">Change Password</p>
+                <p className="text-[11px] text-muted-foreground uppercase tracking-wide mb-3">{t("app.admin.changePassword", "Change Password")}</p>
                 <div className="space-y-2">
-                  <Field label="Current Password"><Input value={currentPassword} onChange={setCurrentPassword} type="password" placeholder="••••••••" /></Field>
-                  <Field label="New Password"><Input value={newPassword} onChange={setNewPassword} type="password" placeholder="••••••••" /></Field>
-                  <Field label="Confirm New Password"><Input value={confirmPassword} onChange={setConfirmPassword} type="password" placeholder="••••••••" /></Field>
+                  <Field label={t("app.admin.currentPassword", "Current Password")}><Input value={currentPassword} onChange={setCurrentPassword} type="password" placeholder="••••••••" /></Field>
+                  <Field label={t("app.admin.newPassword", "New Password")}><Input value={newPassword} onChange={setNewPassword} type="password" placeholder="••••••••" /></Field>
+                  <Field label={t("app.admin.confirmNewPassword", "Confirm New Password")}><Input value={confirmPassword} onChange={setConfirmPassword} type="password" placeholder="••••••••" /></Field>
                 </div>
-                <button className="mt-3 px-4 py-2 rounded-lg text-sm border border-[var(--gold)]/30 text-gold hover:bg-[var(--gold)]/10 transition">Update Password</button>
+                <button className="mt-3 px-4 py-2 rounded-lg text-sm border border-[var(--gold)]/30 text-gold hover:bg-[var(--gold)]/10 transition">{t("app.admin.updatePassword", "Update Password")}</button>
               </div>
             </div>
           </Card>
 
-          <Card title="Integrations" icon={Plug}>
+          <Card title={t("app.admin.integrations", "Integrations")} icon={Plug}>
             <div className="space-y-4">
               <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] space-y-2">
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-medium text-foreground">Razorpay</p>
                   <Toggle checked={razorpayEnabled} onChange={setRazorpayEnabled} />
                 </div>
-                <Field label="API Key"><Input value={razorpayKey} onChange={setRazorpayKey} placeholder="rzp_live_••••••••" /></Field>
+                <Field label={t("app.admin.apiKey", "API Key")}><Input value={razorpayKey} onChange={setRazorpayKey} placeholder="rzp_live_••••••••" /></Field>
               </div>
               <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] space-y-2">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium text-foreground">WhatsApp Notifications</p>
+                  <p className="text-sm font-medium text-foreground">{t("app.admin.whatsappNotifications", "WhatsApp Notifications")}</p>
                   <Toggle checked={whatsappEnabled} onChange={setWhatsappEnabled} />
                 </div>
-                <Field label="WhatsApp Number"><Input value={whatsappNumber} onChange={setWhatsappNumber} placeholder="+91 XXXXX XXXXX" /></Field>
+                <Field label={t("app.admin.whatsappNumber", "WhatsApp Number")}><Input value={whatsappNumber} onChange={setWhatsappNumber} placeholder="+91 XXXXX XXXXX" /></Field>
               </div>
               <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] space-y-2">
-                <p className="text-sm font-medium text-foreground">Google Analytics</p>
-                <Field label="Measurement ID"><Input value={analyticsId} onChange={setAnalyticsId} placeholder="G-XXXXXXXXXX" /></Field>
+                <p className="text-sm font-medium text-foreground">{t("app.admin.googleAnalytics", "Google Analytics")}</p>
+                <Field label={t("app.admin.measurementId", "Measurement ID")}><Input value={analyticsId} onChange={setAnalyticsId} placeholder="G-XXXXXXXXXX" /></Field>
               </div>
             </div>
           </Card>
         </div>
 
         <div className="flex justify-end gap-3 pb-4">
-          <button className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm border border-white/10 text-muted-foreground hover:text-foreground transition"><X className="h-4 w-4" /> Cancel</button>
-          <button onClick={handleSave} className="flex items-center gap-2 gold-btn px-5 py-2.5 rounded-lg text-sm font-semibold"><Save className="h-4 w-4" /> {saved ? "Saved!" : "Save Changes"}</button>
+          <button className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm border border-white/10 text-muted-foreground hover:text-foreground transition"><X className="h-4 w-4" /> {t("app.admin.cancelBtn", "Cancel")}</button>
+          <button onClick={handleSave} className="flex items-center gap-2 gold-btn px-5 py-2.5 rounded-lg text-sm font-semibold"><Save className="h-4 w-4" /> {saved ? t("app.admin.saved", "Saved!") : t("app.admin.saveChanges", "Save Changes")}</button>
         </div>
       </div>
     </div>

@@ -1,6 +1,7 @@
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { useSuitesContext } from "@/components/admin/SuitesContext";
 import { TrendingUp, TrendingDown, IndianRupee, CalendarDays, Users, Star } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { DateRangePicker } from "@/components/admin/DateRangePicker";
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line,
@@ -62,13 +63,13 @@ const tooltipStyle = {
   labelStyle: { color: "#D4A03C" },
 };
 
-const kpis = [
-  { label: "Total Revenue", value: "₹13.1L", change: "+22%", up: true, icon: IndianRupee },
-  { label: "Total Bookings", value: "677", change: "+18%", up: true, icon: CalendarDays },
-  { label: "Avg. Rating", value: "4.7 ★", change: "+0.3", up: true, icon: Star },
-  { label: "New Customers", value: "312", change: "+14%", up: true, icon: Users },
-  { label: "Cancellation Rate", value: "6.2%", change: "-1.1%", up: false, icon: TrendingDown },
-  { label: "Avg. Booking Value", value: "₹5,820", change: "+8%", up: true, icon: TrendingUp },
+const kpisBase = [
+  { key: "totalRevenueLabel", fallback: "Total Revenue", value: "₹13.1L", change: "+22%", up: true, icon: IndianRupee },
+  { key: "totalBookings", fallback: "Total Bookings", value: "677", change: "+18%", up: true, icon: CalendarDays },
+  { key: "avgRating", fallback: "Avg. Rating", value: "4.7 ★", change: "+0.3", up: true, icon: Star },
+  { key: "newCustomers", fallback: "New Customers", value: "312", change: "+14%", up: true, icon: Users },
+  { key: "cancellationRate", fallback: "Cancellation Rate", value: "6.2%", change: "-1.1%", up: false, icon: TrendingDown },
+  { key: "avgBookingValueLabel", fallback: "Avg. Booking Value", value: "₹5,820", change: "+8%", up: true, icon: TrendingUp },
 ];
 
 const RADAR_BASE = [92, 85, 95, 88, 72];
@@ -81,7 +82,9 @@ function seedOffset(id: string, metric: number) {
 
 export default function AnalyticsPage() {
   const { suites } = useSuitesContext();
+  const { t } = useTranslation();
   const axisStyle = { fill: "oklch(0.72 0.02 90)", fontSize: 11 };
+  const kpis = kpisBase.map((k) => ({ ...k, label: t("app.admin." + k.key, k.fallback) }));
 
   const activeSuites = suites.filter((s) => s.status === "Active").length || 1;
   const scale = activeSuites / 4;
@@ -126,7 +129,7 @@ export default function AnalyticsPage() {
       <AdminHeader title="Analytics" />
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">Performance overview</p>
+          <p className="text-sm text-muted-foreground">{t("app.admin.performanceOverview", "Performance overview")}</p>
           <DateRangePicker />
         </div>
 
@@ -138,13 +141,13 @@ export default function AnalyticsPage() {
                 <Icon className="h-3.5 w-3.5 text-gold shrink-0" />
               </div>
               <p className="font-display text-xl font-semibold text-foreground">{value}</p>
-              <p className={`text-[11px] mt-1 ${up ? "text-emerald-400" : "text-red-400"}`}>{change} vs last period</p>
+              <p className={`text-[11px] mt-1 ${up ? "text-emerald-400" : "text-red-400"}`}>{change} {t("app.admin.vsPeriod", "vs last period")}</p>
             </div>
           ))}
         </div>
 
         <div className="glass-card rounded-2xl p-5">
-          <h3 className="font-display text-lg font-medium text-foreground mb-4">Revenue vs Target</h3>
+          <h3 className="font-display text-lg font-medium text-foreground mb-4">{t("app.admin.revenueVsTarget", "Revenue vs Target")}</h3>
           <ResponsiveContainer width="100%" height={260}>
             <AreaChart data={revenueData}>
               <defs>
@@ -170,7 +173,7 @@ export default function AnalyticsPage() {
 
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
           <div className="xl:col-span-2 glass-card rounded-2xl p-5">
-            <h3 className="font-display text-lg font-medium text-foreground mb-4">Booking Trends</h3>
+            <h3 className="font-display text-lg font-medium text-foreground mb-4">{t("app.admin.bookingTrends", "Booking Trends")}</h3>
             <ResponsiveContainer width="100%" height={240}>
               <BarChart data={bookingTrend} barSize={14}>
                 <CartesianGrid strokeDasharray="3 3" stroke="oklch(1 0 0 / 0.06)" vertical={false} />
@@ -185,7 +188,7 @@ export default function AnalyticsPage() {
             </ResponsiveContainer>
           </div>
           <div className="glass-card rounded-2xl p-5">
-            <h3 className="font-display text-lg font-medium text-foreground mb-4">Bookings by Occasion</h3>
+            <h3 className="font-display text-lg font-medium text-foreground mb-4">{t("app.admin.bookingsByOccasion", "Bookings by Occasion")}</h3>
             <ResponsiveContainer width="100%" height={240}>
               <PieChart>
                 <Pie data={occasionData} cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={3} dataKey="value">
@@ -200,8 +203,8 @@ export default function AnalyticsPage() {
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
           <div className="glass-card rounded-2xl p-5">
-            <h3 className="font-display text-lg font-medium text-foreground mb-1">Suite Performance Radar</h3>
-            <p className="text-xs text-muted-foreground mb-4">Score out of 100 across key metrics — {suites.length} suite{suites.length !== 1 ? "s" : ""}</p>
+            <h3 className="font-display text-lg font-medium text-foreground mb-1">{t("app.admin.suitePerformanceRadar", "Suite Performance Radar")}</h3>
+            <p className="text-xs text-muted-foreground mb-4">{suites.length !== 1 ? t("app.admin.suiteRadarDescPlural", "Score out of 100 across key metrics — {{count}} suites", { count: suites.length }) : t("app.admin.suiteRadarDesc", "Score out of 100 across key metrics — {{count}} suite", { count: suites.length })}</p>
             <ResponsiveContainer width="100%" height={280}>
               <RadarChart data={radarData} cx="50%" cy="50%" outerRadius={90}>
                 <PolarGrid stroke="oklch(1 0 0 / 0.08)" />
@@ -215,7 +218,7 @@ export default function AnalyticsPage() {
             </ResponsiveContainer>
           </div>
           <div className="glass-card rounded-2xl p-5">
-            <h3 className="font-display text-lg font-medium text-foreground mb-4">Customer Growth</h3>
+            <h3 className="font-display text-lg font-medium text-foreground mb-4">{t("app.admin.customerGrowth", "Customer Growth")}</h3>
             <ResponsiveContainer width="100%" height={260}>
               <LineChart data={customerGrowth}>
                 <CartesianGrid strokeDasharray="3 3" stroke="oklch(1 0 0 / 0.06)" />
