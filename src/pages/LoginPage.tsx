@@ -1,11 +1,14 @@
 import { Shield, User, UserPlus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { AuthCard } from "@/components/auth/AuthCard";
 import { HeroPanel } from "@/components/auth/HeroPanel";
+import { LanguageSelector } from "@/components/shared/LanguageSelector";
 import loginbg from "@/assets/loginbg.png";
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   return (
     <main
@@ -16,26 +19,27 @@ export default function LoginPage() {
 
       {/* Top-right buttons */}
       <div className="absolute top-5 right-5 z-20 flex items-center gap-2">
+        <LanguageSelector />
         <button
           onClick={() => navigate("/user/dashboard")}
           className="flex items-center gap-2 px-4 py-2 rounded-xl border border-white/20 bg-black/40 backdrop-blur-sm text-white text-sm font-semibold hover:bg-white/10 hover:border-white/40 transition-all"
         >
           <User className="h-4 w-4" />
-          User Dashboard
+          {t("app.auth.userDashboardLink", "User Dashboard")}
         </button>
         <button
           onClick={() => navigate("/dashboard")}
           className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[var(--gold)]/40 bg-black/40 backdrop-blur-sm text-gold text-sm font-semibold hover:bg-[var(--gold)]/15 hover:border-[var(--gold)]/70 transition-all"
         >
           <Shield className="h-4 w-4" />
-          Admin
+          {t("app.auth.adminLink", "Admin")}
         </button>
         <button
           onClick={() => navigate("/admin/register")}
           className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[var(--gold)]/40 bg-black/40 backdrop-blur-sm text-gold text-sm font-semibold hover:bg-[var(--gold)]/15 hover:border-[var(--gold)]/70 transition-all"
         >
           <UserPlus className="h-4 w-4" />
-          Admin Register
+          {t("app.auth.adminRegisterLink", "Admin Register")}
         </button>
       </div>
 

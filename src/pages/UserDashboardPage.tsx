@@ -14,6 +14,124 @@ import {
 } from "lucide-react";
 import { useSuitesContext } from "@/components/admin/SuitesContext";
 import { bookingsApi } from "@/lib/api";
+import { LanguageSelector } from "@/components/shared/LanguageSelector";
+import { useTranslation } from "react-i18next";
+import i18n from "i18next";
+
+function formatDateStr(dateStr: string, lang: string = i18n.language): string {
+  if (!dateStr) return dateStr;
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return dateStr;
+  try {
+    return new Intl.DateTimeFormat(lang, {
+      month: "short",
+      day: "2-digit",
+      year: "numeric"
+    }).format(d);
+  } catch (e) {
+    return dateStr;
+  }
+}
+
+function formatTimeStr(timeStr: string, lang: string = i18n.language): string {
+  if (!timeStr) return timeStr;
+  const match = timeStr.match(/^(\d+):(\d+)\s*(AM|PM)$/i);
+  if (!match) return timeStr;
+  let hours = parseInt(match[1]);
+  const minutes = parseInt(match[2]);
+  const isPm = match[3].toUpperCase() === "PM";
+  if (isPm && hours < 12) hours += 12;
+  if (!isPm && hours === 12) hours = 0;
+  const d = new Date();
+  d.setHours(hours, minutes, 0, 0);
+  try {
+    return new Intl.DateTimeFormat(lang, {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true
+    }).format(d);
+  } catch (e) {
+    return timeStr;
+  }
+}
+
+function translateTimelineEvent(event: string, t: any): string {
+  if (event === "Booking confirmed & paid") return t("app.userDashboard.eventConfirmedPaid", "Booking confirmed & paid");
+  if (event === "Check-in reminder sent") return t("app.userDashboard.eventCheckInReminder", "Check-in reminder sent");
+  if (event === "Check-in") return t("app.userDashboard.checkIn", "Check-in");
+  if (event === "Check-out") return t("app.userDashboard.checkOut", "Check-out");
+  if (event === "Deposit refunded to wallet") return t("app.userDashboard.eventRefundedToWallet", "Deposit refunded to wallet");
+  if (event === "Booking cancelled by guest") return t("app.userDashboard.eventCancelledByGuest", "Booking cancelled by guest");
+  if (event === "Cancellation processed") return t("app.userDashboard.eventCancellationProcessed", "Cancellation processed");
+  return event;
+}
+
+function translateCancellationPolicy(policy: string, lang: string, t: any): string {
+  if (policy === "Booking completed – cancellation not applicable.") {
+    return t("app.userDashboard.policyCompleted", "Booking completed – cancellation not applicable.");
+  }
+  if (policy.startsWith("Free cancellation until")) {
+    if (policy.includes("Jan 21")) {
+      return t("app.userDashboard.policyJan21", "Free cancellation until {{date1}}. 50% refund between {{date1}}–{{date2}}. No refund after {{date2}}.", {
+        date1: formatDateStr("Jan 21, 2025", lang),
+        date2: formatDateStr("Jan 25, 2025", lang)
+      });
+    }
+    if (policy.includes("Mar 03")) {
+      return t("app.userDashboard.policyMar03", "Free cancellation until {{date1}}. 30% refund after that. No refund within 48 hrs.", {
+        date1: formatDateStr("Mar 03, 2025", lang)
+      });
+    }
+  }
+  if (policy.startsWith("Cancelled 2 days before")) {
+    return t("app.userDashboard.policyCancelled2Days", "Cancelled 2 days before check-in. 25% refund applied per policy.");
+  }
+  return policy;
+}
+
+function translateTxnDesc(desc: string, t: any): string {
+  if (desc.startsWith("Booking Payment –")) {
+    const suiteAndId = desc.replace("Booking Payment –", "").trim();
+    const parts = suiteAndId.split(" ");
+    const id = parts[parts.length - 1];
+    const suiteName = parts.slice(0, parts.length - 1).join(" ");
+    return t("app.userDashboard.txnDescBookingPayment", "Booking Payment – {{suite}} {{id}}", { suite: suiteName, id });
+  }
+  if (desc === "Wallet Top-up via UPI") {
+    return t("app.userDashboard.txnDescWalletTopUp", "Wallet Top-up via UPI");
+  }
+  if (desc.startsWith("Refund – Cancelled Booking")) {
+    const id = desc.replace("Refund – Cancelled Booking", "").trim();
+    return t("app.userDashboard.txnDescRefund", "Refund – Cancelled Booking {{id}}", { id });
+  }
+  if (desc.startsWith("Advance Payment –")) {
+    const suiteAndId = desc.replace("Advance Payment –", "").trim();
+    const parts = suiteAndId.split(" ");
+    const id = parts[parts.length - 1];
+    const suiteName = parts.slice(0, parts.length - 1).join(" ");
+    return t("app.userDashboard.txnDescAdvancePayment", "Advance Payment – {{suite}} {{id}}", { suite: suiteName, id });
+  }
+  if (desc === "Wallet Withdrawal to Bank") {
+    return t("app.userDashboard.txnDescWalletWithdrawal", "Wallet Withdrawal to Bank");
+  }
+  return desc;
+}
+
+function translatePaymentMethod(method: string, t: any): string {
+  if (method.includes("Credit Card")) {
+    return method.replace("Credit Card", t("app.userDashboard.creditCard", "Credit Card"));
+  }
+  if (method.includes("Debit Card")) {
+    return method.replace("Debit Card", t("app.userDashboard.debitCard", "Debit Card"));
+  }
+  if (method.includes("Wallet") && !method.includes("UPI")) {
+    return method.replace("Wallet", t("app.userDashboard.wallet", "Wallet"));
+  }
+  if (method.startsWith("Bank –")) {
+    return method.replace("Bank –", t("app.userDashboard.bank", "Bank") + " –");
+  }
+  return method;
+}
 
 /* ─── Types ─────────────────────────────────────────── */
 type NavItem = { id: string; label: string; icon: React.ElementType };
@@ -185,6 +303,7 @@ const BOOKING_EXTRAS: Record<string, {
 
 /* ─── Booking Details Drawer ─────────────────────────── */
 function BookingDetailsDrawer({ booking, onClose }: { booking: Booking; onClose: () => void }) {
+  const { t } = useTranslation();
   const s = STATUS_CONFIG[booking.status];
   const SI = s.icon;
   const extra = BOOKING_EXTRAS[booking.id] || {
@@ -218,7 +337,7 @@ function BookingDetailsDrawer({ booking, onClose }: { booking: Booking; onClose:
             </div>
             <div className="flex items-center gap-3">
               <span className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-semibold ${s.bg} ${s.color}`}>
-                <SI className="h-3 w-3" />{s.label}
+                <SI className="h-3 w-3" />{t("app.userDashboard.status_" + booking.status, s.label)}
               </span>
               <button onClick={onClose} className="h-8 w-8 rounded-xl glass flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
                 <X className="h-4 w-4" />
@@ -231,20 +350,20 @@ function BookingDetailsDrawer({ booking, onClose }: { booking: Booking; onClose:
               <img src={booking.image} alt={booking.suite} className="w-full h-44 object-cover" />
               <div className="glass rounded-b-2xl p-4 grid grid-cols-2 gap-3 border border-white/8 border-t-0">
                 <div>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Location</p>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{t("app.userDashboard.location", "Location")}</p>
                   <p className="flex items-center gap-1 text-sm text-foreground mt-0.5"><MapPin className="h-3 w-3 text-gold/60" />{booking.location}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Duration</p>
-                  <p className="text-sm text-foreground mt-0.5">{booking.nights} Nights</p>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{t("app.userDashboard.duration", "Duration")}</p>
+                  <p className="text-sm text-foreground mt-0.5">{booking.nights} {t("app.userDashboard.nights", "Nights")}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Check-in</p>
-                  <p className="text-sm text-foreground mt-0.5">{booking.checkIn}</p>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{t("app.userDashboard.checkIn", "Check-in")}</p>
+                  <p className="text-sm text-foreground mt-0.5">{formatDateStr(booking.checkIn)}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Check-out</p>
-                  <p className="text-sm text-foreground mt-0.5">{booking.checkOut}</p>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{t("app.userDashboard.checkOut", "Check-out")}</p>
+                  <p className="text-sm text-foreground mt-0.5">{formatDateStr(booking.checkOut)}</p>
                 </div>
               </div>
             </div>
@@ -252,10 +371,10 @@ function BookingDetailsDrawer({ booking, onClose }: { booking: Booking; onClose:
             <div className="glass-card rounded-2xl p-4 space-y-3">
               <div className="flex items-center gap-2">
                 <Package className="h-4 w-4 text-gold" />
-                <h4 className="text-sm font-semibold text-foreground">Selected Add-ons</h4>
+                <h4 className="text-sm font-semibold text-foreground">{t("app.userDashboard.selectedAddons", "Selected Add-ons")}</h4>
               </div>
               {extra.addOns.length === 0 ? (
-                <p className="text-xs text-muted-foreground">No add-ons selected.</p>
+                <p className="text-xs text-muted-foreground">{t("app.userDashboard.noAddons", "No add-ons selected.")}</p>
               ) : (
                 <div className="space-y-2">
                   {extra.addOns.map((a) => (
@@ -273,10 +392,10 @@ function BookingDetailsDrawer({ booking, onClose }: { booking: Booking; onClose:
             <div className="glass-card rounded-2xl p-4 space-y-3">
               <div className="flex items-center gap-2">
                 <CreditCard className="h-4 w-4 text-gold" />
-                <h4 className="text-sm font-semibold text-foreground">Payment Details</h4>
+                <h4 className="text-sm font-semibold text-foreground">{t("app.userDashboard.paymentDetails", "Payment Details")}</h4>
               </div>
               <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Method</span>
+                <span className="text-muted-foreground">{t("app.userDashboard.method", "Method")}</span>
                 <span className="text-foreground">{extra.paymentMethod}</span>
               </div>
               <div className="border-t border-white/8 pt-3 space-y-2">
@@ -287,7 +406,7 @@ function BookingDetailsDrawer({ booking, onClose }: { booking: Booking; onClose:
                   </div>
                 ))}
                 <div className="border-t border-white/8 pt-2 flex items-center justify-between">
-                  <span className="text-sm font-semibold text-foreground">Total Paid</span>
+                  <span className="text-sm font-semibold text-foreground">{t("app.userDashboard.totalPaid", "Total Paid")}</span>
                   <span className="font-display text-lg text-gold">₹{total.toLocaleString()}</span>
                 </div>
               </div>
@@ -296,20 +415,20 @@ function BookingDetailsDrawer({ booking, onClose }: { booking: Booking; onClose:
             <div className="glass-card rounded-2xl p-4 space-y-3">
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4 text-gold" />
-                <h4 className="text-sm font-semibold text-foreground">Booking Timeline</h4>
+                <h4 className="text-sm font-semibold text-foreground">{t("app.userDashboard.bookingTimeline", "Booking Timeline")}</h4>
               </div>
               <div className="relative pl-5 space-y-4">
-                {extra.timeline.map((t, i) => (
+                {extra.timeline.map((tVal, i) => (
                   <div key={i} className="relative flex gap-3">
-                    <span className={`absolute -left-5 top-0.5 h-3.5 w-3.5 rounded-full border-2 flex items-center justify-center ${t.done ? "border-gold bg-gold/20" : "border-white/20 bg-white/5"}`}>
-                      {t.done && <span className="h-1.5 w-1.5 rounded-full bg-gold" />}
+                    <span className={`absolute -left-5 top-0.5 h-3.5 w-3.5 rounded-full border-2 flex items-center justify-center ${tVal.done ? "border-gold bg-gold/20" : "border-white/20 bg-white/5"}`}>
+                      {tVal.done && <span className="h-1.5 w-1.5 rounded-full bg-gold" />}
                     </span>
                     {i < extra.timeline.length - 1 && (
                       <span className="absolute -left-[14.5px] top-4 h-full w-px bg-white/10" />
                     )}
                     <div>
-                      <p className={`text-sm ${t.done ? "text-foreground" : "text-muted-foreground"}`}>{t.event}</p>
-                      <p className="text-[11px] text-muted-foreground">{t.date}</p>
+                      <p className={`text-sm ${tVal.done ? "text-foreground" : "text-muted-foreground"}`}>{translateTimelineEvent(tVal.event, t)}</p>
+                      <p className="text-[11px] text-muted-foreground">{formatDateStr(tVal.date)}</p>
                     </div>
                   </div>
                 ))}
@@ -319,30 +438,30 @@ function BookingDetailsDrawer({ booking, onClose }: { booking: Booking; onClose:
             <div className="glass-card rounded-2xl p-4 space-y-3">
               <div className="flex items-center gap-2">
                 <Receipt className="h-4 w-4 text-gold" />
-                <h4 className="text-sm font-semibold text-foreground">Invoice</h4>
+                <h4 className="text-sm font-semibold text-foreground">{t("app.userDashboard.invoice", "Invoice")}</h4>
               </div>
-              <p className="text-xs text-muted-foreground">Invoice #{booking.id}-INV · Generated on booking confirmation</p>
+              <p className="text-xs text-muted-foreground">{t("app.userDashboard.invoiceDesc", "Invoice #{{id}}-INV · Generated on booking confirmation", { id: booking.id })}</p>
               <button
                 onClick={() => alert(`Invoice for ${booking.id} would download here.`)}
                 className="flex items-center gap-2 px-4 py-2 rounded-xl border border-gold/30 bg-gold/8 text-gold text-sm hover:bg-gold/15 transition-colors w-full justify-center">
-                <Download className="h-4 w-4" /> Download Invoice PDF
+                <Download className="h-4 w-4" /> {t("app.userDashboard.downloadInvoicePdf", "Download Invoice PDF")}
               </button>
             </div>
 
             <div className="glass-card rounded-2xl p-4 space-y-3 border-rose-500/20">
               <div className="flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4 text-rose-400" />
-                <h4 className="text-sm font-semibold text-foreground">Cancellation & Refund</h4>
+                <h4 className="text-sm font-semibold text-foreground">{t("app.userDashboard.cancellationRefund", "Cancellation & Refund")}</h4>
               </div>
               <div className="space-y-2">
                 <div className="bg-rose-500/8 rounded-xl p-3">
-                  <p className="text-xs text-rose-300/90 leading-relaxed">{extra.cancellationPolicy}</p>
+                  <p className="text-xs text-rose-300/90 leading-relaxed">{translateCancellationPolicy(extra.cancellationPolicy, i18n.language, t)}</p>
                 </div>
                 <p className="text-xs text-muted-foreground leading-relaxed">{extra.refundInfo}</p>
               </div>
               {(booking.status === "confirmed" || booking.status === "pending") && (
                 <button className="flex items-center gap-2 px-4 py-2 rounded-xl border border-rose-500/30 bg-rose-500/8 text-rose-400 text-sm hover:bg-rose-500/15 transition-colors w-full justify-center">
-                  <XCircle className="h-4 w-4" /> Request Cancellation
+                  <XCircle className="h-4 w-4" /> {t("app.userDashboard.requestCancellation", "Request Cancellation")}
                 </button>
               )}
             </div>
@@ -355,6 +474,7 @@ function BookingDetailsDrawer({ booking, onClose }: { booking: Booking; onClose:
 
 /* ─── Booking Card ───────────────────────────────────── */
 function BookingCard({ b, onViewDetails }: { b: Booking; onViewDetails: (b: Booking) => void }) {
+  const { t } = useTranslation();
   const s = STATUS_CONFIG[b.status];
   const SI = s.icon;
   return (
@@ -371,28 +491,28 @@ function BookingCard({ b, onViewDetails }: { b: Booking; onViewDetails: (b: Book
             </p>
           </div>
           <span className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-semibold ${s.bg} ${s.color} shrink-0`}>
-            <SI className="h-3 w-3" />{s.label}
+            <SI className="h-3 w-3" />{t("app.userDashboard.status_" + b.status, s.label)}
           </span>
         </div>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-col gap-1 text-xs text-muted-foreground">
             <div className="flex items-center gap-2">
               <Clock className="h-3 w-3 text-gold/60" />
-              <span>Check-in: <span className="text-foreground">{b.checkIn}</span> · <span className="text-gold">{b.checkInTime}</span></span>
+              <span>{t("app.userDashboard.checkIn", "Check-in")}: <span className="text-foreground">{formatDateStr(b.checkIn)}</span> · <span className="text-gold">{formatTimeStr(b.checkInTime)}</span></span>
             </div>
             <div className="flex items-center gap-2">
               <Clock className="h-3 w-3 text-muted-foreground/40" />
-              <span>Check-out: <span className="text-foreground">{b.checkOut}</span> · <span className="text-muted-foreground">{b.checkOutTime}</span></span>
+              <span>{t("app.userDashboard.checkOut", "Check-out")}: <span className="text-foreground">{formatDateStr(b.checkOut)}</span> · <span className="text-muted-foreground">{formatTimeStr(b.checkOutTime)}</span></span>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <span className="font-display text-xl text-foreground">{fmt(b.amount)}</span>
             <button onClick={() => onViewDetails(b)} className="flex items-center gap-1 text-xs text-gold hover:text-gold/80 transition-colors">
-              View Details <ChevronRight className="h-3 w-3" />
+              {t("app.userDashboard.viewDetails", "View Details")} <ChevronRight className="h-3 w-3" />
             </button>
             {b.status === "confirmed" && (
               <button className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-emerald-400/10 border border-emerald-400/25 text-emerald-400 hover:bg-emerald-400/20 transition-colors">
-                Join Now
+                {t("app.userDashboard.joinNow", "Join Now")}
               </button>
             )}
           </div>
@@ -410,6 +530,7 @@ const AMENITY_ICONS: Record<string, React.ElementType> = {
 
 /* ─── Suite Card ─────────────────────────────────────── */
 function SuiteCard({ suite, index, onBookNow }: { suite: ReturnType<typeof useSuitesContext>["suites"][0]; index: number; onBookNow?: () => void }) {
+  const { t } = useTranslation();
   return (
     <motion.div
       initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.07 }}
@@ -435,14 +556,14 @@ function SuiteCard({ suite, index, onBookNow }: { suite: ReturnType<typeof useSu
         {suite.description && <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{suite.description}</p>}
         <div className="grid grid-cols-2 gap-2">
           <div className="bg-white/[0.03] rounded-xl px-3 py-2">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Capacity</p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{t("app.userDashboard.capacity", "Capacity")}</p>
             <div className="flex items-center gap-1 mt-0.5">
               <Users className="h-3 w-3 text-gold/60" />
-              <span className="text-sm text-foreground font-medium">{suite.capacity} guests</span>
+              <span className="text-sm text-foreground font-medium">{suite.capacity} {t("app.userDashboard.guests", "guests")}</span>
             </div>
           </div>
           <div className="bg-white/[0.03] rounded-xl px-3 py-2">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Price / night</p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{t("app.userDashboard.priceNight", "Price / night")}</p>
             <p className="text-sm text-gold font-medium mt-0.5">{suite.price}</p>
           </div>
         </div>
@@ -462,7 +583,7 @@ function SuiteCard({ suite, index, onBookNow }: { suite: ReturnType<typeof useSu
           </div>
         )}
         <button onClick={onBookNow} className="mt-auto gold-btn rounded-xl py-2 text-xs font-semibold flex items-center justify-center gap-1.5">
-          Book Now <ChevronRight className="h-3.5 w-3.5" />
+          {t("app.userDashboard.bookNow", "Book Now")} <ChevronRight className="h-3.5 w-3.5" />
         </button>
       </div>
     </motion.div>
@@ -471,6 +592,7 @@ function SuiteCard({ suite, index, onBookNow }: { suite: ReturnType<typeof useSu
 
 /* ─── Transaction Details Modal ──────────────────────── */
 function TransactionModal({ txn, onClose }: { txn: Transaction; onClose: () => void }) {
+  const { t } = useTranslation();
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -481,7 +603,7 @@ function TransactionModal({ txn, onClose }: { txn: Transaction; onClose: () => v
           <div className="flex items-start justify-between">
             <div>
               <p className="text-[10px] font-mono text-muted-foreground tracking-widest">{txn.id}</p>
-              <h3 className="font-display text-xl text-foreground mt-1">{txn.desc}</h3>
+              <h3 className="font-display text-xl text-foreground mt-1">{translateTxnDesc(txn.desc, t)}</h3>
             </div>
             <button onClick={onClose} className="h-8 w-8 rounded-xl glass flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
               <X className="h-4 w-4" />
@@ -489,37 +611,37 @@ function TransactionModal({ txn, onClose }: { txn: Transaction; onClose: () => v
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="glass rounded-xl p-3">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Amount</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">{t("app.userDashboard.amount", "Amount")}</p>
               <p className={`font-display text-2xl ${txn.type === "credit" ? "text-emerald-400" : "text-rose-400"}`}>
                 {txn.type === "credit" ? "+" : ""}₹{Math.abs(txn.amount).toLocaleString()}
               </p>
             </div>
             <div className="glass rounded-xl p-3">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Status</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">{t("app.userDashboard.status", "Status")}</p>
               <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold ${txn.status === "completed" ? "bg-emerald-400/10 text-emerald-400" : txn.status === "pending" ? "bg-amber-400/10 text-amber-400" : "bg-rose-400/10 text-rose-400"}`}>
                 {txn.status === "completed" ? <CheckCircle2 className="h-3 w-3" /> : txn.status === "pending" ? <Hourglass className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
-                {txn.status.charAt(0).toUpperCase() + txn.status.slice(1)}
+                {t("app.userDashboard.status_" + txn.status, txn.status.charAt(0).toUpperCase() + txn.status.slice(1))}
               </span>
             </div>
           </div>
           <div className="space-y-3 border-t border-white/5 pt-4">
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Date</span>
-              <span className="text-foreground">{txn.date}</span>
+              <span className="text-muted-foreground">{t("app.userDashboard.date", "Date")}</span>
+              <span className="text-foreground">{formatDateStr(txn.date)}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Payment Method</span>
-              <span className="text-foreground">{txn.method}</span>
+              <span className="text-muted-foreground">{t("app.userDashboard.paymentMethod", "Payment Method")}</span>
+              <span className="text-foreground">{translatePaymentMethod(txn.method, t)}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Category</span>
+              <span className="text-muted-foreground">{t("app.userDashboard.category", "Category")}</span>
               <span className="text-foreground capitalize">{txn.category}</span>
             </div>
           </div>
           {txn.invoice && (
             <button onClick={() => alert(`Downloading invoice ${txn.invoice}`)}
               className="w-full gold-btn rounded-xl py-2.5 text-sm font-semibold flex items-center justify-center gap-2">
-              <Download className="h-4 w-4" /> Download Invoice
+              <Download className="h-4 w-4" /> {t("app.userDashboard.downloadInvoice", "Download Invoice")}
             </button>
           )}
         </motion.div>
@@ -531,10 +653,31 @@ function TransactionModal({ txn, onClose }: { txn: Transaction; onClose: () => v
 /* ─── Section Views ──────────────────────────────────── */
 function DashboardView({ onNavigate }: { onNavigate: (id: string) => void }) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { suites } = useSuitesContext();
   const activeSuites = suites.filter((s) => s.status === "Active");
   const upcomingSuites = suites.filter((s) => s.status === "Inactive");
   const [dashboardSelected, setDashboardSelected] = useState<Booking | null>(null);
+
+  const statsTranslated = [
+    { label: t("app.userDashboard.totalBookings", "Total Bookings"), value: "12",    icon: CalendarDays },
+    { label: t("app.userDashboard.nightsStayed", "Nights Stayed"),  value: "38",    icon: BedDouble },
+    { label: t("app.userDashboard.totalSpent", "Total Spent"),    value: "₹5.2L", icon: CreditCard },
+    { label: t("app.userDashboard.loyaltyPoints", "Loyalty Points"), value: "4,820", icon: Star },
+  ];
+
+  const conciergeCards = [
+    { title: t("app.userDashboard.conciergeTitle", "Concierge"),     desc: t("app.userDashboard.conciergeDesc", "24/7 dedicated personal assistance for every need"), icon: Phone,        accent: "from-sky-500/10" },
+    { title: t("app.userDashboard.fineDiningTitle", "Fine Dining"),   desc: t("app.userDashboard.fineDiningDesc", "Reserve exclusive in-suite and restaurant dining"),  icon: Star,         accent: "from-amber-500/10" },
+    { title: t("app.userDashboard.spaWellnessTitle", "Spa & Wellness"),desc: t("app.userDashboard.spaWellnessDesc", "Book rejuvenating spa treatments and wellness"),     icon: ArrowUpRight, accent: "from-emerald-500/10" },
+  ];
+
+  const quickActionsTranslated = [
+    { label: t("app.userDashboard.newBooking", "New Booking"),       icon: BedDouble,     desc: t("app.userDashboard.newBookingDesc", "Explore & reserve suites") },
+    { label: t("app.userDashboard.modifyBooking", "Modify Booking"),    icon: CalendarDays,  desc: t("app.userDashboard.modifyBookingDesc", "Change dates or room type") },
+    { label: t("app.userDashboard.contactConcierge", "Contact Concierge"), icon: Phone,         desc: t("app.userDashboard.contactConciergeDesc", "24/7 personal assistance") },
+    { label: t("app.userDashboard.raiseRequest", "Raise a Request"),   icon: MessageSquare, desc: t("app.userDashboard.raiseRequestDesc", "Report issues or requests") },
+  ];
 
   return (
     <div className="space-y-8">
@@ -556,26 +699,26 @@ function DashboardView({ onNavigate }: { onNavigate: (id: string) => void }) {
         </div>
         {/* Content */}
         <div className="relative z-10 p-8 space-y-3">
-          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase border border-gold/40 text-gold bg-gold/10">Gold Member</span>
+          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase border border-gold/40 text-gold bg-gold/10">{t("app.userDashboard.goldMember", "Gold Member")}</span>
           <h2 className="font-display text-4xl font-medium text-foreground">
-            Make Every<br /><span className="text-gradient-gold italic">Moment Memorable</span>
+            {t("app.userDashboard.makeEvery", "Make Every")}<br /><span className="text-gradient-gold italic">{t("app.userDashboard.momentMemorable", "Moment Memorable")}</span>
           </h2>
-          <p className="text-sm text-muted-foreground max-w-sm">Handpicked private suites with premium amenities for your special celebrations.</p>
+          <p className="text-sm text-muted-foreground max-w-sm">{t("app.userDashboard.heroDesc", "Handpicked private suites with premium amenities for your special celebrations.")}</p>
           <button onClick={() => onNavigate("suites")} className="mt-2 gold-btn flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold">
-            Book Your Suite <ChevronRight className="h-4 w-4" />
+            {t("app.userDashboard.bookYourSuite", "Book Your Suite")} <ChevronRight className="h-4 w-4" />
           </button>
         </div>
         {/* Loyalty points badge */}
         <div className="absolute right-8 bottom-6 hidden md:block z-10">
           <div className="glass-gold rounded-2xl p-4 text-center min-w-[120px]">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">Loyalty Points</p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">{t("app.userDashboard.loyaltyPoints", "Loyalty Points")}</p>
             <p className="font-display text-3xl text-gold">4,820</p>
           </div>
         </div>
       </motion.div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {STATS.map((s, i) => {
+        {statsTranslated.map((s, i) => {
           const Icon = s.icon;
           return (
             <motion.div key={s.label} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}
@@ -593,11 +736,7 @@ function DashboardView({ onNavigate }: { onNavigate: (id: string) => void }) {
       </div>
 
       <div className="grid md:grid-cols-3 gap-4">
-        {[
-          { title: "Concierge",     desc: "24/7 dedicated personal assistance for every need", icon: Phone,        accent: "from-sky-500/10" },
-          { title: "Fine Dining",   desc: "Reserve exclusive in-suite and restaurant dining",  icon: Star,         accent: "from-amber-500/10" },
-          { title: "Spa & Wellness",desc: "Book rejuvenating spa treatments and wellness",     icon: ArrowUpRight, accent: "from-emerald-500/10" },
-        ].map((c, i) => {
+        {conciergeCards.map((c, i) => {
           const Icon = c.icon;
           return (
             <motion.div key={c.title} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 + i * 0.08 }}
@@ -606,7 +745,7 @@ function DashboardView({ onNavigate }: { onNavigate: (id: string) => void }) {
               <h4 className="font-display text-lg text-foreground">{c.title}</h4>
               <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{c.desc}</p>
               <div className="mt-4 flex items-center gap-1 text-xs text-gold group-hover:gap-2 transition-all">
-                Explore <ChevronRight className="h-3 w-3" />
+                {t("app.userDashboard.explore", "Explore")} <ChevronRight className="h-3 w-3" />
               </div>
             </motion.div>
           );
@@ -614,7 +753,7 @@ function DashboardView({ onNavigate }: { onNavigate: (id: string) => void }) {
       </div>
 
       <div>
-        <h3 className="font-display text-xl text-foreground mb-4">Upcoming Stays</h3>
+        <h3 className="font-display text-xl text-foreground mb-4">{t("app.userDashboard.upcomingStays", "Upcoming Stays")}</h3>
         <div className="space-y-3">
           {UPCOMING_BOOKINGS.map((b) => <BookingCard key={b.id} b={b} onViewDetails={setDashboardSelected} />)}
         </div>
@@ -623,8 +762,10 @@ function DashboardView({ onNavigate }: { onNavigate: (id: string) => void }) {
       {activeSuites.length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-display text-xl text-foreground">Available Suites</h3>
-            <span className="px-2.5 py-1 rounded-full bg-emerald-400/10 border border-emerald-400/20 text-emerald-400 text-[10px] font-bold">{activeSuites.length} Available</span>
+            <h3 className="font-display text-xl text-foreground">{t("app.userDashboard.availableSuites", "Available Suites")}</h3>
+            <span className="px-2.5 py-1 rounded-full bg-emerald-400/10 border border-emerald-400/20 text-emerald-400 text-[10px] font-bold">
+              {t("app.userDashboard.countAvailable", "{{count}} Available", { count: activeSuites.length })}
+            </span>
           </div>
           <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
             {activeSuites.map((s, i) => <SuiteCard key={s.id} suite={s} index={i} onBookNow={() => navigate("/user/suite-booking", { state: { suiteId: s.id } })} />)}
@@ -635,8 +776,8 @@ function DashboardView({ onNavigate }: { onNavigate: (id: string) => void }) {
       {upcomingSuites.length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-display text-xl text-foreground">Upcoming Suites</h3>
-            <span className="px-2.5 py-1 rounded-full bg-amber-400/10 border border-amber-400/20 text-amber-400 text-[10px] font-bold">Coming Soon</span>
+            <h3 className="font-display text-xl text-foreground">{t("app.userDashboard.upcomingSuites", "Upcoming Suites")}</h3>
+            <span className="px-2.5 py-1 rounded-full bg-amber-400/10 border border-amber-400/20 text-amber-400 text-[10px] font-bold">{t("app.userDashboard.comingSoon", "Coming Soon")}</span>
           </div>
           <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
             {upcomingSuites.map((s, i) => <SuiteCard key={s.id} suite={s} index={i} onBookNow={() => navigate("/user/suite-booking", { state: { suiteId: s.id } })} />)}
@@ -647,9 +788,9 @@ function DashboardView({ onNavigate }: { onNavigate: (id: string) => void }) {
       {dashboardSelected && <BookingDetailsDrawer booking={dashboardSelected} onClose={() => setDashboardSelected(null)} />}
 
       <div>
-        <h3 className="font-display text-xl text-foreground mb-4">Quick Actions</h3>
+        <h3 className="font-display text-xl text-foreground mb-4">{t("app.userDashboard.quickActions", "Quick Actions")}</h3>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {QUICK_ACTIONS.map((a, i) => {
+          {quickActionsTranslated.map((a, i) => {
             const Icon = a.icon;
             return (
               <motion.button key={a.label} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.06 }}
@@ -671,6 +812,7 @@ function DashboardView({ onNavigate }: { onNavigate: (id: string) => void }) {
 function SuitesView() {
   const { suites } = useSuitesContext();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const filtered = suites.filter((s) => {
@@ -684,28 +826,30 @@ function SuitesView() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="font-display text-2xl text-foreground">Browse Suites</h3>
-          <p className="text-xs text-muted-foreground mt-1">Explore and book from our luxury suite collection</p>
+          <h3 className="font-display text-2xl text-foreground">{t("app.userDashboard.browseSuites", "Browse Suites")}</h3>
+          <p className="text-xs text-muted-foreground mt-1">{t("app.userDashboard.browseSuitesDesc", "Explore and book from our luxury suite collection")}</p>
         </div>
-        <span className="px-3 py-1 rounded-full bg-emerald-400/10 border border-emerald-400/20 text-emerald-400 text-xs font-semibold">{suites.filter(s => s.status === "Active").length} Available</span>
+        <span className="px-3 py-1 rounded-full bg-emerald-400/10 border border-emerald-400/20 text-emerald-400 text-xs font-semibold">
+          {t("app.userDashboard.countAvailable", "{{count}} Available", { count: suites.filter(s => s.status === "Active").length })}
+        </span>
       </div>
       <div className="flex gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-          <input type="text" placeholder="Search suites or occasions..." value={search} onChange={(e) => setSearch(e.target.value)}
+          <input type="text" placeholder={t("app.userDashboard.searchPlaceholder", "Search suites or occasions...")} value={search} onChange={(e) => setSearch(e.target.value)}
             className="luxury-input w-full rounded-xl pl-9 pr-4 py-2 text-xs" />
         </div>
         <div className="flex gap-1 glass rounded-xl p-1">
           {["All", "Active", "Inactive"].map((f) => (
             <button key={f} onClick={() => setStatusFilter(f)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${statusFilter === f ? "bg-gold/20 text-gold" : "text-muted-foreground hover:text-foreground"}`}>
-              {f}
+              {f === "All" ? t("app.userDashboard.filterAll", "All") : f === "Active" ? t("app.userDashboard.filterActive", "Active") : t("app.userDashboard.filterInactive", "Inactive")}
             </button>
           ))}
         </div>
       </div>
       {filtered.length === 0 ? (
-        <div className="glass-card rounded-2xl p-16 text-center text-muted-foreground text-sm">No suites found.</div>
+        <div className="glass-card rounded-2xl p-16 text-center text-muted-foreground text-sm">{t("app.userDashboard.noSuitesFound", "No suites found.")}</div>
       ) : (
         <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map((s, i) => <SuiteCard key={s.id} suite={s} index={i} onBookNow={() => navigate("/user/suite-booking", { state: { suiteId: s.id } })} />)}
@@ -716,6 +860,7 @@ function SuitesView() {
 }
 
 function BookingListView({ bookings, title, fetchFromApi }: { bookings: Booking[]; title: string; fetchFromApi?: boolean }) {
+  const { t } = useTranslation();
   const [selected, setSelected] = useState<Booking | null>(null);
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
@@ -769,17 +914,19 @@ function BookingListView({ bookings, title, fetchFromApi }: { bookings: Booking[
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex items-center gap-3">
           <h3 className="font-display text-2xl text-foreground">{title}</h3>
-          <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-muted-foreground text-xs">{filtered.length} bookings</span>
+          <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-muted-foreground text-xs">
+            {t("app.userDashboard.bookingsCount", "{{count}} bookings", { count: filtered.length })}
+          </span>
         </div>
         <div className="flex flex-wrap items-end gap-3">
           <div className="flex items-center gap-2">
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] uppercase tracking-widest text-muted-foreground">From</label>
+              <label className="text-[10px] uppercase tracking-widest text-muted-foreground">{t("app.userDashboard.fromDate", "From")}</label>
               <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)}
                 className="luxury-input rounded-xl px-3 py-1.5 text-xs bg-black/40 text-foreground" />
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] uppercase tracking-widest text-muted-foreground">To</label>
+              <label className="text-[10px] uppercase tracking-widest text-muted-foreground">{t("app.userDashboard.toDate", "To")}</label>
               <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)}
                 className="luxury-input rounded-xl px-3 py-1.5 text-xs bg-black/40 text-foreground" />
             </div>
@@ -789,20 +936,22 @@ function BookingListView({ bookings, title, fetchFromApi }: { bookings: Booking[
               <button key={s} onClick={() => setStatusFilter(s)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-colors ${
                   statusFilter === s ? "bg-gold/20 text-gold" : "text-muted-foreground hover:text-foreground"
-                }`}>{s === "all" ? "All" : s}</button>
+                }`}>
+                {s === "all" ? t("app.userDashboard.status_all", "All") : t(`app.userDashboard.status_${s}`, s.charAt(0).toUpperCase() + s.slice(1))}
+              </button>
             ))}
           </div>
           {hasFilters && (
             <button onClick={() => { setFromDate(""); setToDate(""); setStatusFilter("all"); }}
               className="text-xs text-rose-400 hover:text-rose-300 transition-colors px-2 py-1.5">
-              Clear
+              {t("app.userDashboard.clear", "Clear")}
             </button>
           )}
         </div>
       </div>
 
       {filtered.length === 0
-        ? <div className="glass-card rounded-2xl p-12 text-center text-muted-foreground">{loadingApi ? "Loading bookings..." : "No bookings match the selected filters."}</div>
+        ? <div className="glass-card rounded-2xl p-12 text-center text-muted-foreground">{loadingApi ? t("app.userDashboard.loadingBookings", "Loading bookings...") : t("app.userDashboard.noBookingsMatch", "No bookings match the selected filters.")}</div>
         : <div className="space-y-3">{filtered.map((b) => <BookingCard key={b.id} b={b} onViewDetails={setSelected} />)}</div>}
       {selected && <BookingDetailsDrawer booking={selected} onClose={() => setSelected(null)} />}
     </div>
@@ -810,19 +959,20 @@ function BookingListView({ bookings, title, fetchFromApi }: { bookings: Booking[
 }
 
 function WalletView() {
+  const { t } = useTranslation();
   const [searchTerm, setSearchTerm]   = useState("");
   const [filterType, setFilterType]   = useState<"all" | "credit" | "debit">("all");
   const [selectedTxn, setSelectedTxn] = useState<Transaction | null>(null);
   const [methods, setMethods]         = useState<PaymentMethod[]>(PAYMENT_METHODS);
 
-  const filtered = TRANSACTIONS.filter((t) => {
-    const matchSearch = t.desc.toLowerCase().includes(searchTerm.toLowerCase()) || t.id.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchType   = filterType === "all" || t.type === filterType;
+  const filtered = TRANSACTIONS.filter((tVal) => {
+    const matchSearch = tVal.desc.toLowerCase().includes(searchTerm.toLowerCase()) || tVal.id.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchType   = filterType === "all" || tVal.type === filterType;
     return matchSearch && matchType;
   });
 
-  const totalCredit = TRANSACTIONS.filter((t) => t.type === "credit").reduce((s, t) => s + t.amount, 0);
-  const totalDebit  = TRANSACTIONS.filter((t) => t.type === "debit").reduce((s, t) => s + Math.abs(t.amount), 0);
+  const totalCredit = TRANSACTIONS.filter((tVal) => tVal.type === "credit").reduce((s, tVal) => s + tVal.amount, 0);
+  const totalDebit  = TRANSACTIONS.filter((tVal) => tVal.type === "debit").reduce((s, tVal) => s + Math.abs(tVal.amount), 0);
 
   function setDefault(id: string) {
     setMethods((prev) => prev.map((m) => ({ ...m, isDefault: m.id === id })));
@@ -831,11 +981,19 @@ function WalletView() {
     setMethods((prev) => prev.filter((m) => m.id !== id));
   }
 
+  const walletActions = [
+    { label: t("app.userDashboard.addMoney", "Add Money"),        icon: Plus,       color: "emerald" },
+    { label: t("app.userDashboard.transactions", "Transactions"),     icon: Receipt,    color: "sky"     },
+    { label: t("app.userDashboard.importStatement", "Import Statement"), icon: Download,   color: "violet"  },
+    { label: t("app.userDashboard.paymentMethods", "Payment Methods"),  icon: CreditCard, color: "amber"   },
+    { label: t("app.userDashboard.refunds", "Refunds"),          icon: RefreshCw,  color: "rose"    },
+  ];
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="font-display text-2xl text-foreground">Wallet & Payments</h3>
-        <span className="px-3 py-1 rounded-full bg-gold/10 border border-gold/25 text-gold text-xs font-semibold">Premium Member</span>
+        <h3 className="font-display text-2xl text-foreground">{t("app.userDashboard.walletPayments", "Wallet & Payments")}</h3>
+        <span className="px-3 py-1 rounded-full bg-gold/10 border border-gold/25 text-gold text-xs font-semibold">{t("app.userDashboard.premiumMember", "Premium Member")}</span>
       </div>
 
       {/* Balance Cards */}
@@ -844,39 +1002,33 @@ function WalletView() {
           className="glass-card rounded-2xl p-6 bg-gradient-to-br from-gold/10 to-transparent border-gold/25 md:col-span-2">
           <div className="flex items-start justify-between mb-4">
             <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">Available Balance</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">{t("app.userDashboard.availableBalance", "Available Balance")}</p>
               <p className="font-display text-5xl text-gold">₹12,400</p>
-              <p className="text-xs text-muted-foreground mt-2">Wallet credits & refunds</p>
+              <p className="text-xs text-muted-foreground mt-2">{t("app.userDashboard.walletCreditsRefunds", "Wallet credits & refunds")}</p>
             </div>
             <Wallet className="h-8 w-8 text-gold/40" />
           </div>
           <div className="flex gap-3">
             <button className="flex-1 gold-btn rounded-xl py-2.5 text-sm font-semibold flex items-center justify-center gap-2">
-              <Plus className="h-4 w-4" /> Add Money
+              <Plus className="h-4 w-4" /> {t("app.userDashboard.addMoney", "Add Money")}
             </button>
             <button className="flex-1 glass rounded-xl py-2.5 text-sm font-semibold text-gold border border-gold/30 hover:bg-gold/10 transition-colors flex items-center justify-center gap-2">
-              <ArrowUpRight className="h-4 w-4" /> Withdraw
+              <ArrowUpRight className="h-4 w-4" /> {t("app.userDashboard.withdraw", "Withdraw")}
             </button>
           </div>
         </motion.div>
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
           className="glass-card rounded-2xl p-6">
-          <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">Loyalty Points</p>
+          <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">{t("app.userDashboard.loyaltyPoints", "Loyalty Points")}</p>
           <p className="font-display text-4xl text-foreground">4,820</p>
-          <p className="text-xs text-muted-foreground mt-2">Earn 1 pt = ₹10 spent</p>
-          <button className="mt-4 w-full glass rounded-xl py-2 text-xs font-semibold text-gold border border-gold/20 hover:bg-gold/10 transition-colors">Redeem Points</button>
+          <p className="text-xs text-muted-foreground mt-2">{t("app.userDashboard.loyaltyPointsDesc", "Earn 1 pt = ₹10 spent")}</p>
+          <button className="mt-4 w-full glass rounded-xl py-2 text-xs font-semibold text-gold border border-gold/20 hover:bg-gold/10 transition-colors">{t("app.userDashboard.redeemPoints", "Redeem Points")}</button>
         </motion.div>
       </div>
 
       {/* Quick Actions */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-        {[
-          { label: "Add Money",        icon: Plus,       color: "emerald" },
-          { label: "Transactions",     icon: Receipt,    color: "sky"     },
-          { label: "Import Statement", icon: Download,   color: "violet"  },
-          { label: "Payment Methods",  icon: CreditCard, color: "amber"   },
-          { label: "Refunds",          icon: RefreshCw,  color: "rose"    },
-        ].map((a, i) => {
+        {walletActions.map((a, i) => {
           const Icon = a.icon;
           return (
             <motion.button key={a.label} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.15 + i * 0.05 }}
@@ -894,28 +1046,28 @@ function WalletView() {
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
         className="glass-card rounded-2xl p-6">
         <div className="flex items-center justify-between mb-4">
-          <h4 className="font-display text-lg text-foreground">Payment Analytics</h4>
+          <h4 className="font-display text-lg text-foreground">{t("app.userDashboard.paymentAnalytics", "Payment Analytics")}</h4>
           <BarChart3 className="h-5 w-5 text-gold" />
         </div>
         <div className="grid md:grid-cols-3 gap-4">
           <div className="glass rounded-xl p-4">
             <div className="flex items-center gap-2 mb-2">
               <TrendingUp className="h-4 w-4 text-emerald-400" />
-              <p className="text-xs text-muted-foreground uppercase tracking-wide">Total Credits</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">{t("app.userDashboard.totalCredits", "Total Credits")}</p>
             </div>
             <p className="font-display text-2xl text-emerald-400">₹{totalCredit.toLocaleString()}</p>
           </div>
           <div className="glass rounded-xl p-4">
             <div className="flex items-center gap-2 mb-2">
               <TrendingDown className="h-4 w-4 text-rose-400" />
-              <p className="text-xs text-muted-foreground uppercase tracking-wide">Total Debits</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">{t("app.userDashboard.totalDebits", "Total Debits")}</p>
             </div>
             <p className="font-display text-2xl text-rose-400">₹{totalDebit.toLocaleString()}</p>
           </div>
           <div className="glass rounded-xl p-4">
             <div className="flex items-center gap-2 mb-2">
               <DollarSign className="h-4 w-4 text-gold" />
-              <p className="text-xs text-muted-foreground uppercase tracking-wide">Net Flow</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">{t("app.userDashboard.netFlow", "Net Flow")}</p>
             </div>
             <p className="font-display text-2xl text-gold">₹{(totalCredit - totalDebit).toLocaleString()}</p>
           </div>
@@ -926,9 +1078,9 @@ function WalletView() {
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
         className="glass-card rounded-2xl p-6 space-y-4">
         <div className="flex items-center justify-between">
-          <h4 className="font-display text-lg text-foreground">Saved Payment Methods</h4>
+          <h4 className="font-display text-lg text-foreground">{t("app.userDashboard.savedPaymentMethods", "Saved Payment Methods")}</h4>
           <button className="flex items-center gap-1.5 text-sm text-gold hover:text-gold/80 transition-colors">
-            <Plus className="h-4 w-4" /> Add New
+            <Plus className="h-4 w-4" /> {t("app.userDashboard.addNew", "Add New")}
           </button>
         </div>
         <div className="grid md:grid-cols-2 gap-3">
@@ -949,21 +1101,21 @@ function WalletView() {
                     </div>
                   </div>
                   {pm.isDefault && (
-                    <span className="px-2 py-0.5 rounded-full bg-gold/10 border border-gold/25 text-gold text-[10px] font-bold">DEFAULT</span>
+                    <span className="px-2 py-0.5 rounded-full bg-gold/10 border border-gold/25 text-gold text-[10px] font-bold">{t("app.userDashboard.default", "DEFAULT")}</span>
                   )}
                 </div>
                 <div className="flex gap-2">
                   <button className="flex-1 glass rounded-lg py-1.5 text-xs text-muted-foreground hover:text-foreground hover:border-gold/20 transition-colors flex items-center justify-center gap-1.5">
-                    <Edit3 className="h-3 w-3" /> Edit
+                    <Edit3 className="h-3 w-3" /> {t("app.userDashboard.edit", "Edit")}
                   </button>
                   <button onClick={() => deleteMethod(pm.id)}
                     className="flex-1 glass rounded-lg py-1.5 text-xs text-muted-foreground hover:text-rose-400 hover:border-rose-400/20 transition-colors flex items-center justify-center gap-1.5">
-                    <Trash2 className="h-3 w-3" /> Delete
+                    <Trash2 className="h-3 w-3" /> {t("app.userDashboard.delete", "Delete")}
                   </button>
                   {!pm.isDefault && (
                     <button onClick={() => setDefault(pm.id)}
                       className="flex-1 glass rounded-lg py-1.5 text-xs text-gold hover:bg-gold/10 transition-colors flex items-center justify-center gap-1.5">
-                      <Star className="h-3 w-3" /> Default
+                      <Star className="h-3 w-3" /> {t("app.userDashboard.setDefault", "Default")}
                     </button>
                   )}
                 </div>
@@ -977,55 +1129,55 @@ function WalletView() {
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
         className="glass-card rounded-2xl p-6 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <h4 className="font-display text-lg text-foreground">Recent Transactions</h4>
+          <h4 className="font-display text-lg text-foreground">{t("app.userDashboard.recentTransactions", "Recent Transactions")}</h4>
           <div className="flex gap-2">
             <button
               onClick={() => alert("Import transactions from CSV/PDF")}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-gold/30 bg-gold/8 text-gold text-xs hover:bg-gold/15 transition-colors">
-              <Download className="h-3.5 w-3.5" /> Import
+              <Download className="h-3.5 w-3.5" /> {t("app.userDashboard.import", "Import")}
             </button>
             <div className="relative flex-1 sm:flex-initial">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search..."
+              <input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder={t("app.userDashboard.searchPlaceholderShort", "Search...")}
                 className="luxury-input w-full sm:w-48 rounded-xl pl-9 pr-3 py-2 text-xs text-foreground bg-transparent" />
             </div>
             <div className="flex gap-1 glass rounded-xl p-1">
               {(["all", "credit", "debit"] as const).map((f) => (
                 <button key={f} onClick={() => setFilterType(f)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${filterType === f ? "bg-gold/20 text-gold" : "text-muted-foreground hover:text-foreground"}`}>
-                  {f === "all" ? "All" : f === "credit" ? "Credits" : "Debits"}
+                  {f === "all" ? t("app.userDashboard.filterAll", "All") : f === "credit" ? t("app.userDashboard.filterCredits", "Credits") : t("app.userDashboard.filterDebits", "Debits")}
                 </button>
               ))}
             </div>
           </div>
         </div>
         <div className="space-y-2">
-          {filtered.map((t, i) => (
-            <motion.div key={t.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.03 }}
+          {filtered.map((tVal, i) => (
+            <motion.div key={tVal.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.03 }}
               className="glass rounded-xl p-4 hover:border-gold/30 transition-colors cursor-pointer group"
-              onClick={() => setSelectedTxn(t)}>
+              onClick={() => setSelectedTxn(tVal)}>
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${t.type === "credit" ? "bg-emerald-400/10 border border-emerald-400/20" : "bg-rose-400/10 border border-rose-400/20"}`}>
-                    {t.type === "credit"
+                  <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${tVal.type === "credit" ? "bg-emerald-400/10 border border-emerald-400/25" : "bg-rose-400/10 border border-rose-400/25"}`}>
+                    {tVal.type === "credit"
                       ? <ArrowDownLeft className="h-5 w-5 text-emerald-400" />
                       : <ArrowUpLeft className="h-5 w-5 text-rose-400" />}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm text-foreground truncate">{t.desc}</p>
+                    <p className="text-sm text-foreground truncate">{translateTxnDesc(tVal.desc, t)}</p>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <p className="text-xs text-muted-foreground">{t.date}</p>
+                      <p className="text-xs text-muted-foreground">{formatDateStr(tVal.date)}</p>
                       <span className="text-muted-foreground">•</span>
-                      <p className="text-xs text-muted-foreground font-mono">{t.id}</p>
+                      <p className="text-xs text-muted-foreground font-mono">{tVal.id}</p>
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
                   <div className="text-right">
-                    <p className={`font-display text-lg ${t.type === "credit" ? "text-emerald-400" : "text-rose-400"}`}>
-                      {t.type === "credit" ? "+" : "-"}₹{Math.abs(t.amount).toLocaleString()}
+                    <p className={`font-display text-lg ${tVal.type === "credit" ? "text-emerald-400" : "text-rose-400"}`}>
+                      {tVal.type === "credit" ? "+" : "-"}₹{Math.abs(tVal.amount).toLocaleString()}
                     </p>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{t.category}</p>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{tVal.category}</p>
                   </div>
                   <Eye className="h-4 w-4 text-muted-foreground group-hover:text-gold transition-colors" />
                 </div>
@@ -1034,7 +1186,7 @@ function WalletView() {
           ))}
         </div>
         {filtered.length === 0 && (
-          <div className="text-center py-8 text-muted-foreground text-sm">No transactions found.</div>
+          <div className="text-center py-8 text-muted-foreground text-sm">{t("app.userDashboard.noTransactionsFound", "No transactions found.")}</div>
         )}
       </motion.div>
 
@@ -1135,6 +1287,7 @@ const AMENITY_ICON_MAP: Record<string, React.ElementType> = {
 
 /* ─── Package Detail Modal ───────────────────────────── */
 function PackageDetailModal({ pkg, onClose }: { pkg: CelebrationPackage; onClose: () => void }) {
+  const { t } = useTranslation();
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -1149,9 +1302,13 @@ function PackageDetailModal({ pkg, onClose }: { pkg: CelebrationPackage; onClose
             <button onClick={onClose} className="absolute top-4 right-4 h-8 w-8 rounded-xl bg-black/50 backdrop-blur flex items-center justify-center text-white hover:bg-black/70 transition-colors">
               <X className="h-4 w-4" />
             </button>
-            <span className={`absolute top-4 left-4 px-2.5 py-1 rounded-full border text-[10px] font-bold tracking-widest ${pkg.badgeColor}`}>{pkg.badge}</span>
+            <span className={`absolute top-4 left-4 px-2.5 py-1 rounded-full border text-[10px] font-bold tracking-widest ${pkg.badgeColor}`}>
+              {t("app.userDashboard.badge_" + pkg.badge.toLowerCase().replace(/\s+/g, "_"), pkg.badge)}
+            </span>
             <div className="absolute bottom-4 left-5">
-              <p className="text-[10px] text-gold/80 uppercase tracking-widest">{pkg.occasion}</p>
+              <p className="text-[10px] text-gold/80 uppercase tracking-widest">
+                {t("app.userDashboard.occasion_" + pkg.occasion.toLowerCase().replace(/\s+/g, "_"), pkg.occasion)}
+              </p>
               <h3 className="font-display text-2xl text-white">{pkg.name}</h3>
             </div>
           </div>
@@ -1164,7 +1321,7 @@ function PackageDetailModal({ pkg, onClose }: { pkg: CelebrationPackage; onClose
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">{pkg.description}</p>
             <div>
-              <p className="text-[11px] text-muted-foreground uppercase tracking-widest mb-2">What's Included</p>
+              <p className="text-[11px] text-muted-foreground uppercase tracking-widest mb-2">{t("app.userDashboard.whatsIncluded", "What's Included")}</p>
               <div className="flex flex-wrap gap-2">
                 {pkg.amenities.map((a) => {
                   const Icon = AMENITY_ICON_MAP[a] ?? Sparkles;
@@ -1177,8 +1334,8 @@ function PackageDetailModal({ pkg, onClose }: { pkg: CelebrationPackage; onClose
               </div>
             </div>
             <div className="flex gap-3 pt-2">
-              <button className="flex-1 gold-btn rounded-xl py-3 text-sm font-semibold">Book This Package</button>
-              <button onClick={onClose} className="flex-1 glass rounded-xl py-3 text-sm text-muted-foreground border border-white/10 hover:text-foreground transition-colors">Close</button>
+              <button className="flex-1 gold-btn rounded-xl py-3 text-sm font-semibold">{t("app.userDashboard.bookThisPackage", "Book This Package")}</button>
+              <button onClick={onClose} className="flex-1 glass rounded-xl py-3 text-sm text-muted-foreground border border-white/10 hover:text-foreground transition-colors">{t("app.userDashboard.close", "Close")}</button>
             </div>
           </div>
         </motion.div>
@@ -1189,6 +1346,7 @@ function PackageDetailModal({ pkg, onClose }: { pkg: CelebrationPackage; onClose
 
 /* ─── Celebration Packages View ──────────────────────── */
 function CelebrationPackagesView() {
+  const { t } = useTranslation();
   const [selectedOccasion, setSelectedOccasion] = useState("All");
   const [priceRange, setPriceRange]             = useState(40000);
   const [sortBy, setSortBy]                     = useState("Popularity");
@@ -1225,10 +1383,12 @@ function CelebrationPackagesView() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="font-display text-2xl text-foreground">Celebration Packages</h3>
-          <p className="text-xs text-muted-foreground mt-1">Curated luxury experiences for every special occasion</p>
+          <h3 className="font-display text-2xl text-foreground">{t("app.userDashboard.celebrationPackages", "Celebration Packages")}</h3>
+          <p className="text-xs text-muted-foreground mt-1">{t("app.userDashboard.celebrationPackagesDesc", "Curated luxury experiences for every special occasion")}</p>
         </div>
-        <span className="px-3 py-1 rounded-full bg-gold/10 border border-gold/25 text-gold text-xs font-semibold">{filtered.length} Packages</span>
+        <span className="px-3 py-1 rounded-full bg-gold/10 border border-gold/25 text-gold text-xs font-semibold">
+          {t("app.userDashboard.packagesCount", "{{count}} Packages", { count: filtered.length })}
+        </span>
       </div>
 
       <div className="flex gap-6">
@@ -1238,8 +1398,8 @@ function CelebrationPackagesView() {
             {/* Occasion filter */}
             <div>
               <div className="flex items-center justify-between mb-3">
-                <p className="text-xs font-semibold text-foreground uppercase tracking-widest">Occasion</p>
-                <button onClick={clearFilters} className="text-[10px] text-gold hover:text-gold/70 transition-colors">Clear All</button>
+                <p className="text-xs font-semibold text-foreground uppercase tracking-widest">{t("app.userDashboard.occasion", "Occasion")}</p>
+                <button onClick={clearFilters} className="text-[10px] text-gold hover:text-gold/70 transition-colors">{t("app.userDashboard.clearAll", "Clear All")}</button>
               </div>
               <div className="space-y-1">
                 {OCCASIONS.map((o) => (
@@ -1249,7 +1409,7 @@ function CelebrationPackagesView() {
                         ? "bg-gold/15 border border-gold/30 text-gold font-medium"
                         : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
                     }`}>
-                    {o}
+                    {t("app.userDashboard.occasion_" + o.toLowerCase().replace(/\s+/g, "_"), o)}
                   </button>
                 ))}
               </div>
@@ -1257,7 +1417,7 @@ function CelebrationPackagesView() {
 
             {/* Price Range */}
             <div>
-              <p className="text-xs font-semibold text-foreground uppercase tracking-widest mb-3">Max Price</p>
+              <p className="text-xs font-semibold text-foreground uppercase tracking-widest mb-3">{t("app.userDashboard.maxPrice", "Max Price")}</p>
               <input type="range" min={5000} max={40000} step={1000} value={priceRange}
                 onChange={(e) => { setPriceRange(Number(e.target.value)); setPage(1); }}
                 className="w-full accent-[var(--gold)] cursor-pointer" />
@@ -1270,7 +1430,7 @@ function CelebrationPackagesView() {
 
             {/* Sort */}
             <div>
-              <p className="text-xs font-semibold text-foreground uppercase tracking-widest mb-3">Sort By</p>
+              <p className="text-xs font-semibold text-foreground uppercase tracking-widest mb-3">{t("app.userDashboard.sortBy", "Sort By")}</p>
               <div className="space-y-1">
                 {SORT_OPTIONS.map((s) => (
                   <button key={s} onClick={() => setSortBy(s)}
@@ -1279,7 +1439,7 @@ function CelebrationPackagesView() {
                         ? "bg-gold/15 border border-gold/30 text-gold font-medium"
                         : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
                     }`}>
-                    {s}
+                    {t("app.userDashboard.sort_" + s.toLowerCase().replace(/:/g, "").replace(/\s+/g, "_"), s)}
                   </button>
                 ))}
               </div>
@@ -1289,7 +1449,9 @@ function CelebrationPackagesView() {
           {/* Compare bar */}
           {compareList.length > 0 && (
             <div className="glass-card rounded-2xl p-4 border-gold/25">
-              <p className="text-xs font-semibold text-gold uppercase tracking-widest mb-2">Comparing ({compareList.length}/3)</p>
+              <p className="text-xs font-semibold text-gold uppercase tracking-widest mb-2">
+                {t("app.userDashboard.comparingCount", "Comparing ({{count}}/3)", { count: compareList.length })}
+              </p>
               <div className="space-y-1">
                 {compareList.map((id) => {
                   const pkg = CELEBRATION_PACKAGES.find((p) => p.id === id)!;
@@ -1301,7 +1463,7 @@ function CelebrationPackagesView() {
                   );
                 })}
               </div>
-              <button className="mt-3 w-full gold-btn rounded-lg py-1.5 text-xs font-semibold">Compare Now</button>
+              <button className="mt-3 w-full gold-btn rounded-lg py-1.5 text-xs font-semibold">{t("app.userDashboard.compareNow", "Compare Now")}</button>
             </div>
           )}
         </aside>
@@ -1311,8 +1473,8 @@ function CelebrationPackagesView() {
           {paginated.length === 0 ? (
             <div className="glass-card rounded-2xl p-16 text-center">
               <Sparkles className="h-10 w-10 text-gold/30 mx-auto mb-3" />
-              <p className="text-muted-foreground text-sm">No packages match your filters.</p>
-              <button onClick={clearFilters} className="mt-4 text-gold text-xs hover:underline">Clear filters</button>
+              <p className="text-muted-foreground text-sm">{t("app.userDashboard.noPackagesMatch", "No packages match your filters.")}</p>
+              <button onClick={clearFilters} className="mt-4 text-gold text-xs hover:underline">{t("app.userDashboard.clearFilters", "Clear filters")}</button>
             </div>
           ) : (
             <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -1330,14 +1492,18 @@ function CelebrationPackagesView() {
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
                       {/* Badge */}
-                      <span className={`absolute top-3 left-3 px-2.5 py-1 rounded-full border text-[10px] font-bold tracking-widest ${pkg.badgeColor}`}>{pkg.badge}</span>
+                      <span className={`absolute top-3 left-3 px-2.5 py-1 rounded-full border text-[10px] font-bold tracking-widest ${pkg.badgeColor}`}>
+                        {t("app.userDashboard.badge_" + pkg.badge.toLowerCase().replace(/\s+/g, "_"), pkg.badge)}
+                      </span>
                       {/* Wishlist */}
                       <button onClick={() => toggleWishlist(pkg.id)}
                         className="absolute top-3 right-3 h-8 w-8 rounded-xl bg-black/40 backdrop-blur flex items-center justify-center hover:bg-black/60 transition-colors">
                         <Heart className={`h-4 w-4 transition-colors ${isWishlisted ? "fill-rose-400 text-rose-400" : "text-white"}`} />
                       </button>
                       {/* Occasion */}
-                      <p className="absolute bottom-3 left-3 text-[10px] text-gold/90 uppercase tracking-widest font-semibold">{pkg.occasion}</p>
+                      <p className="absolute bottom-3 left-3 text-[10px] text-gold/90 uppercase tracking-widest font-semibold">
+                        {t("app.userDashboard.occasion_" + pkg.occasion.toLowerCase().replace(/\s+/g, "_"), pkg.occasion)}
+                      </p>
                     </div>
 
                     {/* Body */}
@@ -1375,12 +1541,12 @@ function CelebrationPackagesView() {
                                 ? "bg-gold/20 border-gold/40 text-gold"
                                 : "border-white/10 text-muted-foreground hover:border-gold/30 hover:text-gold"
                             }`}>
-                            {isCompared ? "✓ Compare" : "+ Compare"}
+                            {isCompared ? t("app.userDashboard.compared", "✓ Compare") : t("app.userDashboard.compare", "+ Compare")}
                           </button>
                         </div>
                         <button onClick={() => setDetailPkg(pkg)}
                           className="w-full gold-btn rounded-xl py-2.5 text-sm font-semibold flex items-center justify-center gap-2">
-                          <Eye className="h-4 w-4" /> View Details
+                          <Eye className="h-4 w-4" /> {t("app.userDashboard.viewDetails", "View Details")}
                         </button>
                       </div>
                     </div>
@@ -1417,6 +1583,7 @@ function CelebrationPackagesView() {
   );
 }
 function OffersView() {
+  const { t } = useTranslation();
   const [tab, setTab] = useState<"offers" | "referrals" | "coupons">("offers");
   const [copiedCode, setCopiedCode] = useState("");
   const [couponInput, setCouponInput] = useState("");
@@ -1443,17 +1610,17 @@ function OffersView() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="font-display text-2xl text-foreground">Special Offers & Referrals</h3>
+        <h3 className="font-display text-2xl text-foreground">{t("app.userDashboard.specialOffersReferrals", "Special Offers & Referrals")}</h3>
       </div>
 
       {/* Tabs */}
       <div className="flex gap-1 glass rounded-xl p-1 w-fit">
-        {(["offers", "referrals", "coupons"] as const).map((t) => (
-          <button key={t} onClick={() => setTab(t)}
+        {(["offers", "referrals", "coupons"] as const).map((tVal) => (
+          <button key={tVal} onClick={() => setTab(tVal)}
             className={`px-4 py-2 rounded-lg text-xs font-medium capitalize transition-colors ${
-              tab === t ? "bg-gold/20 text-gold" : "text-muted-foreground hover:text-foreground"
+              tab === tVal ? "bg-gold/20 text-gold" : "text-muted-foreground hover:text-foreground"
             }`}>
-            {t === "offers" ? "Offers" : t === "referrals" ? "Referrals" : "Coupons"}
+            {tVal === "offers" ? t("app.userDashboard.tabOffers", "Offers") : tVal === "referrals" ? t("app.userDashboard.tabReferrals", "Referrals") : t("app.userDashboard.tabCoupons", "Coupons")}
           </button>
         ))}
       </div>
@@ -1462,10 +1629,10 @@ function OffersView() {
       {tab === "offers" && (
         <div className="grid md:grid-cols-2 gap-4">
           {[
-            { title: "Early Bird Discount",   desc: "Book 60 days in advance and save 20% on select suites.", badge: "20% OFF",    expires: "Mar 31, 2025" },
-            { title: "Extended Stay Benefit", desc: "Stay 5 nights or more and enjoy your 6th night complimentary.", badge: "FREE NIGHT", expires: "Jun 30, 2025" },
-            { title: "Weekday Escape",        desc: "Exclusive rates on Monday–Thursday bookings across all properties.", badge: "15% OFF",    expires: "Apr 15, 2025" },
-            { title: "Anniversary Package",   desc: "Complimentary suite upgrade and floral decor for anniversary stays.", badge: "EXCLUSIVE",  expires: "Dec 31, 2025" },
+            { title: t("app.userDashboard.offerTitle_0", "Early Bird Discount"),   desc: t("app.userDashboard.offerDesc_0", "Book 60 days in advance and save 20% on select suites."), badge: t("app.userDashboard.offerBadge_0", "20% OFF"),    expires: "Mar 31, 2025" },
+            { title: t("app.userDashboard.offerTitle_1", "Extended Stay Benefit"), desc: t("app.userDashboard.offerDesc_1", "Stay 5 nights or more and enjoy your 6th night complimentary."), badge: t("app.userDashboard.offerBadge_1", "FREE NIGHT"), expires: "Jun 30, 2025" },
+            { title: t("app.userDashboard.offerTitle_2", "Weekday Escape"),        desc: t("app.userDashboard.offerDesc_2", "Exclusive rates on Monday–Thursday bookings across all properties."), badge: t("app.userDashboard.offerBadge_2", "15% OFF"),    expires: "Apr 15, 2025" },
+            { title: t("app.userDashboard.offerTitle_3", "Anniversary Package"),   desc: t("app.userDashboard.offerDesc_3", "Complimentary suite upgrade and floral decor for anniversary stays."), badge: t("app.userDashboard.offerBadge_3", "EXCLUSIVE"),  expires: "Dec 31, 2025" },
           ].map((o) => (
             <div key={o.title} className="glass-card rounded-2xl p-5 hover:border-gold/30 transition-colors">
               <div className="flex items-start justify-between gap-3 mb-3">
@@ -1473,7 +1640,7 @@ function OffersView() {
                 <span className="px-2.5 py-1 rounded-full border border-gold/40 text-gold bg-gold/10 text-[10px] font-bold tracking-widest shrink-0">{o.badge}</span>
               </div>
               <p className="text-sm text-muted-foreground leading-relaxed">{o.desc}</p>
-              <p className="text-[11px] text-muted-foreground mt-3">Valid until {o.expires}</p>
+              <p className="text-[11px] text-muted-foreground mt-3">{t("app.userDashboard.validUntil", "Valid until {{date}}", { date: o.expires })}</p>
             </div>
           ))}
         </div>
@@ -1486,9 +1653,9 @@ function OffersView() {
           <div className="glass-card rounded-2xl p-6 bg-gradient-to-br from-gold/10 to-transparent border-gold/25">
             <div className="flex items-start justify-between mb-4">
               <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">Your Referral Code</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">{t("app.userDashboard.yourReferralCode", "Your Referral Code")}</p>
                 <p className="font-display text-4xl text-gold tracking-widest">ADITH2025</p>
-                <p className="text-xs text-muted-foreground mt-2">Share this code and earn ₹500 for every friend who books</p>
+                <p className="text-xs text-muted-foreground mt-2">{t("app.userDashboard.referralDesc", "Share this code and earn ₹500 for every friend who books")}</p>
               </div>
               <Users className="h-8 w-8 text-gold/40" />
             </div>
@@ -1496,10 +1663,10 @@ function OffersView() {
               <button onClick={() => copyCode("ADITH2025")}
                 className="flex-1 gold-btn rounded-xl py-2.5 text-sm font-semibold flex items-center justify-center gap-2">
                 {copiedCode === "ADITH2025" ? <CheckCircle2 className="h-4 w-4" /> : <Download className="h-4 w-4" />}
-                {copiedCode === "ADITH2025" ? "Copied!" : "Copy Code"}
+                {copiedCode === "ADITH2025" ? t("app.userDashboard.copied", "Copied!") : t("app.userDashboard.copyCode", "Copy Code")}
               </button>
               <button className="flex-1 glass rounded-xl py-2.5 text-sm font-semibold text-gold border border-gold/30 hover:bg-gold/10 transition-colors flex items-center justify-center gap-2">
-                <ArrowUpRight className="h-4 w-4" /> Share
+                <ArrowUpRight className="h-4 w-4" /> {t("app.userDashboard.share", "Share")}
               </button>
             </div>
           </div>
@@ -1507,9 +1674,9 @@ function OffersView() {
           {/* Stats */}
           <div className="grid grid-cols-3 gap-4">
             {[
-              { label: "Friends Referred", value: "6",      icon: Users },
-              { label: "Successful Bookings", value: "4",   icon: CheckCircle2 },
-              { label: "Rewards Earned", value: "₹2,000",   icon: Star },
+              { label: t("app.userDashboard.friendsReferred", "Friends Referred"), value: "6",      icon: Users },
+              { label: t("app.userDashboard.successfulBookings", "Successful Bookings"), value: "4",   icon: CheckCircle2 },
+              { label: t("app.userDashboard.rewardsEarned", "Rewards Earned"), value: "₹2,000",   icon: Star },
             ].map((s) => {
               const Icon = s.icon;
               return (
@@ -1528,16 +1695,16 @@ function OffersView() {
 
           {/* How it works */}
           <div className="glass-card rounded-2xl p-5 space-y-4">
-            <h4 className="font-display text-lg text-foreground">How It Works</h4>
+            <h4 className="font-display text-lg text-foreground">{t("app.userDashboard.howItWorks", "How It Works")}</h4>
             <div className="space-y-3">
               {[
-                { step: "01", text: "Share your unique referral code with friends" },
-                { step: "02", text: "Friend signs up and makes their first booking" },
-                { step: "03", text: "You earn ₹500 wallet credit instantly" },
-                { step: "04", text: "Your friend gets ₹250 off their first stay" },
+                { step: "01", text: t("app.userDashboard.refStep1", "Share your unique referral code with friends") },
+                { step: "02", text: t("app.userDashboard.refStep2", "Friend signs up and makes their first booking") },
+                { step: "03", text: t("app.userDashboard.refStep3", "You earn ₹500 wallet credit instantly") },
+                { step: "04", text: t("app.userDashboard.refStep4", "Your friend gets ₹250 off their first stay") },
               ].map((s) => (
                 <div key={s.step} className="flex items-center gap-4">
-                  <span className="h-8 w-8 rounded-xl bg-gold/10 border border-gold/20 flex items-center justify-center text-[11px] font-bold text-gold shrink-0">{s.step}</span>
+                  <span className="h-8 w-8 rounded-xl bg-gold/10 border border-gold/25 flex items-center justify-center text-[11px] font-bold text-gold shrink-0">{s.step}</span>
                   <p className="text-sm text-muted-foreground">{s.text}</p>
                 </div>
               ))}
@@ -1551,36 +1718,36 @@ function OffersView() {
         <div className="space-y-5">
           {/* Apply coupon input */}
           <div className="glass-card rounded-2xl p-5 space-y-3">
-            <h4 className="font-display text-lg text-foreground">Apply a Coupon</h4>
+            <h4 className="font-display text-lg text-foreground">{t("app.userDashboard.applyCoupon", "Apply a Coupon")}</h4>
             <div className="flex gap-3">
               <input
                 value={couponInput}
                 onChange={(e) => { setCouponInput(e.target.value.toUpperCase()); setAppliedCoupon(""); }}
-                placeholder="Enter coupon code..."
+                placeholder={t("app.userDashboard.couponPlaceholder", "Enter coupon code...")}
                 className="luxury-input flex-1 rounded-xl px-4 py-2.5 text-sm text-foreground bg-transparent uppercase tracking-widest"
               />
               <button onClick={applyCoupon}
                 className="gold-btn rounded-xl px-5 py-2.5 text-sm font-semibold">
-                Apply
+                {t("app.userDashboard.apply", "Apply")}
               </button>
             </div>
             {appliedCoupon && appliedCoupon !== "invalid" && (
               <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-400/10 border border-emerald-400/20">
                 <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-                <p className="text-xs text-emerald-400">Coupon <span className="font-bold">{appliedCoupon}</span> applied successfully!</p>
+                <p className="text-xs text-emerald-400">{t("app.userDashboard.couponApplied", "Coupon {{code}} applied successfully!", { code: appliedCoupon })}</p>
               </div>
             )}
             {appliedCoupon === "invalid" && (
               <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-rose-400/10 border border-rose-400/20">
                 <XCircle className="h-4 w-4 text-rose-400" />
-                <p className="text-xs text-rose-400">Invalid or expired coupon code.</p>
+                <p className="text-xs text-rose-400">{t("app.userDashboard.couponInvalid", "Invalid or expired coupon code.")}</p>
               </div>
             )}
           </div>
 
           {/* Available coupons */}
           <div>
-            <p className="text-xs text-muted-foreground uppercase tracking-widest mb-3">Available Coupons</p>
+            <p className="text-xs text-muted-foreground uppercase tracking-widest mb-3">{t("app.userDashboard.availableCoupons", "Available Coupons")}</p>
             <div className="grid md:grid-cols-2 gap-4">
               {COUPONS.map((c) => (
                 <div key={c.code} className="glass-card rounded-2xl p-5 hover:border-gold/30 transition-colors">
@@ -1593,13 +1760,13 @@ function OffersView() {
                   <p className="text-sm text-muted-foreground leading-relaxed">{c.desc}</p>
                   <div className="flex items-center justify-between mt-3">
                     <div className="space-y-0.5">
-                      <p className="text-[10px] text-muted-foreground">Min. spend: <span className="text-foreground">{c.minSpend}</span></p>
-                      <p className="text-[10px] text-muted-foreground">Valid until {c.expires}</p>
+                      <p className="text-[10px] text-muted-foreground">{t("app.userDashboard.minSpend", "Min. spend: {{amount}}", { amount: c.minSpend })}</p>
+                      <p className="text-[10px] text-muted-foreground">{t("app.userDashboard.validUntil", "Valid until {{date}}", { date: c.expires })}</p>
                     </div>
                     <button onClick={() => copyCode(c.code)}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-gold/30 bg-gold/8 text-gold text-xs hover:bg-gold/15 transition-colors">
                       {copiedCode === c.code ? <CheckCircle2 className="h-3 w-3" /> : <Download className="h-3 w-3" />}
-                      {copiedCode === c.code ? "Copied" : "Copy"}
+                      {copiedCode === c.code ? t("app.userDashboard.copied", "Copied") : t("app.userDashboard.copy", "Copy")}
                     </button>
                   </div>
                 </div>
@@ -1613,15 +1780,16 @@ function OffersView() {
 }
 
 function ProfileView() {
+  const { t } = useTranslation();
   return (
     <div className="space-y-6 max-w-xl">
-      <h3 className="font-display text-2xl text-foreground">Profile Settings</h3>
+      <h3 className="font-display text-2xl text-foreground">{t("app.userDashboard.profileSettings", "Profile Settings")}</h3>
       <div className="glass-card rounded-2xl p-6 space-y-5">
         {[
-          { label: "Full Name",     value: "Adithya Kumar",      type: "text"  },
-          { label: "Email",         value: "adithya@example.com", type: "email" },
-          { label: "Phone",         value: "+91 98765 43210",      type: "tel"   },
-          { label: "Date of Birth", value: "1995-04-12",           type: "date"  },
+          { label: t("app.auth.fullName", "Full Name"),     value: "Adithya Kumar",      type: "text"  },
+          { label: t("app.auth.emailLabel", "Email Address"), value: "adithya@example.com", type: "email" },
+          { label: t("app.auth.phoneNumber", "Phone Number"), value: "+91 98765 43210",      type: "tel"   },
+          { label: t("app.userDashboard.dob", "Date of Birth"), value: "1995-04-12",           type: "date"  },
         ].map((f) => (
           <div key={f.label} className="space-y-1.5">
             <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">{f.label}</label>
@@ -1629,42 +1797,43 @@ function ProfileView() {
               className="luxury-input w-full rounded-xl px-4 py-2.5 text-sm text-foreground bg-transparent" />
           </div>
         ))}
-        <button className="gold-btn w-full rounded-xl py-2.5 text-sm font-semibold mt-2">Save Changes</button>
+        <button className="gold-btn w-full rounded-xl py-2.5 text-sm font-semibold mt-2">{t("app.userDashboard.saveChanges", "Save Changes")}</button>
       </div>
     </div>
   );
 }
 
 function HelpView() {
+  const { t } = useTranslation();
   const topics = [
-    "Booking queries & confirmations",
-    "Celebration package customisation",
-    "Payment & refund requests",
-    "Live celebration sharing support",
-    "Complaints & escalations",
-    "Legal & privacy matters",
+    t("app.userDashboard.helpTopic1", "Booking queries & confirmations"),
+    t("app.userDashboard.helpTopic2", "Celebration package customisation"),
+    t("app.userDashboard.helpTopic3", "Payment & refund requests"),
+    t("app.userDashboard.helpTopic4", "Live celebration sharing support"),
+    t("app.userDashboard.helpTopic5", "Complaints & escalations"),
+    t("app.userDashboard.helpTopic6", "Legal & privacy matters"),
   ];
 
   const contactCards = [
     {
       icon: MessageSquare,
-      label: "Email Support",
+      label: t("app.userDashboard.emailSupport", "Email Support"),
       value: "vibenestsmeetingpoint@gmail.com",
-      sub: "We respond within 1–2 business days",
+      sub: t("app.userDashboard.emailSupportDesc", "We respond within 1–2 business days"),
       href: "mailto:vibenestsmeetingpoint@gmail.com",
     },
     {
       icon: Phone,
-      label: "Support Number",
+      label: t("app.userDashboard.supportNumber", "Support Number"),
       value: "+91 9000201011",
-      sub: "Call or WhatsApp during support hours",
+      sub: t("app.userDashboard.supportNumberDesc", "Call or WhatsApp during support hours"),
       href: "tel:+919000201011",
     },
     {
       icon: Clock,
-      label: "Support Hours",
-      value: "9:00 AM – 9:00 PM IST",
-      sub: "Monday to Sunday, incl. public holidays",
+      label: t("app.userDashboard.supportHours", "Support Hours"),
+      value: t("app.userDashboard.supportHoursValue", "9:00 AM – 9:00 PM IST"),
+      sub: t("app.userDashboard.supportHoursDesc", "Monday to Sunday, incl. public holidays"),
       href: null,
     },
   ];
@@ -1675,10 +1844,10 @@ function HelpView() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="font-display text-2xl text-foreground">Help & Support</h3>
-          <p className="text-xs text-muted-foreground mt-1">Vibenests Private Luxury Suites — we're here every day</p>
+          <h3 className="font-display text-2xl text-foreground">{t("app.userDashboard.helpSupport", "Help & Support")}</h3>
+          <p className="text-xs text-muted-foreground mt-1">{t("app.userDashboard.helpSupportDesc", "Vibenests Private Luxury Suites — we're here every day")}</p>
         </div>
-        <span className="px-3 py-1 rounded-full bg-gold/10 border border-gold/25 text-gold text-[10px] font-bold tracking-widest uppercase">9 AM – 9 PM IST</span>
+        <span className="px-3 py-1 rounded-full bg-gold/10 border border-gold/25 text-gold text-[10px] font-bold tracking-widest uppercase">{t("app.userDashboard.supportHoursBadge", "9 AM – 9 PM IST")}</span>
       </div>
 
       {/* Two-column layout */}
@@ -1686,7 +1855,7 @@ function HelpView() {
 
         {/* Left — contact cards */}
         <div className="space-y-3">
-          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">Contact Us</p>
+          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">{t("app.userDashboard.contactUs", "Contact Us")}</p>
           {contactCards.map((c) => {
             const Icon = c.icon;
             const cls = "flex items-center gap-4 glass-card rounded-2xl p-5 transition-colors group";
@@ -1714,12 +1883,12 @@ function HelpView() {
         {/* Right — topics + legal */}
         <div className="space-y-4">
           <div className="glass-card rounded-2xl p-5 space-y-4">
-            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">We Can Help With</p>
+            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">{t("app.userDashboard.weCanHelp", "We Can Help With")}</p>
             <ul className="grid grid-cols-1 sm:grid-cols-2 gap-y-2.5 gap-x-4">
-              {topics.map((t) => (
-                <li key={t} className="flex items-center gap-2 text-sm text-muted-foreground">
+              {topics.map((tVal) => (
+                <li key={tVal} className="flex items-center gap-2 text-sm text-muted-foreground">
                   <span className="h-1.5 w-1.5 rounded-full bg-gold/60 shrink-0" />
-                  {t}
+                  {tVal}
                 </li>
               ))}
             </ul>
@@ -1727,19 +1896,19 @@ function HelpView() {
 
           {/* Business info */}
           <div className="glass-card rounded-2xl p-5 space-y-1.5">
-            <p className="text-sm font-semibold text-foreground">Vibenests Private Luxury Suites</p>
+            <p className="text-sm font-semibold text-foreground">{t("app.userDashboard.businessInfoTitle", "Vibenests Private Luxury Suites")}</p>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Premium private suite bookings and celebration experiences. Our team is available 7 days a week to assist you.
+              {t("app.userDashboard.businessInfoDesc", "Premium private suite bookings and celebration experiences. Our team is available 7 days a week to assist you.")}
             </p>
           </div>
 
           {/* Legal links */}
           <div className="glass rounded-2xl px-5 py-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
-            <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="hover:text-gold transition-colors">Privacy Policy</a>
+            <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="hover:text-gold transition-colors">{t("app.userDashboard.privacyPolicy", "Privacy Policy")}</a>
             <span className="text-white/15">|</span>
-            <a href="/terms-of-use" target="_blank" rel="noopener noreferrer" className="hover:text-gold transition-colors">Terms of Use</a>
+            <a href="/terms-of-use" target="_blank" rel="noopener noreferrer" className="hover:text-gold transition-colors">{t("app.userDashboard.termsOfUse", "Terms of Use")}</a>
             <span className="text-white/15">|</span>
-            <a href="/contact" target="_blank" rel="noopener noreferrer" className="hover:text-gold transition-colors">Full Contact Page</a>
+            <a href="/contact" target="_blank" rel="noopener noreferrer" className="hover:text-gold transition-colors">{t("app.userDashboard.fullContactPage", "Full Contact Page")}</a>
           </div>
         </div>
       </div>
@@ -1749,19 +1918,35 @@ function HelpView() {
 
 /* ─── Main Component ─────────────────────────────────── */
 export default function UserDashboardPage() {
-  const [activeNav, setActiveNav] = useState("dashboard");
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [profileOpen, setProfileOpen] = useState(false);
   const navigate = useNavigate();
+  const { t } = useTranslation();
+
+  const [activeNav, setActiveNav] = useState("dashboard");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+
+  // Auto-collapse sidebar on smaller screens, but keep it visible
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 1024) {
+        setSidebarCollapsed(true);
+      } else {
+        setSidebarCollapsed(false);
+      }
+    };
+    window.addEventListener("resize", handleResize);
+    handleResize();
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   function renderContent() {
     switch (activeNav) {
       case "dashboard":   return <DashboardView onNavigate={setActiveNav} />;
       case "suites":      return <SuitesView />;
-      case "my-bookings": return <BookingListView bookings={[]} title="My Bookings" fetchFromApi />;
-      case "upcoming":    return <BookingListView bookings={UPCOMING_BOOKINGS} title="Upcoming Bookings" />;
-      case "past":        return <BookingListView bookings={PAST_BOOKINGS} title="Past Bookings" />;
+      case "my-bookings": return <BookingListView bookings={[]} title={t("app.userDashboard.myBookings", "My Bookings")} fetchFromApi />;
+      case "upcoming":    return <BookingListView bookings={UPCOMING_BOOKINGS} title={t("app.userDashboard.upcomingBookings", "Upcoming Bookings")} />;
+      case "past":        return <BookingListView bookings={PAST_BOOKINGS} title={t("app.userDashboard.pastBookings", "Past Bookings")} />;
       case "wallet":      return <WalletView />;
       case "packages":    return <CelebrationPackagesView />;
       case "offers":      return <OffersView />;
@@ -1796,11 +1981,12 @@ export default function UserDashboardPage() {
             </div>
             <div className="leading-tight">
               <p className="font-display text-sm font-semibold tracking-[0.15em] text-gradient-gold">VIBENESTS</p>
-              <p className="text-[9px] tracking-[0.25em] text-muted-foreground uppercase">Private Luxury Suites</p>
+              <p className="text-[9px] tracking-[0.25em] text-muted-foreground uppercase">{t("app.userDashboard.brandSub", "Private Luxury Suites")}</p>
             </div>
           </div>
         </div>
         <div className="flex items-center gap-3">
+          <LanguageSelector />
           <button className="relative h-9 w-9 rounded-xl glass flex items-center justify-center text-muted-foreground hover:text-gold transition-colors">
             <Bell className="h-4 w-4" />
             <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-gold" />
@@ -1825,12 +2011,12 @@ export default function UserDashboardPage() {
                     <button
                       onClick={() => { navigate("/login"); setProfileOpen(false); }}
                       className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10 transition-colors">
-                      <LogOut className="h-4 w-4 shrink-0" /> Logout
+                      <LogOut className="h-4 w-4 shrink-0" /> {t("app.userDashboard.logout", "Logout")}
                     </button>
                     <button
                       onClick={() => setProfileOpen(false)}
                       className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors">
-                      <X className="h-4 w-4 shrink-0" /> Cancel
+                      <X className="h-4 w-4 shrink-0" /> {t("app.userDashboard.cancel", "Cancel")}
                     </button>
                   </motion.div>
                 </>
@@ -1857,7 +2043,7 @@ export default function UserDashboardPage() {
           <div className={`flex items-center border-b border-white/5 min-h-[64px] ${sidebarCollapsed ? "justify-center px-2 py-4" : "justify-between px-4 py-4"}`}>
             {!sidebarCollapsed && (
               <div>
-                <p className="text-xs text-muted-foreground">Welcome back</p>
+                <p className="text-xs text-muted-foreground">{t("app.userDashboard.welcome", "Welcome back")}</p>
                 <p className="text-sm font-medium text-foreground font-display">Adithya Reddy</p>
               </div>
             )}
@@ -1876,7 +2062,7 @@ export default function UserDashboardPage() {
                 <div className="h-9 w-9 rounded-full bg-gradient-gold flex items-center justify-center font-bold text-[oklch(0.12_0.02_260)] text-sm shrink-0">A</div>
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">Adithya Reddy</p>
-                  <p className="text-[11px] text-gold">Gold Member</p>
+                  <p className="text-[11px] text-gold">{t("app.userDashboard.goldMember", "Gold Member")}</p>
                 </div>
               </div>
             </div>
@@ -1891,9 +2077,22 @@ export default function UserDashboardPage() {
           <nav className="flex-1 px-2 py-4 space-y-0.5 overflow-y-auto scrollbar-none">
             {NAV_ITEMS.map(({ id, label, icon: Icon }) => {
               const active = activeNav === id;
+              const translatedLabel =
+                id === "dashboard" ? t("app.userDashboard.dashboard", "Dashboard") :
+                id === "suites" ? t("app.userDashboard.browseSuites", "Browse Suites") :
+                id === "my-bookings" ? t("app.userDashboard.myBookings", "My Bookings") :
+                id === "upcoming" ? t("app.userDashboard.upcomingBookings", "Upcoming Bookings") :
+                id === "past" ? t("app.userDashboard.pastBookings", "Past Bookings") :
+                id === "wallet" ? t("app.userDashboard.walletPayments", "Wallet & Payments") :
+                id === "packages" ? t("app.userDashboard.celebrationPackages", "Celebration Packages") :
+                id === "offers" ? t("app.userDashboard.specialOffersReferrals", "Special Offers & Referrals") :
+                id === "profile" ? t("app.userDashboard.profileSettings", "Profile Settings") :
+                id === "help" ? t("app.userDashboard.helpSupport", "Help & Support") :
+                id === "write-review" ? t("app.userDashboard.writeReview", "Write a Review") :
+                label;
               return (
                 <button key={id}
-                  title={sidebarCollapsed ? label : undefined}
+                  title={sidebarCollapsed ? translatedLabel : undefined}
                   onClick={() => {
                     if (id === "write-review") { navigate("/user/write-review"); setSidebarOpen(false); return; }
                     setActiveNav(id); setSidebarOpen(false);
@@ -1902,7 +2101,7 @@ export default function UserDashboardPage() {
                     ${sidebarCollapsed ? "justify-center" : ""}
                     ${active ? "bg-gold/15 border border-gold/25 text-gold font-medium" : "text-muted-foreground hover:bg-white/5 hover:text-foreground"}`}>
                   <Icon className={`h-4 w-4 shrink-0 ${active ? "text-gold" : ""}`} />
-                  {!sidebarCollapsed && label}
+                  {!sidebarCollapsed && translatedLabel}
                 </button>
               );
             })}
@@ -1910,10 +2109,10 @@ export default function UserDashboardPage() {
 
           <div className="px-2 pb-6 pt-2 border-t border-white/5">
             <button onClick={() => navigate("/login")}
-              title={sidebarCollapsed ? "Logout" : undefined}
+              title={sidebarCollapsed ? t("app.userDashboard.logout", "Logout") : undefined}
               className={`w-full flex items-center gap-3 px-2.5 py-2.5 rounded-xl text-sm text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10 transition-all ${sidebarCollapsed ? "justify-center" : ""}`}>
               <LogOut className="h-4 w-4 shrink-0" />
-              {!sidebarCollapsed && "Logout"}
+              {!sidebarCollapsed && t("app.userDashboard.logout", "Logout")}
             </button>
           </div>
         </aside>

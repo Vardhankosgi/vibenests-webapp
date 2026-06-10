@@ -3,6 +3,7 @@ import { IndianRupee, TrendingUp, TrendingDown, ArrowLeft, Download, CreditCard,
 import { useNavigate } from "react-router-dom";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { useAppData, parseAmount } from "@/components/admin/AppDataContext";
+import { useTranslation } from "react-i18next";
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Cell, PieChart, Pie,
@@ -13,6 +14,7 @@ const PERIODS = ["Monthly", "Quarterly", "Yearly"];
 
 export default function RevenuePage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { bookings, stats } = useAppData();
   const [period, setPeriod] = useState("Monthly");
   const [txFilter, setTxFilter] = useState("All");
@@ -77,20 +79,20 @@ export default function RevenuePage() {
         {/* Back + actions */}
         <div className="flex items-center justify-between">
           <button onClick={() => navigate("/dashboard")} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-gold transition">
-            <ArrowLeft className="h-4 w-4" /> Back to Dashboard
+            <ArrowLeft className="h-4 w-4" /> {t("app.admin.backToDashboard", "Back to Dashboard")}
           </button>
           <button className="flex items-center gap-2 text-xs gold-btn px-4 py-2 rounded-lg font-medium">
-            <Download className="h-3.5 w-3.5" /> Export Report
+            <Download className="h-3.5 w-3.5" /> {t("app.admin.exportReport", "Export Report")}
           </button>
         </div>
 
         {/* Top KPI cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
           {[
-            { label: "Total Revenue", value: `₹${(totalRevenue / 100000).toFixed(1)}L`, sub: "+18% vs last year", up: true, icon: IndianRupee, accent: "border-[var(--gold)]/30" },
-            { label: "Net Profit",    value: `₹${(netProfit / 100000).toFixed(1)}L`,    sub: "+22% vs last year", up: true, icon: TrendingUp,  accent: "border-emerald-500/30" },
-            { label: "Total Expenses",value: `₹${(totalExpenses / 1000).toFixed(0)}k`,  sub: "+8% vs last year",  up: false,icon: TrendingDown,accent: "border-destructive/30" },
-            { label: "Avg Monthly",   value: `₹${(totalRevenue / 12 / 1000).toFixed(0)}k`, sub: "Per month avg", up: true, icon: IndianRupee, accent: "border-[var(--gold)]/20" },
+            { label: t("app.admin.totalRevenueCard", "Total Revenue"), value: `₹${(totalRevenue / 100000).toFixed(1)}L`, sub: "+18% vs last year", up: true, icon: IndianRupee, accent: "border-[var(--gold)]/30" },
+            { label: t("app.admin.netProfitCard", "Net Profit"),    value: `₹${(netProfit / 100000).toFixed(1)}L`,    sub: "+22% vs last year", up: true, icon: TrendingUp,  accent: "border-emerald-500/30" },
+            { label: t("app.admin.totalExpensesCard", "Total Expenses"),value: `₹${(totalExpenses / 1000).toFixed(0)}k`,  sub: "+8% vs last year",  up: false,icon: TrendingDown,accent: "border-destructive/30" },
+            { label: t("app.admin.avgMonthlyCard", "Avg Monthly"),   value: `₹${(totalRevenue / 12 / 1000).toFixed(0)}k`, sub: "Per month avg", up: true, icon: IndianRupee, accent: "border-[var(--gold)]/20" },
           ].map((c) => (
             <div key={c.label} className={`glass-card rounded-2xl p-5 border ${c.accent} flex items-start justify-between gap-4`}>
               <div>
@@ -108,7 +110,7 @@ export default function RevenuePage() {
         {/* Revenue vs Expenses Chart */}
         <div className="glass-card rounded-2xl p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-display text-lg font-medium">Revenue vs Expenses</h3>
+            <h3 className="font-display text-lg font-medium">{t("app.admin.revenueVsExpenses", "Revenue vs Expenses")}</h3>
             <div className="flex gap-1 p-1 rounded-lg bg-white/[0.04] border border-white/[0.06]">
               {PERIODS.map((p) => (
                 <button key={p} onClick={() => setPeriod(p)}
@@ -154,7 +156,7 @@ export default function RevenuePage() {
         {/* Suite Revenue + Pie */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
           <div className="xl:col-span-2 glass-card rounded-2xl p-5">
-            <h3 className="font-display text-lg font-medium mb-4">Revenue by Suite</h3>
+            <h3 className="font-display text-lg font-medium mb-4">{t("app.admin.revenueBySuite", "Revenue by Suite")}</h3>
             <ResponsiveContainer width="100%" height={240}>
               <BarChart data={suiteRevenue} layout="vertical" margin={{ left: 8 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="oklch(1 0 0 / 0.06)" horizontal={false} />
@@ -172,7 +174,7 @@ export default function RevenuePage() {
           </div>
 
           <div className="glass-card rounded-2xl p-5">
-            <h3 className="font-display text-lg font-medium mb-4">Revenue Split</h3>
+            <h3 className="font-display text-lg font-medium mb-4">{t("app.admin.revenueSplit", "Revenue Split")}</h3>
             <ResponsiveContainer width="100%" height={200}>
               <PieChart>
                 <Pie data={pieData} cx="50%" cy="50%" innerRadius={55} outerRadius={80} paddingAngle={3} dataKey="value">
@@ -200,16 +202,16 @@ export default function RevenuePage() {
 
         {/* Suite performance table */}
         <div className="glass-card rounded-2xl p-5">
-          <h3 className="font-display text-lg font-medium mb-4">Suite Performance</h3>
+          <h3 className="font-display text-lg font-medium mb-4">{t("app.admin.suitePerformance", "Suite Performance")}</h3>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-xs text-muted-foreground uppercase tracking-wide border-b border-white/[0.06]">
-                  <th className="pb-3 pr-4">Suite</th>
-                  <th className="pb-3 pr-4">Bookings</th>
-                  <th className="pb-3 pr-4">Revenue</th>
-                  <th className="pb-3 pr-4">Avg per Booking</th>
-                  <th className="pb-3">Share</th>
+                  <th className="pb-3 pr-4">{t("app.admin.suite", "Suite")}</th>
+                  <th className="pb-3 pr-4">{t("app.admin.bookings", "Bookings")}</th>
+                  <th className="pb-3 pr-4">{t("app.admin.revenue", "Revenue")}</th>
+                  <th className="pb-3 pr-4">{t("app.admin.avgBookingValueLabel", "Avg per Booking")}</th>
+                  <th className="pb-3">{t("app.admin.discount", "Share")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/[0.04]">
@@ -237,27 +239,30 @@ export default function RevenuePage() {
         {/* Transactions */}
         <div className="glass-card rounded-2xl p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-display text-lg font-medium">Recent Transactions</h3>
+            <h3 className="font-display text-lg font-medium">{t("app.admin.recentTransactionsTitle", "Recent Transactions")}</h3>
             <div className="flex gap-1 p-1 rounded-lg bg-white/[0.04] border border-white/[0.06]">
-              {["All", "Settled", "Pending"].map((f) => (
-                <button key={f} onClick={() => setTxFilter(f)}
-                  className={`px-3 py-1 rounded-md text-xs font-medium transition ${txFilter === f ? "bg-[var(--gold)]/20 text-gold border border-[var(--gold)]/30" : "text-muted-foreground hover:text-foreground"}`}>
+              {[t("app.admin.allFilter","All"), t("app.admin.settledFilter","Settled"), t("app.admin.pendingFilter","Pending")].map((f, i) => {
+                const vals = ["All","Settled","Pending"];
+                return (
+                <button key={f} onClick={() => setTxFilter(vals[i])}
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition ${txFilter === vals[i] ? "bg-[var(--gold)]/20 text-gold border border-[var(--gold)]/30" : "text-muted-foreground hover:text-foreground"}`}>
                   {f}
                 </button>
-              ))}
+                );
+              })}
             </div>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-xs text-muted-foreground uppercase tracking-wide border-b border-white/[0.06]">
-                  <th className="pb-3 pr-4">Txn ID</th>
-                  <th className="pb-3 pr-4">Guest</th>
-                  <th className="pb-3 pr-4">Suite</th>
-                  <th className="pb-3 pr-4">Date</th>
-                  <th className="pb-3 pr-4">Amount</th>
-                  <th className="pb-3 pr-4">Method</th>
-                  <th className="pb-3">Status</th>
+                  <th className="pb-3 pr-4">{t("app.admin.txnIdCol","Txn ID")}</th>
+                  <th className="pb-3 pr-4">{t("app.admin.guest","Guest")}</th>
+                  <th className="pb-3 pr-4">{t("app.admin.suite","Suite")}</th>
+                  <th className="pb-3 pr-4">{t("app.admin.date","Date")}</th>
+                  <th className="pb-3 pr-4">{t("app.admin.amount","Amount")}</th>
+                  <th className="pb-3 pr-4">{t("app.admin.methodCol","Method")}</th>
+                  <th className="pb-3">{t("app.admin.status","Status")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/[0.04]">

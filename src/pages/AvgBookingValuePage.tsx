@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Download, TrendingUp, TrendingDown, IndianRupee, BarChart2 } from "lucide-react";
 import { AdminHeader } from "@/components/admin/AdminHeader";
+import { useTranslation } from "react-i18next";
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Cell, PieChart, Pie,
@@ -63,6 +64,7 @@ const growth = Math.round(((monthlyAvg[11].avg - monthlyAvg[0].avg) / monthlyAvg
 
 export default function AvgBookingValuePage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [sortBy, setSortBy] = useState<"amount" | "addons">("amount");
 
   const sorted = [...recentBookings].sort((a, b) => b[sortBy] - a[sortBy]);
@@ -75,20 +77,20 @@ export default function AvgBookingValuePage() {
         {/* Back + Export */}
         <div className="flex items-center justify-between">
           <button onClick={() => navigate("/dashboard")} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-gold transition">
-            <ArrowLeft className="h-4 w-4" /> Back to Dashboard
+            <ArrowLeft className="h-4 w-4" /> {t("app.admin.backToDashboard", "Back to Dashboard")}
           </button>
           <button className="flex items-center gap-2 text-xs gold-btn px-4 py-2 rounded-lg font-medium">
-            <Download className="h-3.5 w-3.5" /> Export Report
+            <Download className="h-3.5 w-3.5" /> {t("app.admin.exportReport", "Export Report")}
           </button>
         </div>
 
         {/* KPI Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
           {[
-            { label: "Avg. Booking Value", value: `₹${overallAvg.toLocaleString()}`, sub: `+${growth}% YoY growth`, up: true, icon: IndianRupee, accent: "border-[var(--gold)]/30" },
-            { label: "Highest Month", value: `₹${highestMonth.avg.toLocaleString()}`, sub: highestMonth.month + " 2025", up: true, icon: TrendingUp, accent: "border-emerald-500/30" },
-            { label: "Lowest Month", value: `₹${lowestMonth.avg.toLocaleString()}`, sub: lowestMonth.month + " 2025", up: false, icon: TrendingDown, accent: "border-amber-500/30" },
-            { label: "Avg. Add-on Value", value: "₹1,080", sub: "+14% vs last month", up: true, icon: BarChart2, accent: "border-[var(--gold)]/20" },
+            { label: t("app.admin.avgBookingValueLabel", "Avg. Booking Value"), value: `₹${overallAvg.toLocaleString()}`, sub: `+${growth}% YoY growth`, up: true, icon: IndianRupee, accent: "border-[var(--gold)]/30" },
+            { label: t("app.admin.highestMonth", "Highest Month"), value: `₹${highestMonth.avg.toLocaleString()}`, sub: highestMonth.month + " 2025", up: true, icon: TrendingUp, accent: "border-emerald-500/30" },
+            { label: t("app.admin.lowestMonth", "Lowest Month"), value: `₹${lowestMonth.avg.toLocaleString()}`, sub: lowestMonth.month + " 2025", up: false, icon: TrendingDown, accent: "border-amber-500/30" },
+            { label: t("app.admin.avgAddonValue", "Avg. Add-on Value"), value: "₹1,080", sub: "+14% vs last month", up: true, icon: BarChart2, accent: "border-[var(--gold)]/20" },
           ].map((c) => (
             <div key={c.label} className={`glass-card rounded-2xl p-5 border ${c.accent} flex items-start justify-between gap-4`}>
               <div>
@@ -106,7 +108,7 @@ export default function AvgBookingValuePage() {
         {/* Monthly Avg Trend + Value Range */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
           <div className="xl:col-span-2 glass-card rounded-2xl p-5">
-            <h3 className="font-display text-lg font-medium mb-4">Monthly Avg. Booking Value Trend</h3>
+            <h3 className="font-display text-lg font-medium mb-4">{t("app.admin.monthlyAvgTrend", "Monthly Avg. Booking Value Trend")}</h3>
             <ResponsiveContainer width="100%" height={260}>
               <LineChart data={monthlyAvg}>
                 <CartesianGrid strokeDasharray="3 3" stroke="oklch(1 0 0 / 0.06)" />
@@ -131,7 +133,7 @@ export default function AvgBookingValuePage() {
           </div>
 
           <div className="glass-card rounded-2xl p-5">
-            <h3 className="font-display text-lg font-medium mb-4">Value Range Distribution</h3>
+            <h3 className="font-display text-lg font-medium mb-4">{t("app.admin.valueRangeDist", "Value Range Distribution")}</h3>
             <ResponsiveContainer width="100%" height={200}>
               <PieChart>
                 <Pie data={valueRanges} cx="50%" cy="50%" innerRadius={50} outerRadius={78} paddingAngle={3} dataKey="count" nameKey="range">
@@ -162,7 +164,7 @@ export default function AvgBookingValuePage() {
         {/* Suite Avg + Occasion Avg */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
           <div className="glass-card rounded-2xl p-5">
-            <h3 className="font-display text-lg font-medium mb-4">Avg. Value by Suite</h3>
+            <h3 className="font-display text-lg font-medium mb-4">{t("app.admin.avgValueBySuite", "Avg. Value by Suite")}</h3>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={suiteAvg} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" stroke="oklch(1 0 0 / 0.06)" horizontal={false} />
@@ -180,7 +182,7 @@ export default function AvgBookingValuePage() {
           </div>
 
           <div className="glass-card rounded-2xl p-5">
-            <h3 className="font-display text-lg font-medium mb-4">Avg. Value by Occasion</h3>
+            <h3 className="font-display text-lg font-medium mb-4">{t("app.admin.avgValueByOccasion", "Avg. Value by Occasion")}</h3>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={occasionAvg} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" stroke="oklch(1 0 0 / 0.06)" horizontal={false} />
@@ -201,12 +203,12 @@ export default function AvgBookingValuePage() {
         {/* Booking Value Breakdown Table */}
         <div className="glass-card rounded-2xl p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-display text-lg font-medium">Booking Value Breakdown</h3>
+            <h3 className="font-display text-lg font-medium">{t("app.admin.bookingValueBreakdown", "Booking Value Breakdown")}</h3>
             <div className="flex gap-1 p-1 rounded-lg bg-white/[0.04] border border-white/[0.06]">
               {(["amount", "addons"] as const).map((s) => (
                 <button key={s} onClick={() => setSortBy(s)}
                   className={`px-3 py-1 rounded-md text-xs font-medium transition ${sortBy === s ? "bg-[var(--gold)]/20 text-gold border border-[var(--gold)]/30" : "text-muted-foreground hover:text-foreground"}`}>
-                  {s === "amount" ? "By Total" : "By Add-ons"}
+                  {s === "amount" ? t("app.admin.byTotal", "By Total") : t("app.admin.byAddons", "By Add-ons")}
                 </button>
               ))}
             </div>
@@ -215,13 +217,13 @@ export default function AvgBookingValuePage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-xs text-muted-foreground uppercase tracking-wide border-b border-white/[0.06]">
-                  <th className="pb-3 pr-4">Booking ID</th>
-                  <th className="pb-3 pr-4">Guest</th>
-                  <th className="pb-3 pr-4">Suite</th>
-                  <th className="pb-3 pr-4">Occasion</th>
-                  <th className="pb-3 pr-4">Date</th>
-                  <th className="pb-3 pr-4">Base + Add-ons</th>
-                  <th className="pb-3">Total</th>
+                  <th className="pb-3 pr-4">{t("app.admin.bookingIdCol", "Booking ID")}</th>
+                  <th className="pb-3 pr-4">{t("app.admin.guestCol", "Guest")}</th>
+                  <th className="pb-3 pr-4">{t("app.admin.suiteCol", "Suite")}</th>
+                  <th className="pb-3 pr-4">{t("app.admin.occasionCol", "Occasion")}</th>
+                  <th className="pb-3 pr-4">{t("app.admin.dateCol", "Date")}</th>
+                  <th className="pb-3 pr-4">{t("app.admin.baseAddons", "Base + Add-ons")}</th>
+                  <th className="pb-3">{t("app.admin.totalCol", "Total")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/[0.04]">

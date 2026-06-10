@@ -5,6 +5,20 @@ import { useAuth } from "@/components/auth/AuthContext";
 import { authApi } from "@/lib/api";
 import { LayoutDashboard, CalendarDays, BedDouble, BarChart2, Settings, LogOut, Menu, Tag, Package, Users, Gift,CreditCard } from "lucide-react";
 import { LogoPopover } from "@/components/shared/LogoPopover";
+import { useTranslation } from "react-i18next";
+
+const navItemKeys: { [key: string]: string } = {
+  "Dashboard": "dashboard",
+  "Bookings": "bookings",
+  "Suite Booking": "suiteBooking",
+  "Suites": "suites",
+  "Add-on Management": "addonManagement",
+  "Celebration Packages": "celebrationPackages",
+  "User Management": "userManagement",
+  "Analytics": "analytics",
+  "Offers & Refund Configurations": "offersRefund",
+  "Settings": "settings",
+};
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
@@ -27,6 +41,7 @@ export function AdminSidebar({ collapsed, onToggle }: AdminSidebarProps) {
   const [showConfirm, setShowConfirm] = useState(false);
   const navigate = useNavigate();
   const { clearSession } = useAuth();
+  const { t } = useTranslation();
   return (
     <>
     <aside
@@ -41,7 +56,7 @@ export function AdminSidebar({ collapsed, onToggle }: AdminSidebarProps) {
             <LogoPopover className="h-16 w-16 object-contain shrink-0" />
             <div className="leading-tight">
               <div className="font-display text-xs font-semibold tracking-[0.15em] text-gradient-gold">VIBENESTS</div>
-              <div className="text-[9px] tracking-widest text-muted-foreground uppercase">Admin Panel</div>
+              <div className="text-[9px] tracking-widest text-muted-foreground uppercase">{t("app.admin.adminPanel", "Admin Panel")}</div>
             </div>
           </div>
         )}
@@ -55,38 +70,42 @@ export function AdminSidebar({ collapsed, onToggle }: AdminSidebarProps) {
 
       {/* Nav */}
       <nav className="flex-1 px-2 py-4 space-y-1">
-        {navItems.map(({ icon: Icon, label, to }) => (
-          <NavLink
-            key={to}
-            to={to}
-            title={collapsed ? label : undefined}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-2.5 py-2.5 rounded-lg text-sm transition-all ${
-                collapsed ? "justify-center" : ""
-              } ${
-                isActive
-                  ? "bg-[var(--gold)]/10 text-gold border border-[var(--gold)]/20"
-                  : "text-muted-foreground hover:text-foreground hover:bg-white/[0.05]"
-              }`
-            }
-          >
-            <Icon className="h-4 w-4 shrink-0" />
-            {!collapsed && <span>{label}</span>}
-          </NavLink>
-        ))}
+        {navItems.map(({ icon: Icon, label, to }) => {
+          const transKey = navItemKeys[label];
+          const translatedLabel = transKey ? t("app.admin." + transKey, label) : label;
+          return (
+            <NavLink
+              key={to}
+              to={to}
+              title={collapsed ? translatedLabel : undefined}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-2.5 py-2.5 rounded-lg text-sm transition-all ${
+                  collapsed ? "justify-center" : ""
+                } ${
+                  isActive
+                    ? "bg-[var(--gold)]/10 text-gold border border-[var(--gold)]/20"
+                    : "text-muted-foreground hover:text-foreground hover:bg-white/[0.05]"
+                }`
+              }
+            >
+              <Icon className="h-4 w-4 shrink-0" />
+              {!collapsed && <span>{translatedLabel}</span>}
+            </NavLink>
+          );
+        })}
       </nav>
 
       {/* Logout */}
       <div className="px-2 py-4 border-t border-[var(--gold)]/10">
         <button
           onClick={() => setShowConfirm(true)}
-          title={collapsed ? "Logout" : undefined}
+          title={collapsed ? t("app.admin.logout", "Logout") : undefined}
           className={`flex items-center gap-3 px-2.5 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all w-full ${
             collapsed ? "justify-center" : ""
           }`}
         >
           <LogOut className="h-4 w-4 shrink-0" />
-          {!collapsed && <span>Logout</span>}
+          {!collapsed && <span>{t("app.admin.logout", "Logout")}</span>}
         </button>
       </div>
     </aside>
@@ -95,8 +114,8 @@ export function AdminSidebar({ collapsed, onToggle }: AdminSidebarProps) {
     {showConfirm && createPortal(
       <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
         <div className="glass-card rounded-2xl p-6 w-full max-w-sm mx-4 border border-[var(--gold)]/20">
-          <h3 className="font-display text-xl text-foreground mb-2">Confirm Logout</h3>
-          <p className="text-sm text-muted-foreground mb-6">Are you sure you want to logout?</p>
+          <h3 className="font-display text-xl text-foreground mb-2">{t("app.admin.confirmLogout", "Confirm Logout")}</h3>
+          <p className="text-sm text-muted-foreground mb-6">{t("app.admin.confirmLogoutText", "Are you sure you want to logout?")}</p>
           <div className="flex gap-3">
             <button
               onClick={async () => {
@@ -108,13 +127,13 @@ export function AdminSidebar({ collapsed, onToggle }: AdminSidebarProps) {
               }}
               className="gold-btn flex-1 rounded-lg py-2.5 text-sm font-semibold"
             >
-              Yes, Logout
+              {t("app.admin.yesLogout", "Yes, Logout")}
             </button>
             <button
               onClick={() => setShowConfirm(false)}
               className="flex-1 rounded-lg py-2.5 text-sm font-medium border border-white/10 text-muted-foreground hover:text-foreground hover:border-white/20 transition"
             >
-              Cancel
+              {t("app.admin.cancel", "Cancel")}
             </button>
           </div>
         </div>

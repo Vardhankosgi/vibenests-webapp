@@ -2,66 +2,69 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { ShieldCheck, ArrowLeft } from "lucide-react";
 import { BrandMark } from "@/components/auth/BrandMark";
+import { LanguageSelector } from "@/components/shared/LanguageSelector";
+import { useTranslation } from "react-i18next";
 import loginbg from "@/assets/loginbg.png";
-
-const sections = [
-  {
-    title: "1. Introduction",
-    content: `Vibenests Private Luxury Suites ("Vibenests", "we", "our", or "us") is committed to protecting your privacy and personal data. This Privacy Policy explains how we collect, use, store, process, and protect your personal information when you use our website, mobile application, and services.\n\nThis policy complies with:\n• Digital Personal Data Protection Act, 2023 (India)\n• Information Technology Act, 2000\n• Information Technology (Reasonable Security Practices and Procedures and Sensitive Personal Data or Information) Rules, 2011`,
-  },
-  {
-    title: "2. Information We Collect",
-    content: `Personal Information — We may collect: Full Name, Mobile Number, Email Address, Date of Birth (optional), Billing Information, Address Information, Government-issued ID where legally required.\n\nBooking Information — Occasion selected, Suite booked, Date and time of booking, Guest count, Add-ons selected, Special requests.\n\nPayment Information — Payments are processed through authorized payment gateways. Vibenests does not store: Card Numbers, CVV, Banking Passwords, UPI PINs.`,
-  },
-  {
-    title: "3. Live Celebration Feature",
-    content: `When users opt for Live Celebration Sharing:\n• Meeting links may be generated through approved platforms.\n• Guests joining through shared links are responsible for their own conduct.\n• Users must obtain consent before sharing personal images or videos of others.\n• Vibenests does not monitor private conversations conducted through third-party meeting platforms.`,
-  },
-  {
-    title: "4. Purpose of Data Processing",
-    content: `We process personal data to:\n• Create and manage bookings\n• Provide customer support\n• Process payments\n• Share booking updates\n• Enable live celebration links\n• Improve service quality\n• Prevent fraud and abuse\n• Meet legal obligations`,
-  },
-  {
-    title: "5. Consent",
-    content: `By using our services, you consent to the collection and processing of your personal data for the purposes described in this policy. You may withdraw consent at any time by contacting us. Withdrawal of consent may affect service availability.`,
-  },
-  {
-    title: "6. Data Retention",
-    content: `We retain data only as long as necessary for: Booking management, Tax compliance, Legal obligations, Fraud prevention, and Dispute resolution. Thereafter, data will be securely deleted or anonymized.`,
-  },
-  {
-    title: "7. Your Rights Under DPDP Act",
-    content: `You have the right to:\n• Access your personal data\n• Correct inaccurate information\n• Request deletion of data\n• Withdraw consent\n• Nominate another individual to exercise rights on your behalf\n• File a grievance`,
-  },
-  {
-    title: "8. Security Measures",
-    content: `We implement: SSL encryption, Access controls, Secure cloud infrastructure, Role-based access management, Audit logs, and Regular security reviews.`,
-  },
-  {
-    title: "9. Third-Party Services",
-    content: `We may use: Payment Gateways, SMS Providers, Email Service Providers, Video Meeting Platforms, and Analytics Services. Such providers process data according to their own privacy policies.`,
-  },
-  {
-    title: "10. Children's Privacy",
-    content: `Our services are intended for individuals aged 18 years and above. We do not knowingly collect data from minors.`,
-  },
-  {
-    title: "11. Grievance Officer",
-    content: `For privacy-related concerns, data access requests, correction requests, deletion requests, or DPDP Act grievances, please contact:\n\nEmail: vibenestsmeetingpoint@gmail.com\nSupport Number: +91 9000201020\n\nResponse Timeline: We aim to acknowledge complaints within 7 business days and resolve them within 30 business days.`,
-  },
-  {
-    title: "12. Policy Updates",
-    content: `We may update this Privacy Policy periodically. Continued use of our services constitutes acceptance of the revised policy.`,
-  },
-];
 
 export default function PrivacyPolicyPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   function handleBack() {
     if (window.history.length > 1) navigate(-1);
     else window.close();
   }
+
+  const sections = [
+    {
+      title: t("legal.privacy.intro.title"),
+      content: `${t("legal.privacy.intro.p1")}\n\n${t("legal.privacy.intro.p2")}\n\n${t("legal.privacy.intro.p3")}\n• ${t("legal.privacy.intro.li1")}\n• ${t("legal.privacy.intro.li2")}\n• ${t("legal.privacy.intro.li3")}`,
+    },
+    {
+      title: t("legal.privacy.collect.title"),
+      content: `${t("legal.privacy.collect.p1")}\n• ${t("legal.privacy.collect.li1")}\n• ${t("legal.privacy.collect.li2")}\n• ${t("legal.privacy.collect.li3")}\n• ${t("legal.privacy.collect.li4")}\n• ${t("legal.privacy.collect.li5")}\n• ${t("legal.privacy.collect.li6")}\n• ${t("legal.privacy.collect.li7")}\n\n${t("legal.privacy.collect.p2")}\n• ${t("legal.privacy.collect.li8")}\n• ${t("legal.privacy.collect.li9")}\n• ${t("legal.privacy.collect.li10")}\n• ${t("legal.privacy.collect.li11")}\n• ${t("legal.privacy.collect.li12")}\n• ${t("legal.privacy.collect.li13")}\n\n${t("legal.privacy.collect.p3")}\n${t("legal.privacy.collect.p4")}\n• ${t("legal.privacy.collect.li14")}\n• ${t("legal.privacy.collect.li15")}\n• ${t("legal.privacy.collect.li16")}\n• ${t("legal.privacy.collect.li17")}`,
+    },
+    {
+      title: t("legal.privacy.live.title"),
+      content: `When users opt for Live Celebration Sharing:\n• ${t("legal.privacy.live.li1")}\n• ${t("legal.privacy.live.li2")}\n• ${t("legal.privacy.live.li3")}\n• ${t("legal.privacy.live.li4")}`,
+    },
+    {
+      title: t("legal.privacy.purpose.title"),
+      content: `${t("legal.privacy.purpose.p1")}\n• ${t("legal.privacy.purpose.li1")}\n• ${t("legal.privacy.purpose.li2")}\n• ${t("legal.privacy.purpose.li3")}\n• ${t("legal.privacy.purpose.li4")}\n• ${t("legal.privacy.purpose.li5")}\n• ${t("legal.privacy.purpose.li6")}\n• ${t("legal.privacy.purpose.li7")}\n• ${t("legal.privacy.purpose.li8")}`,
+    },
+    {
+      title: t("legal.privacy.consent.title"),
+      content: `${t("legal.privacy.consent.li1")} ${t("legal.privacy.consent.li2")} ${t("legal.privacy.consent.li3")}`,
+    },
+    {
+      title: t("legal.privacy.retention.title"),
+      content: `${t("legal.privacy.retention.p1")}\n• ${t("legal.privacy.retention.li1")}\n• ${t("legal.privacy.retention.li2")}\n• ${t("legal.privacy.retention.li3")}\n• ${t("legal.privacy.retention.li4")}\n• ${t("legal.privacy.retention.li5")}\n\n${t("legal.privacy.retention.p2")}`,
+    },
+    {
+      title: t("legal.privacy.rights.title"),
+      content: `${t("legal.privacy.rights.p1")}\n• ${t("legal.privacy.rights.li1")}\n• ${t("legal.privacy.rights.li2")}\n• ${t("legal.privacy.rights.li3")}\n• ${t("legal.privacy.rights.li4")}\n• ${t("legal.privacy.rights.li5")}\n• ${t("legal.privacy.rights.li6")}`,
+    },
+    {
+      title: t("legal.privacy.security.title"),
+      content: `${t("legal.privacy.security.p1")}\n• ${t("legal.privacy.security.li1")}\n• ${t("legal.privacy.security.li2")}\n• ${t("legal.privacy.security.li3")}\n• ${t("legal.privacy.security.li4")}\n• ${t("legal.privacy.security.li5")}\n• ${t("legal.privacy.security.li6")}`,
+    },
+    {
+      title: t("legal.privacy.thirdParty.title"),
+      content: `${t("legal.privacy.thirdParty.p1")}\n• ${t("legal.privacy.thirdParty.li1")}\n• ${t("legal.privacy.thirdParty.li2")}\n• ${t("legal.privacy.thirdParty.li3")}\n• ${t("legal.privacy.thirdParty.li4")}\n• ${t("legal.privacy.thirdParty.li5")}\n\n${t("legal.privacy.thirdParty.p2")}`,
+    },
+    {
+      title: t("legal.privacy.children.title"),
+      content: `• ${t("legal.privacy.children.li1")}\n• ${t("legal.privacy.children.li2")}`,
+    },
+    {
+      title: t("legal.privacy.grievance.title"),
+      content: `${t("legal.privacy.grievance.p1")}\n\n${t("contact.cards.email")}: vibenestsmeetingpoint@gmail.com\n${t("contact.cards.phone")}: +91 9000201020\n\n${t("legal.privacy.grievance.timeline")}`,
+    },
+    {
+      title: t("legal.privacy.updates.title"),
+      content: `• ${t("legal.privacy.updates.li1")}\n• ${t("legal.privacy.updates.li2")}`,
+    },
+  ];
 
   return (
     <div
@@ -80,12 +83,15 @@ export default function PrivacyPolicyPage() {
         {/* Header */}
         <header className="flex items-center justify-between px-6 py-5 border-b border-white/8">
           <BrandMark />
-          <button
-            onClick={handleBack}
-            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4" /> Back
-          </button>
+          <div className="flex items-center gap-4">
+            <LanguageSelector />
+            <button
+              onClick={handleBack}
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" /> {t("common.back", "Back")}
+            </button>
+          </div>
         </header>
 
         {/* Content */}
@@ -100,12 +106,12 @@ export default function PrivacyPolicyPage() {
             <div className="space-y-3">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-gold/30 bg-gold/10">
                 <ShieldCheck className="h-3.5 w-3.5 text-gold" />
-                <span className="text-[11px] font-bold tracking-widest text-gold uppercase">Privacy Policy</span>
+                <span className="text-[11px] font-bold tracking-widest text-gold uppercase">{t("legal.privacy.title").replace(/^\d+\.\s/, "")}</span>
               </div>
               <h1 className="font-display text-4xl font-medium text-foreground">
-                Your Privacy, <span className="text-gradient-gold italic">Protected</span>
+                {t("seo.privacyTitle").split(" - ")[0]}
               </h1>
-              <p className="text-sm text-muted-foreground">Effective Date: 30/05/2026</p>
+              <p className="text-sm text-muted-foreground">{t("legal.effectiveDate", { date: "30/05/2026" })}</p>
             </div>
 
             {/* Sections */}
@@ -131,9 +137,9 @@ export default function PrivacyPolicyPage() {
               transition={{ delay: 0.55 }}
               className="flex flex-wrap gap-4 text-xs text-muted-foreground pt-2"
             >
-              <a href="/terms-of-use" className="hover:text-gold transition-colors">Terms of Use</a>
+              <a href="/terms-of-use" className="hover:text-gold transition-colors">{t("footer.terms")}</a>
               <span className="text-white/15">|</span>
-              <a href="/contact" className="hover:text-gold transition-colors">Contact Us</a>
+              <a href="/contact" className="hover:text-gold transition-colors">{t("footer.contact")}</a>
             </motion.div>
           </motion.div>
         </main>

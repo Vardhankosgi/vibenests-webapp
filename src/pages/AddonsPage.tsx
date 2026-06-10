@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { Plus, Search, Pencil, Trash2, X, ImagePlus } from "lucide-react";
 import { addonsApi } from "@/lib/api";
+import { useTranslation } from "react-i18next";
 
 type Addon = {
   id: number;
@@ -43,6 +44,8 @@ export default function AddonsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const { t } = useTranslation();
+  // const [addons, setAddons] = useState(initialAddons);
   const [search, setSearch] = useState("");
   const [catFilter, setCatFilter] = useState("All");
   const [showModal, setShowModal] = useState(false);
@@ -161,10 +164,10 @@ export default function AddonsPage() {
       <div className="p-6 space-y-5">
         <div className="flex flex-wrap gap-3">
           {[
-                { label: "Total Add-ons", count: addons.length, color: "border-[var(--gold)]/30 text-gold" },
-                { label: "Active", count: addons.filter((a) => a.status === "active").length, color: "border-emerald-500/30 text-emerald-400" },
-                { label: "Inactive", count: addons.filter((a) => a.status === "inactive").length, color: "border-amber-500/30 text-amber-400" },
-              ].map((s) => (
+            { label: t("app.admin.totalAddons", "Total Add-ons"), count: addons.length, color: "border-[var(--gold)]/30 text-gold" },
+            { label: t("app.admin.active", "Active"), count: addons.filter(a => a.status === "Active").length, color: "border-emerald-500/30 text-emerald-400" },
+            { label: t("app.admin.inactive", "Inactive"), count: addons.filter(a => a.status === "Inactive").length, color: "border-amber-500/30 text-amber-400" },
+          ].map((s) => (
             <div key={s.label} className={`glass-card rounded-xl px-4 py-2.5 border ${s.color} flex items-center gap-2`}>
               <span className="text-xl font-display font-semibold">{s.count}</span>
               <span className="text-xs text-muted-foreground">{s.label}</span>
@@ -175,41 +178,44 @@ export default function AddonsPage() {
         <div className="glass-card rounded-2xl p-4 flex flex-wrap items-center gap-3">
           <div className="relative flex-1 min-w-48">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-            <input type="text" placeholder="Search add-ons..." value={search} onChange={(e) => setSearch(e.target.value)} className="luxury-input w-full rounded-lg pl-9 pr-4 py-2 text-xs" />
+            <input type="text" placeholder={t("app.admin.searchAddons", "Search add-ons...")} value={search} onChange={(e) => setSearch(e.target.value)} className="luxury-input w-full rounded-lg pl-9 pr-4 py-2 text-xs" />
           </div>
           <div className="flex gap-1 p-1 rounded-xl bg-white/[0.04] border border-[var(--gold)]/10">
-            {["All", ...allCategories, ...customCategories].map((c) => (
-              <button key={c} onClick={() => setCatFilter(c)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${catFilter === c ? "bg-[var(--gold)]/15 text-gold border border-[var(--gold)]/25" : "text-muted-foreground hover:text-foreground"}`}>
-                {c}
-              </button>
-            ))}
+            {[t("app.admin.allCategories", "All"), ...allCategories, ...customCategories].map((c, i) => {
+              const val = i === 0 ? "All" : c;
+              return (
+                <button key={c} onClick={() => setCatFilter(val)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${catFilter === val ? "bg-[var(--gold)]/15 text-gold border border-[var(--gold)]/25" : "text-muted-foreground hover:text-foreground"}`}>
+                  {c}
+                </button>
+              );
+            })}
           </div>
           <button onClick={openAdd} className="flex items-center gap-2 gold-btn px-4 py-2 rounded-lg text-xs font-semibold ml-auto">
-            <Plus className="h-3.5 w-3.5" /> Add Add-on
+            <Plus className="h-3.5 w-3.5" /> {t("app.admin.addAddon", "Add Add-on")}
           </button>
         </div>
 
         <div className="glass-card rounded-2xl p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-display text-lg font-medium text-foreground">All Add-ons</h3>
+            <h3 className="font-display text-lg font-medium text-foreground">{t("app.admin.allAddons", "All Add-ons")}</h3>
             <span className="text-xs text-muted-foreground">{filtered.length} of {addons.length}</span>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-xs text-muted-foreground uppercase tracking-wide border-b border-white/[0.06]">
-                  <th className="pb-3 pr-4">Image</th>
-                  <th className="pb-3 pr-4">Name</th>
-                  <th className="pb-3 pr-4">Category</th>
-                  <th className="pb-3 pr-4">Price</th>
-                  <th className="pb-3 pr-4">Status</th>
-                  <th className="pb-3">Actions</th>
+                  <th className="pb-3 pr-4">{t("app.admin.image", "Image")}</th>
+                  <th className="pb-3 pr-4">{t("app.admin.name", "Name")}</th>
+                  <th className="pb-3 pr-4">{t("app.admin.category", "Category")}</th>
+                  <th className="pb-3 pr-4">{t("app.admin.amount", "Price")}</th>
+                  <th className="pb-3 pr-4">{t("app.admin.status", "Status")}</th>
+                  <th className="pb-3">{t("app.admin.actions", "Actions")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/[0.04]">
                 {filtered.length === 0 ? (
-                  <tr><td colSpan={6} className="py-10 text-center text-sm text-muted-foreground">No add-ons found</td></tr>
+                  <tr><td colSpan={6} className="py-10 text-center text-sm text-muted-foreground">{t("app.admin.noAddonsFound", "No add-ons found")}</td></tr>
                 ) : filtered.map((a) => (
                   <tr key={a.id} className="hover:bg-white/[0.02] transition">
                     <td className="py-3 pr-4">
@@ -228,7 +234,9 @@ export default function AddonsPage() {
                     <td className="py-3 pr-4 text-muted-foreground text-xs">{a.category}</td>
                     <td className="py-3 pr-4 text-gold font-medium">{a.price}</td>
                     <td className="py-3 pr-4">
-                      <span className={`px-2.5 py-1 rounded-full text-[11px] font-medium border ${statusStyle[a.status]}`}>{a.status}</span>
+                      <span className={`px-2.5 py-1 rounded-full text-[11px] font-medium border ${statusStyle[a.status]}`}>
+                        {a.status === "Active" ? t("app.admin.active", "Active") : t("app.admin.inactive", "Inactive")}
+                      </span>
                     </td>
                     <td className="py-3">
                       <div className="flex items-center gap-2">
@@ -248,12 +256,12 @@ export default function AddonsPage() {
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
           <div className="glass-card rounded-2xl p-5 w-full max-w-md border border-[var(--gold)]/20 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-display text-lg text-foreground">{editId ? "Edit Add-on" : "Add New Add-on"}</h3>
+              <h3 className="font-display text-lg text-foreground">{editId ? t("app.admin.editAddon", "Edit Add-on") : t("app.admin.addNewAddon", "Add New Add-on")}</h3>
               <button onClick={() => setShowModal(false)} className="text-muted-foreground hover:text-foreground"><X className="h-5 w-5" /></button>
             </div>
             <div className="space-y-3">
               <div>
-                <label className="text-[11px] text-muted-foreground uppercase tracking-wide">Image</label>
+                <label className="text-[11px] text-muted-foreground uppercase tracking-wide">{t("app.admin.image", "Image")}</label>
                 <div className="mt-1 flex items-center gap-3">
                   {form.image ? (
                     <div className="relative h-16 w-16 rounded-lg overflow-hidden border border-[var(--gold)]/20">
@@ -263,16 +271,16 @@ export default function AddonsPage() {
                   ) : (
                     <button type="button" onClick={() => fileRef.current?.click()} className="h-16 w-16 rounded-lg border border-dashed border-[var(--gold)]/30 flex flex-col items-center justify-center gap-1 hover:border-[var(--gold)]/60 hover:bg-[var(--gold)]/5 transition">
                       <ImagePlus className="h-5 w-5 text-gold/60" />
-                      <span className="text-[9px] text-muted-foreground">Upload</span>
+                      <span className="text-[9px] text-muted-foreground">{t("app.admin.upload", "Upload")}</span>
                     </button>
                   )}
                   <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImage} />
                 </div>
               </div>
               {[
-                { label: "Add-on Name", key: "name", placeholder: "e.g. Birthday Cake" },
-                { label: "Price", key: "price", placeholder: "e.g. 1200" },
-                { label: "Description", key: "description", placeholder: "Brief description..." },
+                { label: t("app.admin.addonName", "Add-on Name"), key: "name", placeholder: t("app.admin.addonNamePlaceholder", "e.g. Birthday Cake") },
+                { label: t("app.admin.priceLabel", "Price"), key: "price", placeholder: t("app.admin.pricePlaceholder", "e.g. ₹1,200") },
+                { label: t("app.admin.description", "Description"), key: "description", placeholder: t("app.admin.descriptionPlaceholder", "Brief description...") },
               ].map(({ label, key, placeholder }) => (
                 <div key={key}>
                   <label className="text-[11px] text-muted-foreground uppercase tracking-wide">{label}</label>
@@ -287,28 +295,28 @@ export default function AddonsPage() {
               ))}
 
               <div>
-                <label className="text-[11px] text-muted-foreground uppercase tracking-wide">Category</label>
+                <label className="text-[11px] text-muted-foreground uppercase tracking-wide">{t("app.admin.category", "Category")}</label>
                 <select value={form.category} onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))} className="luxury-input w-full rounded-lg px-3 py-2 text-sm mt-0.5 bg-transparent cursor-pointer">
                   {[...allCategories, ...customCategories].map((c) => <option key={c} value={c} className="bg-[oklch(0.13_0.025_260)]">{c}</option>)}
                 </select>
                 <div className="flex gap-2 mt-2">
-                  <input type="text" placeholder="Add new category..." value={newCatInput} onChange={(e) => setNewCatInput(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); const t = newCatInput.trim(); if (t && ![...allCategories, ...customCategories].includes(t)) { setCustomCategories((p) => [...p, t]); setForm((f) => ({ ...f, category: t })); } setNewCatInput(""); } }}
+                  <input type="text" placeholder={t("app.admin.addNewCategory", "Add new category...")} value={newCatInput} onChange={(e) => setNewCatInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); const t2 = newCatInput.trim(); if (t2 && ![...allCategories, ...customCategories].includes(t2)) { setCustomCategories((p) => [...p, t2]); setForm((f) => ({ ...f, category: t2 })); } setNewCatInput(""); } }}
                     className="luxury-input flex-1 rounded-lg px-3 py-1.5 text-xs" />
-                  <button type="button" onClick={() => { const t = newCatInput.trim(); if (t && ![...allCategories, ...customCategories].includes(t)) { setCustomCategories((p) => [...p, t]); setForm((f) => ({ ...f, category: t })); } setNewCatInput(""); }} className="px-3 py-1.5 rounded-lg text-xs gold-btn font-medium">+ Add</button>
+                  <button type="button" onClick={() => { const t2 = newCatInput.trim(); if (t2 && ![...allCategories, ...customCategories].includes(t2)) { setCustomCategories((p) => [...p, t2]); setForm((f) => ({ ...f, category: t2 })); } setNewCatInput(""); }} className="px-3 py-1.5 rounded-lg text-xs gold-btn font-medium">+ {t("app.admin.addAmenity", "Add")}</button>
                 </div>
               </div>
               <div>
-                <label className="text-[11px] text-muted-foreground uppercase tracking-wide">Status</label>
+                <label className="text-[11px] text-muted-foreground uppercase tracking-wide">{t("app.admin.statusLabel", "Status")}</label>
                 <select value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as Addon["status"] }))} className="luxury-input w-full rounded-lg px-3 py-2 text-sm mt-0.5 bg-transparent cursor-pointer">
-                  <option value="Active" className="bg-[oklch(0.13_0.025_260)]">Active</option>
-                  <option value="Inactive" className="bg-[oklch(0.13_0.025_260)]">Inactive</option>
+                  <option value="Active" className="bg-[oklch(0.13_0.025_260)]">{t("app.admin.active", "Active")}</option>
+                  <option value="Inactive" className="bg-[oklch(0.13_0.025_260)]">{t("app.admin.inactive", "Inactive")}</option>
                 </select>
               </div>
             </div>
             <div className="flex gap-3 mt-4">
-              <button onClick={handleSave} className="gold-btn flex-1 rounded-lg py-2 text-sm font-semibold">{editId ? "Save Changes" : "Add Add-on"}</button>
-              <button onClick={() => setShowModal(false)} className="flex-1 rounded-lg py-2 text-sm border border-white/10 text-muted-foreground hover:text-foreground transition">Cancel</button>
+              <button onClick={handleSave} className="gold-btn flex-1 rounded-lg py-2 text-sm font-semibold">{editId ? t("app.admin.saveChanges", "Save Changes") : t("app.admin.addAddon", "Add Add-on")}</button>
+              <button onClick={() => setShowModal(false)} className="flex-1 rounded-lg py-2 text-sm border border-white/10 text-muted-foreground hover:text-foreground transition">{t("app.admin.cancel", "Cancel")}</button>
             </div>
           </div>
         </div>

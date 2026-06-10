@@ -3,10 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Mail, Lock, ArrowRight } from "lucide-react";
 import { authApi } from "@/lib/api";
 import { useAuth } from "./AuthContext";
+import { useTranslation } from "react-i18next";
 
 export function EmailLoginForm() {
   const navigate = useNavigate();
   const { saveSession } = useAuth();
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
@@ -18,11 +20,11 @@ export function EmailLoginForm() {
     e.preventDefault();
     setError(null);
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setError("Please enter a valid email address.");
+      setError(t("app.validation.emailRequired", "Please enter a valid email address."));
       return;
     }
     if (password.length < 6) {
-      setError("Password must be at least 6 characters.");
+      setError(t("app.validation.passwordLength", "Password must be at least 6 characters."));
       return;
     }
     setLoading(true);
@@ -31,7 +33,7 @@ export function EmailLoginForm() {
       saveSession(data.accessToken, data.refreshToken, data.user);
       navigate(data.user.role === 'admin' ? '/dashboard' : '/user/dashboard');
     } catch (err: any) {
-      setError(err.message || "Login failed. Please try again.");
+      setError(err.message || t("app.auth.loginFailed", "Login failed. Please try again."));
     } finally {
       setLoading(false);
     }
@@ -40,14 +42,14 @@ export function EmailLoginForm() {
   return (
     <form onSubmit={submit} className="space-y-5">
       <div className="space-y-2">
-        <label className="text-xs font-medium tracking-wide text-muted-foreground uppercase">Email Address</label>
+        <label className="text-xs font-medium tracking-wide text-muted-foreground uppercase">{t("app.auth.emailLabel")}</label>
         <div className="relative">
           <Mail className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gold/70" />
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
+            placeholder={t("forms.emailPlaceholder")}
             className="luxury-input w-full rounded-lg pl-11 pr-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/60"
             autoComplete="email"
           />
@@ -55,14 +57,14 @@ export function EmailLoginForm() {
       </div>
 
       <div className="space-y-2">
-        <label className="text-xs font-medium tracking-wide text-muted-foreground uppercase">Password</label>
+        <label className="text-xs font-medium tracking-wide text-muted-foreground uppercase">{t("app.auth.passwordLabel")}</label>
         <div className="relative">
           <Lock className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gold/70" />
           <input
             type={show ? "text" : "password"}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="Enter your password"
+            placeholder={t("app.auth.passwordPlaceholder", "Enter your password")}
             className="luxury-input w-full rounded-lg pl-11 pr-11 py-3 text-sm text-foreground placeholder:text-muted-foreground/60"
             autoComplete="current-password"
           />
@@ -84,9 +86,9 @@ export function EmailLoginForm() {
             onChange={(e) => setRemember(e.target.checked)}
             className="h-4 w-4 rounded border-[var(--gold)]/40 bg-transparent accent-[var(--gold)]"
           />
-          <span className="text-muted-foreground">Remember me</span>
+          <span className="text-muted-foreground">{t("app.auth.rememberMe")}</span>
         </label>
-        <a href="#" className="text-gold hover:underline underline-offset-4">Forgot Password?</a>
+        <a href="#" className="text-gold hover:underline underline-offset-4">{t("app.auth.forgotPassword")}</a>
       </div>
 
       {error && (
@@ -100,14 +102,12 @@ export function EmailLoginForm() {
         disabled={loading}
         className="gold-btn group w-full rounded-lg py-3.5 text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-70"
       >
-        {loading ? "Signing in..." : "Login"}
+        {loading ? t("app.auth.signingIn") : t("app.auth.signIn")}
         {!loading && <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />}
       </button>
 
       <p className="text-[11px] text-center text-muted-foreground leading-relaxed">
-        By logging in, you agree to our{" "}
-        <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-gold hover:underline">Terms of Service</a> and{" "}
-        <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-gold hover:underline">Privacy Policy</a>.
+        {t("app.auth.termsAndPrivacy")}
       </p>
     </form>
   );
