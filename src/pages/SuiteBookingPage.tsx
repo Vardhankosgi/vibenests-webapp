@@ -19,6 +19,11 @@ type ApiAddOn = {
   price: number;
 };
 
+// NOTE: Some builds previously had stale references to ADDONS.
+// Keep this constant empty to avoid runtime ReferenceError if any old UI path references it.
+const ADDONS: ApiAddOn[] = [];
+
+
 
 /* ── Dashboard nav items (mirrors UserDashboardPage) ── */
 const NAV_ITEMS = [
@@ -74,9 +79,10 @@ export default function SuiteBookingPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation();
-  const { suites } = useSuitesContext();
+  const { suites, loading: suitesLoading } = useSuitesContext();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+
 
   const stepKeys = useMemo(() => [
     "app.userDashboard.selectOccasion",
@@ -96,14 +102,7 @@ export default function SuiteBookingPage() {
     };
   }), [t]);
 
-  const localizedAddons = useMemo(() => ADDONS.map(a => {
-    const keyPart = a.id.replace("-", "_");
-    return {
-      ...a,
-      name: t("app.userDashboard.addon_" + keyPart, a.name),
-      description: t("app.userDashboard.addon_" + keyPart + "_desc", a.description),
-    };
-  }), [t]);
+
 
   const [step, setStep] = useState(0);
   const [selectedOccasion, setSelectedOccasion] = useState("");
@@ -122,7 +121,21 @@ export default function SuiteBookingPage() {
 
   const suite = suites.find((s) => s.id === selectedSuite);
 
+  if (suitesLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-[oklch(0.08_0.015_260)]">
+        <div className="glass-card rounded-3xl border border-gold/20 p-8 text-center">
+          <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground">{t("app.userDashboard.loadingSuites", "Loading suites...")}</p>
+          <div className="mt-4 h-2 w-56 bg-white/10 rounded-full overflow-hidden">
+            <div className="h-full w-1/3 bg-gold/70 animate-[bb_sweep_1s_ease-in-out_infinite]" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const suiteMinCap = suite?.minCapacity ?? 1;
+
   const suiteMaxCap = suite?.capacity ?? 99;
   const suiteBasePrice = suite ? parseFloat(String(suite.price).replace(/[₹,]/g, "")) : 0;
   const rateExtra = suite?.ratePerExtraPerson ?? 0;
@@ -205,14 +218,7 @@ export default function SuiteBookingPage() {
   }
   function handleBack() { setShowValidation(false); if (step > 0) setStep((v) => v - 1); }
 
-  // Pre-select suite from Book Now navigation
-  useEffect(() => {
-    const passedId = (location.state as any)?.suiteId;
-    if (passedId && suites.length > 0) {
-      const found = suites.find((s) => s.id === String(passedId));
-      if (found) { setSelectedSuiteId(Number(found.id)); setPersons(found.minCapacity); }
-    }
-  }, [suites, location.state]);
+
 
   function updateQty(id: string, delta: number) {
     setAddonQty((p) => ({ ...p, [id]: Math.max(0, (p[id] ?? 0) + delta) }));
@@ -522,14 +528,14 @@ export default function SuiteBookingPage() {
                           <span className="px-2 py-0.5 rounded-full bg-gold/10 border border-gold/25 text-[10px] text-gold font-semibold">{t("app.userDashboard.slotDuration", "2h 30m per slot")}</span>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          {TIME_SLOTS.map((slot) => {
+{TIME_SLOTS.map((slot) => {
                             const end = getEndTime(slot);
                             const active = startTime === slot;
                             return (
                               <button
-                                key={t}
+                                key={slot}
                                 type="button"
-                                onClick={() => setStartTime(t)}
+onClick={() => setStartTime(slot)}
                                 className={`flex items-center justify-between gap-3 px-4 py-3.5 rounded-2xl border text-sm font-medium transition-all ${
                                   active
                                     ? "border-gold bg-gold/15 text-gold shadow-[0_0_16px_rgba(212,160,60,0.2)]"
@@ -588,7 +594,8 @@ export default function SuiteBookingPage() {
                           </div>
                           <p className="font-semibold text-gold shrink-0">₹{personsTotal.toLocaleString()}</p>
                         </div>
-<div className="mt-3 flex items-center gap-3">
+                      <div className="mt-3 flex items-center gap-3">
+
                           <div className="flex items-center gap-2 rounded-full border border-white/10 bg-black/40 px-3 py-1.5">
                             <button type="button" onClick={() => setPersons((p) => Math.max(suiteMinCap, p - 1))} className="h-7 w-7 rounded-full border border-white/10 text-muted-foreground hover:text-foreground flex items-center justify-center transition">
                               <Minus className="h-3.5 w-3.5" />
@@ -616,8 +623,9 @@ export default function SuiteBookingPage() {
                                 <button type="button" onClick={() => updateQty(String(addon.id), -1)} className="h-7 w-7 rounded-full border border-white/10 text-muted-foreground hover:text-foreground flex items-center justify-center transition">
                                   <Minus className="h-3.5 w-3.5" />
                                 </button>
-                                <span className="min-w-[28px] text-center font-semibold text-foreground text-sm">{addonQty[addon.id]}</span>
-                                <button type="button" onClick={() => updateQty(addon.id, 1)} className="h-7 w-7 rounded-full border border-white/10 text-muted-foreground hover:text-foreground flex items-center justify-center transition">
+                                <span className="min-w-[28px] text-center font-semibold text-foreground text-sm">{addonQty[String(addon.id)]}</span>
+                                <button type="button" onClick={() => updateQty(String(addon.id), 1)} className="h-7 w-7 rounded-full border border-white/10 text-muted-foreground hover:text-foreground flex items-center justify-center transition">
+
                                   <Plus className="h-3.5 w-3.5" />
                                 </button>
                               </div>

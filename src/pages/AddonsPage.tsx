@@ -165,8 +165,8 @@ export default function AddonsPage() {
         <div className="flex flex-wrap gap-3">
           {[
             { label: t("app.admin.totalAddons", "Total Add-ons"), count: addons.length, color: "border-[var(--gold)]/30 text-gold" },
-            { label: t("app.admin.active", "Active"), count: addons.filter(a => a.status === "Active").length, color: "border-emerald-500/30 text-emerald-400" },
-            { label: t("app.admin.inactive", "Inactive"), count: addons.filter(a => a.status === "Inactive").length, color: "border-amber-500/30 text-amber-400" },
+            { label: t("app.admin.active", "Active"), count: addons.filter((a) => String(a.status).toLowerCase() === "active").length, color: "border-emerald-500/30 text-emerald-400" },
+            { label: t("app.admin.inactive", "Inactive"), count: addons.filter((a) => String(a.status).toLowerCase() === "inactive").length, color: "border-amber-500/30 text-amber-400" },
           ].map((s) => (
             <div key={s.label} className={`glass-card rounded-xl px-4 py-2.5 border ${s.color} flex items-center gap-2`}>
               <span className="text-xl font-display font-semibold">{s.count}</span>
@@ -235,7 +235,7 @@ export default function AddonsPage() {
                     <td className="py-3 pr-4 text-gold font-medium">{a.price}</td>
                     <td className="py-3 pr-4">
                       <span className={`px-2.5 py-1 rounded-full text-[11px] font-medium border ${statusStyle[a.status]}`}>
-                        {a.status === "Active" ? t("app.admin.active", "Active") : t("app.admin.inactive", "Inactive")}
+{String(a.status).toLowerCase() === "active" ? t("app.admin.active", "Active") : t("app.admin.inactive", "Inactive")}
                       </span>
                     </td>
                     <td className="py-3">
