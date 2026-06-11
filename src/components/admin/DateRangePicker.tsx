@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Calendar, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { createPortal } from "react-dom";
+import { useTranslation } from "react-i18next";
 
 const presets = [
   { label: "Today", getDates: () => { const d = new Date(); return { from: d, to: d }; } },
@@ -27,6 +28,24 @@ interface DateRangePickerProps {
 }
 
 export function DateRangePicker({ value, onChange }: DateRangePickerProps = {}) {
+  const { t } = useTranslation();
+  const presets = [
+    { labelKey: "today", label: "Today", getDates: () => { const d = new Date(); return { from: d, to: d }; } },
+    { labelKey: "last7Days", label: "Last 7 Days", getDates: () => { const to = new Date(); const from = new Date(); from.setDate(from.getDate() - 6); return { from, to }; } },
+    { labelKey: "last30Days", label: "Last 30 Days", getDates: () => { const to = new Date(); const from = new Date(); from.setDate(from.getDate() - 29); return { from, to }; } },
+    { labelKey: "thisMonth", label: "This Month", getDates: () => { const now = new Date(); return { from: new Date(now.getFullYear(), now.getMonth(), 1), to: new Date(now.getFullYear(), now.getMonth() + 1, 0) }; } },
+    { labelKey: "lastMonth", label: "Last Month", getDates: () => { const now = new Date(); return { from: new Date(now.getFullYear(), now.getMonth() - 1, 1), to: new Date(now.getFullYear(), now.getMonth(), 0) }; } },
+  ];
+  const MONTHS_T = [
+    t("app.admin.monthJan", "January"), t("app.admin.monthFeb", "February"), t("app.admin.monthMar", "March"),
+    t("app.admin.monthApr", "April"), t("app.admin.monthMay", "May"), t("app.admin.monthJun", "June"),
+    t("app.admin.monthJul", "July"), t("app.admin.monthAug", "August"), t("app.admin.monthSep", "September"),
+    t("app.admin.monthOct", "October"), t("app.admin.monthNov", "November"), t("app.admin.monthDec", "December"),
+  ];
+  const DAYS_T = [
+    t("app.admin.daySu", "Su"), t("app.admin.dayMo", "Mo"), t("app.admin.dayTu", "Tu"),
+    t("app.admin.dayWe", "We"), t("app.admin.dayTh", "Th"), t("app.admin.dayFr", "Fr"), t("app.admin.daySa", "Sa"),
+  ];
   const today = new Date();
   const [open, setOpen] = useState(false);
   const [from, setFrom] = useState<Date>(new Date(today.getFullYear(), today.getMonth(), 1));
@@ -50,8 +69,8 @@ export function DateRangePicker({ value, onChange }: DateRangePickerProps = {}) 
   }, [open]);
 
   function applyPreset(p: typeof presets[0]) {
-    const { from: f, to: t } = p.getDates();
-    setFrom(f); setTo(t);
+    const { from: f, to: t2 } = p.getDates();
+    setFrom(f); setTo(t2);
     setActivePreset(p.label);
     setSelecting(null);
   }
@@ -105,7 +124,7 @@ export function DateRangePicker({ value, onChange }: DateRangePickerProps = {}) 
           >
             {/* Presets */}
             <div className="w-40 border-r border-[var(--gold)]/10 p-3 flex flex-col gap-1">
-              <p className="text-[10px] tracking-widest text-muted-foreground uppercase px-2 mb-2">Quick Select</p>
+              <p className="text-[10px] tracking-widest text-muted-foreground uppercase px-2 mb-2">{t("app.admin.quickSelect", "Quick Select")}</p>
               {presets.map((p) => (
                 <button
                   key={p.label}
@@ -116,7 +135,7 @@ export function DateRangePicker({ value, onChange }: DateRangePickerProps = {}) 
                       : "text-muted-foreground hover:text-foreground hover:bg-white/[0.05]"
                   }`}
                 >
-                  {p.label}
+                  {t("app.admin.preset_" + p.labelKey, p.label)}
                 </button>
               ))}
             </div>
@@ -132,7 +151,7 @@ export function DateRangePicker({ value, onChange }: DateRangePickerProps = {}) 
                   <ChevronLeft className="h-4 w-4" />
                 </button>
                 <span className="font-display text-sm font-medium text-foreground">
-                  {MONTHS[viewMonth]} {viewYear}
+                  {MONTHS_T[viewMonth]} {viewYear}
                 </span>
                 <button
                   onClick={() => { if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y + 1); } else setViewMonth(m => m + 1); }}
@@ -144,7 +163,7 @@ export function DateRangePicker({ value, onChange }: DateRangePickerProps = {}) 
 
               {/* Day headers */}
               <div className="grid grid-cols-7 mb-1">
-                {DAYS.map((d) => (
+                {DAYS_T.map((d) => (
                   <div key={d} className="text-center text-[10px] text-muted-foreground py-1">{d}</div>
                 ))}
               </div>
@@ -186,7 +205,7 @@ export function DateRangePicker({ value, onChange }: DateRangePickerProps = {}) 
                   onClick={() => { onChange?.({ from, to }); setOpen(false); }}
                   className="gold-btn px-4 py-1.5 rounded-lg text-xs font-semibold"
                 >
-                  Apply
+                  {t("app.admin.apply", "Apply")}
                 </button>
               </div>
             </div>

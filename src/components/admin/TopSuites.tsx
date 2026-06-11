@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -81,11 +82,12 @@ export function TopSuites() {
   const currentMonth = months[new Date().getMonth()];
   const [selected, setSelected] = useState(currentMonth);
   const suites = dataByMonth[selected];
+  const { t } = useTranslation();
 
   return (
     <div className="glass-card rounded-2xl p-5">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-display text-lg font-medium text-foreground">Top Performing Suites</h3>
+        <h3 className="font-display text-lg font-medium text-foreground">{t("app.admin.topPerformingSuites", "Top Performing Suites")}</h3>
         <select
           value={selected}
           onChange={(e) => setSelected(e.target.value)}
@@ -112,7 +114,7 @@ export function TopSuites() {
             </div>
             <div className="text-right shrink-0">
               <p className="text-xs text-gold font-medium">{suite.revenue}</p>
-              <p className="text-[11px] text-muted-foreground">{suite.bookings} bookings</p>
+              <p className="text-[11px] text-muted-foreground">{suite.bookings} {t("app.admin.bookings", "bookings")}</p>
             </div>
           </div>
         ))}

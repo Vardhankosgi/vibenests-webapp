@@ -4,7 +4,7 @@ import { AdminHeader } from "@/components/admin/AdminHeader";
 import { useSuitesContext, type Suite } from "@/components/admin/SuitesContext";
 import { useTranslation } from "react-i18next";
 
-const emptyForm: Omit<Suite, "id"> = { name: "", minCapacity: 1, capacity: 2, price: "", ratePerExtraPerson: 199, baseDiscount: 0, occasions: "", status: "Active", description: "", images: [], amenities: [] };
+const emptyForm: Omit<Suite, "id"> = { name: "", minCapacity: 1, capacity: 2, price: "", ratePerExtraPerson: 199, baseDiscount: 0, slotStartTime: "09:00", slotEndTime: "21:00", slotDurationMins: 150, occasions: "", status: "Active", description: "", images: [], amenities: [] };
 
 const statusStyle: Record<string, string> = {
   Active: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
@@ -121,7 +121,7 @@ export default function SuitesPage() {
   });
 
   function openAdd() { setEditId(null); setForm(emptyForm); setShowModal(true); }
-  function openEdit(s: Suite) { setEditId(s.id); setForm({ name: s.name, minCapacity: s.minCapacity, capacity: s.capacity, price: s.price, ratePerExtraPerson: s.ratePerExtraPerson, baseDiscount: s.baseDiscount, occasions: s.occasions, status: s.status, description: s.description, images: s.images, amenities: s.amenities }); setShowModal(true); }
+  function openEdit(s: Suite) { setEditId(s.id); setForm({ name: s.name, minCapacity: s.minCapacity, capacity: s.capacity, price: s.price, ratePerExtraPerson: s.ratePerExtraPerson, baseDiscount: s.baseDiscount, slotStartTime: s.slotStartTime, slotEndTime: s.slotEndTime, slotDurationMins: s.slotDurationMins, occasions: s.occasions, status: s.status, description: s.description, images: s.images, amenities: s.amenities }); setShowModal(true); }
 
   async function handleSave() {
     if (!form.name.trim()) return;
@@ -291,6 +291,48 @@ export default function SuitesPage() {
                 <textarea rows={2} placeholder={t("app.admin.descriptionPlaceholder", "Brief description...")} value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} className="luxury-input w-full rounded-lg px-3 py-1.5 text-sm mt-0.5 resize-none" />
               </div>
               <AmenitiesEditor amenities={form.amenities} onChange={(a) => setForm((f) => ({ ...f, amenities: a }))} />
+              <div>
+                <label className="text-xs text-muted-foreground uppercase tracking-wide">{t("app.admin.timeSlotSettings", "Time Slot Settings")}</label>
+                <div className="mt-1.5 grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[10px] text-muted-foreground">{t("app.admin.startTime", "Start Time")}</label>
+                    <input type="time" value={form.slotStartTime} onChange={(e) => setForm((f) => ({ ...f, slotStartTime: e.target.value }))} className="luxury-input w-full rounded-lg px-3 py-1.5 text-sm mt-0.5" style={{ colorScheme: "dark" }} />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-muted-foreground">{t("app.admin.endTime", "End Time")}</label>
+                    <input type="time" value={form.slotEndTime} onChange={(e) => setForm((f) => ({ ...f, slotEndTime: e.target.value }))} className="luxury-input w-full rounded-lg px-3 py-1.5 text-sm mt-0.5" style={{ colorScheme: "dark" }} />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="text-[10px] text-muted-foreground">{t("app.admin.slotDurationMins", "Slot Duration (minutes)")}</label>
+                    <input type="number" min={30} step={15} value={form.slotDurationMins} onChange={(e) => setForm((f) => ({ ...f, slotDurationMins: Number(e.target.value) }))} className="luxury-input w-full rounded-lg px-3 py-1.5 text-sm mt-0.5" />
+                  </div>
+                </div>
+                {/* Preview generated slots */}
+                {form.slotStartTime && form.slotEndTime && form.slotDurationMins >= 30 && (() => {
+                  const slots: string[] = [];
+                  const [sh, sm] = form.slotStartTime.split(":").map(Number);
+                  const [eh, em] = form.slotEndTime.split(":").map(Number);
+                  let cur = sh * 60 + sm;
+                  const end = eh * 60 + em;
+                  const step = form.slotDurationMins + 30; // slot + 30-min gap
+                  while (cur + form.slotDurationMins <= end) {
+                    const hh = Math.floor(cur / 60) % 24;
+                    const mm = cur % 60;
+                    const period = hh >= 12 ? "PM" : "AM";
+                    const dh = hh > 12 ? hh - 12 : hh === 0 ? 12 : hh;
+                    slots.push(`${String(dh).padStart(2,"0")}:${String(mm).padStart(2,"0")} ${period}`);
+                    cur += step;
+                  }
+                  return slots.length > 0 ? (
+                    <div className="mt-2">
+                      <p className="text-[10px] text-muted-foreground mb-1">{slots.length} {t("app.admin.slotsOf", "slots")} · {form.slotDurationMins} {t("app.admin.minEach", "min each")} · {t("app.admin.minGap", "30 min gap")}</p>
+                      <div className="flex flex-wrap gap-1">
+                        {slots.map((s) => <span key={s} className="px-2 py-0.5 rounded-full bg-gold/10 border border-gold/20 text-[10px] text-gold">{s}</span>)}
+                      </div>
+                    </div>
+                  ) : null;
+                })()}
+              </div>
               <div>
                 <label className="text-xs text-muted-foreground uppercase tracking-wide">{t("app.admin.statusLabel", "Status")}</label>
                 <select value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as Suite["status"] }))} className="luxury-input w-full rounded-lg px-3 py-1.5 text-sm mt-0.5 bg-transparent cursor-pointer">

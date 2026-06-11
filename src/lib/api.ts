@@ -4,7 +4,32 @@ function getToken() {
   return localStorage.getItem('accessToken');
 }
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+function getRefreshToken() {
+  return localStorage.getItem('refreshToken');
+}
+
+async function refreshAccessToken(): Promise<string | null> {
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) return null;
+  try {
+    const res = await fetch(`${BASE}/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data.accessToken) {
+      localStorage.setItem('accessToken', data.accessToken);
+      return data.accessToken;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+async function request<T>(path: string, options: RequestInit = {}, retry = true): Promise<T> {
   const token = getToken();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -13,15 +38,15 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   };
   const res = await fetch(`${BASE}${path}`, { ...options, headers });
   if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    if (res.status === 401 || res.status === 403) {
-      const userRaw = localStorage.getItem('authUser');
-      const user = userRaw ? JSON.parse(userRaw) : null;
-      if (!user || user.role !== 'admin') {
-        throw new Error('Access denied: admin login required');
+    if ((res.status === 401 || res.status === 403) && retry) {
+      const newToken = await refreshAccessToken();
+      if (newToken) {
+        // retry with new token
+        return request<T>(path, options, false);
       }
       throw new Error('Session expired. Please log in again.');
     }
+    const body = await res.json().catch(() => ({}));
     throw new Error(body.message || `HTTP ${res.status}`);
   }
   return res.json();
@@ -102,6 +127,15 @@ export const paymentsApi = {
       '/payments/verify-payment',
       { method: 'POST', body: JSON.stringify({ paymentId, razorpayOrderId, razorpayPaymentId, razorpaySignature }) }
     ),
+};
+
+// ── Celebration Packages ─────────────────────────────────────────────────────
+export const celebrationPackagesApi = {
+  getPublic: () => request<any[]>('/celebration-packages'),
+  getAll: () => request<any[]>('/celebration-packages/all'),
+  create: (body: any) => request<any>('/celebration-packages', { method: 'POST', body: JSON.stringify(body) }),
+  update: (id: number, body: any) => request<any>(`/celebration-packages/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  remove: (id: number) => request<any>(`/celebration-packages/${id}`, { method: 'DELETE' }),
 };
 
 // ── Reports ──────────────────────────────────────────────────────────────────

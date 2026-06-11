@@ -1,4 +1,5 @@
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { useTranslation } from "react-i18next";
 
 const data = [
   { name: "Suite Bookings", value: 62 },
@@ -15,9 +16,10 @@ const COLORS = [
 ];
 
 export function RevenuePieChart() {
+  const { t } = useTranslation();
   return (
     <div className="glass-card rounded-2xl p-5">
-      <h3 className="font-display text-lg font-medium text-foreground mb-4">Revenue Breakdown</h3>
+      <h3 className="font-display text-lg font-medium text-foreground mb-4">{t("app.admin.revenueBreakdown", "Revenue Breakdown")}</h3>
       <ResponsiveContainer width="100%" height={260}>
         <PieChart>
           <Pie data={data} cx="50%" cy="50%" innerRadius={65} outerRadius={95} paddingAngle={3} dataKey="value">
