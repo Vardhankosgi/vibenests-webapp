@@ -11,6 +11,8 @@ import { addonsApi, bookingsApi, paymentsApi, couponsApi } from "@/lib/api";
 import { LanguageSelector } from "@/components/shared/LanguageSelector";
 import { useTranslation } from "react-i18next";
 
+
+
 type ApiAddOn = {
   id: number;
   name: string;
@@ -88,12 +90,16 @@ function getEndTime(start: string, durationMins: number): string {
 
 
 
+
 const STEPS = [
   "Select Occasion", "Choose Date & Time",
   "Add-ons & Customizations", "Booking Summary", "Payment",
 ];
 
+
+
 export default function SuiteBookingPage() {
+
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation();
@@ -833,6 +839,7 @@ onClick={() => setStartTime(slot)}
                         <div className="overflow-x-auto">
                           <table className="w-full text-sm">
                             <tbody>
+
                               <tr>
                                 <td className="py-2 text-muted-foreground">Suite</td>
                                 <td className="py-2 text-right text-foreground">₹{basePrice.toLocaleString()}</td>
@@ -862,7 +869,7 @@ onClick={() => setStartTime(slot)}
                           </table>
                         </div>
 
-                        <div className="grid gap-3 md:grid-cols-2">
+              <div className="grid gap-3 md:grid-cols-2">
                           <button
                             type="button"
                             onClick={() => setPaymentMethod("pay-now")}
@@ -886,8 +893,9 @@ onClick={() => setStartTime(slot)}
                             </p>
                             <p className="text-xs text-muted-foreground mt-1">Pay 20% advance now, balance at venue</p>
                           </button>
-
                         </div>
+
+
 
                         {payError && <p className="text-sm text-rose-400">{payError}</p>}
 
