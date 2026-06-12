@@ -11,9 +11,10 @@ const statusStyle: Record<string, string> = {
   Confirmed: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
   Pending:   "bg-amber-500/10 text-amber-400 border-amber-500/20",
   Cancelled: "bg-destructive/10 text-destructive border-destructive/20",
+  Completed: "bg-blue-500/10 text-blue-400 border-blue-500/20",
 };
 
-const statuses  = ["All", "Confirmed", "Pending", "Cancelled"];
+const statuses  = ["All", "Confirmed", "Pending", "Cancelled", "Completed"];
 const occasions = ["All", "Birthday", "Anniversary", "Proposal", "Surprise Party", "Corporate", "Other"];
 
 const TIME_SLOTS = [
@@ -556,7 +557,7 @@ export default function BookingsPage() {
                     <td className="py-3 pr-4 text-foreground font-medium">{b.amount}</td>
                     <td className="py-3 pr-4">
                       <span className={`px-2.5 py-1 rounded-full text-[11px] font-medium border ${statusStyle[b.status]}`}>
-                        {b.status === "Confirmed" ? t("app.admin.confirmed", "Confirmed") : b.status === "Pending" ? t("app.admin.pending", "Pending") : t("app.admin.cancelled", "Cancelled")}
+                        {b.status === "Confirmed" ? t("app.admin.confirmed", "Confirmed") : b.status === "Pending" ? t("app.admin.pending", "Pending") : b.status === "Completed" ? t("app.admin.completed", "Completed") : t("app.admin.cancelled", "Cancelled")}
                       </span>
                     </td>
                     <td className="py-3">

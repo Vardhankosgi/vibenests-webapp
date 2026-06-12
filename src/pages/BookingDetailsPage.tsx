@@ -9,6 +9,7 @@ const statusStyle: Record<string, string> = {
   Confirmed: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
   Pending: "bg-amber-500/10 text-amber-400 border-amber-500/20",
   Cancelled: "bg-destructive/10 text-destructive border-destructive/20",
+  Completed: "bg-blue-500/10 text-blue-400 border-blue-500/20",
 };
 
 export default function BookingDetailsPage() {
@@ -262,6 +263,8 @@ export default function BookingDetailsPage() {
               <div className="flex flex-wrap items-center gap-3">
                 {normalizedBookingStatus === "confirmed" ? (
                   <div className="flex items-center gap-2 text-emerald-400"><CheckCircle2 className="h-4 w-4" /> Confirmed</div>
+                ) : normalizedBookingStatus === "completed" ? (
+                  <div className="flex items-center gap-2 text-blue-400"><CheckCircle2 className="h-4 w-4" /> Completed</div>
                 ) : (
                   <div className="flex items-center gap-2 text-amber-400"><XCircle className="h-4 w-4" /> {status || booking.status || ""}</div>
                 )}
@@ -330,7 +333,7 @@ export default function BookingDetailsPage() {
                     }}
                     className="flex items-center gap-2 gold-btn px-4 py-2 rounded-lg text-sm font-semibold disabled:opacity-50"
                   >
-                    <CheckCircle2 className="h-4 w-4" /> Check-in
+                    <CheckCircle2 className="h-4 w-4" /> Check-out
                   </button>
 
 

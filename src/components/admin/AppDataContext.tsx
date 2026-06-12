@@ -6,7 +6,7 @@ export type Booking = {
   orderId?: string;
   id: string; guest: string; email: string; phone: string; suite: string;
   occasion: string; date: string; time: string; endTime: string;
-  guests: number; amount: string; status: "Confirmed" | "Pending" | "Cancelled";
+  guests: number; amount: string; status: "Confirmed" | "Pending" | "Cancelled" | "Completed";
   basePrice?: number;
   addonsTotal?: number;
   totalAmount?: number;
@@ -69,6 +69,7 @@ type Stats = {
   confirmedBookings: number;
   pendingBookings: number;
   cancelledBookings: number;
+  completedBookings: number;
   totalCustomers: number;
   activeCustomers: number;
   blockedCustomers: number;
@@ -116,6 +117,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
       confirmedBookings: confirmed.length,
       pendingBookings: bookings.filter((b) => b.status === "Pending").length,
       cancelledBookings: bookings.filter((b) => b.status === "Cancelled").length,
+      completedBookings: bookings.filter((b) => b.status === "Completed").length,
       totalCustomers: users.length,
       activeCustomers: users.filter((u) => u.status === "Active").length,
       blockedCustomers: users.filter((u) => u.status === "Blocked").length,
