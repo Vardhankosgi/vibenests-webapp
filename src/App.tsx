@@ -29,11 +29,13 @@ import ContactUsPage from "@/pages/ContactUsPage";
 import { SuitesProvider } from "@/components/admin/SuitesContext";
 import RazorpayProvider from "@/components/shared/RazorpayProvider";
 import { AppDataProvider } from "@/components/admin/AppDataContext";
+import FloatingWhatsAppBot from "@/components/shared/FloatingWhatsAppBot";
 
 export default function App() {
   return (
     <AppDataProvider>
       <RazorpayProvider>
+        <FloatingWhatsAppBot />
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
