@@ -7,8 +7,7 @@ import {
   HelpCircle, LogOut, Package, Bell, ChevronDown,
 } from "lucide-react";
 import { useSuitesContext } from "@/components/admin/SuitesContext";
-import { addonsApi, bookingsApi, paymentsApi } from "@/lib/api";
-// import { bookingsApi, paymentsApi } from "@/lib/api";
+import { addonsApi, bookingsApi, paymentsApi, couponsApi } from "@/lib/api";
 import { LanguageSelector } from "@/components/shared/LanguageSelector";
 import { useTranslation } from "react-i18next";
 
@@ -52,15 +51,17 @@ const OCCASIONS = [
 
 const TIME_SLOTS: string[] = []; // replaced by suite-specific generated slots
 
-// Each slot is 2h 30m — auto-calculate end time
-// Generate time slots from suite settings with 30-min gap between slots
-export function generateSlots(startTime: string, endTime: string, durationMins: number): string[] {
+// Generate time slots from suite settings with custom gap between slots
+export function generateSlots(startTime: string, endTime: string, durationMins: number, gapMins: number = 30): string[] {
   const slots: string[] = [];
   const [sh, sm] = startTime.split(":").map(Number);
   const [eh, em] = endTime.split(":").map(Number);
   let cur = sh * 60 + sm;
-  const end = eh * 60 + em;
-  const step = durationMins + 30;
+  let end = eh * 60 + em;
+  if (end < cur) {
+    end += 24 * 60;
+  }
+  const step = durationMins + gapMins;
   while (cur + durationMins <= end) {
     const hh = Math.floor(cur / 60) % 24;
     const mm = cur % 60;
@@ -140,32 +141,60 @@ export default function SuiteBookingPage() {
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [couponError, setCouponError] = useState("");
   const [couponApplying, setCouponApplying] = useState(false);
+  const [liveCoupons, setLiveCoupons] = useState<any[]>([]);
 
-  const MOCK_COUPONS: Record<string, number> = {
-    VIBE10: 10,
-    VIBE20: 20,
-    LAUNCH15: 15,
-    SAVE5: 5,
-  };
+  // Fetch real coupons from the public /coupons/active endpoint
+  useEffect(() => {
+    couponsApi.getActive().then((list) => {
+      setLiveCoupons(Array.isArray(list) ? list : []);
+    }).catch(() => setLiveCoupons([]));
+  }, []);
 
-  function applyCoupon() {
+  async function applyCoupon() {
     const code = couponInput.trim().toUpperCase();
     if (!code) return;
     setCouponApplying(true);
     setCouponError("");
-    setTimeout(() => {
-      if (MOCK_COUPONS[code]) {
-        const pct = MOCK_COUPONS[code];
-        setCouponCode(code);
-        setCouponDiscount(pct);
-        setCouponError("");
+    try {
+      // Use the already-fetched active coupons list; refresh if empty
+      let list = liveCoupons;
+      if (list.length === 0) {
+        const fresh = await couponsApi.getActive();
+        list = Array.isArray(fresh) ? fresh : [];
+        setLiveCoupons(list);
+      }
+      const match = list.find(
+        (c: any) => (c.code ?? "").toUpperCase() === code && c.status === 'active'
+      );
+      if (match) {
+        // Validate expiry if present
+        const expires = match.expiresAt ? new Date(match.expiresAt) : null;
+        if (expires && !isNaN(expires.getTime()) && expires < new Date()) {
+          setCouponCode("");
+          setCouponDiscount(0);
+          setCouponError(t("app.userDashboard.couponInvalid", "Invalid or expired coupon code."));
+        } else {
+          // discountValue is percentage for 'percentage' type, fixed amount for 'fixed'
+          // For summary display we store the percentage (or 0 for fixed to show ₹ savings)
+          const isPercent = match.discountType === 'percentage';
+          const pct = isPercent ? Number(match.discountValue ?? 0) : 0;
+          const fixedAmt = !isPercent ? Number(match.discountValue ?? 0) : 0;
+          setCouponCode(code);
+          setCouponDiscount(pct || 0);
+          // For fixed discounts store a negative to subtract directly
+          if (fixedAmt > 0) setCouponDiscount(-(fixedAmt));
+          setCouponError("");
+        }
       } else {
         setCouponCode("");
         setCouponDiscount(0);
         setCouponError(t("app.userDashboard.couponInvalid", "Invalid or expired coupon code."));
       }
+    } catch {
+      setCouponError(t("app.userDashboard.couponInvalid", "Invalid or expired coupon code."));
+    } finally {
       setCouponApplying(false);
-    }, 600);
+    }
   }
 
   function removeCoupon() {
@@ -191,8 +220,9 @@ export default function SuiteBookingPage() {
   }
 
   const slotDuration = suite?.slotDurationMins ?? 150;
+  const slotGap = suite?.gapBetweenSlotsMins ?? 30;
   const timeSlots = suite
-    ? generateSlots(suite.slotStartTime, suite.slotEndTime, slotDuration)
+    ? generateSlots(suite.slotStartTime, suite.slotEndTime, slotDuration, slotGap)
     : [];
 
   const suiteMinCap = suite?.minCapacity ?? 1;
@@ -254,7 +284,12 @@ export default function SuiteBookingPage() {
   }, [suites, location.state]);
   const subtotal   = basePrice + addonsTotal;
   // Requested: remove serviceFee & taxes from UI. Total is suite + persons + add-ons - discount.
-  const couponSavings = couponDiscount > 0 ? Math.round(subtotal * couponDiscount / 100) : 0;
+  // couponDiscount > 0 means percentage off; couponDiscount < 0 means fixed ₹ amount off
+  const couponSavings = couponDiscount > 0
+    ? Math.round(subtotal * couponDiscount / 100)
+    : couponDiscount < 0
+      ? Math.min(Math.abs(couponDiscount), subtotal)
+      : 0;
   const grandTotal = subtotal - couponSavings;
 
   // Requested: dynamic payable amount (full vs 20% advance).
@@ -573,7 +608,7 @@ export default function SuiteBookingPage() {
                       <div className="space-y-3">
                         <div className="flex items-center gap-2">
                           <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground">{t("app.userDashboard.selectTimeSlot", "Select Time Slot")}</p>
-                          <span className="px-2 py-0.5 rounded-full bg-gold/10 border border-gold/25 text-[10px] text-gold font-semibold">{slotDuration} min per slot · 30 min gap</span>
+                          <span className="px-2 py-0.5 rounded-full bg-gold/10 border border-gold/25 text-[10px] text-gold font-semibold">{slotDuration} min per slot · {slotGap} min gap</span>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
 {timeSlots.map((slot) => {
@@ -756,7 +791,9 @@ onClick={() => setStartTime(slot)}
                               <div className="flex items-center gap-2">
                                 <Tag className="h-4 w-4 text-emerald-400 shrink-0" />
                                 <span className="text-sm font-semibold text-emerald-400">{couponCode}</span>
-                                <span className="text-xs text-emerald-400/80">{couponDiscount}% {t("app.userDashboard.discount", "off")}</span>
+                                <span className="text-xs text-emerald-400/80">
+                                  {couponDiscount > 0 ? `${couponDiscount}% ` : `₹${Math.abs(couponDiscount)} `}{t("app.userDashboard.discount", "off")}
+                                </span>
                               </div>
                               <button
                                 type="button"
@@ -812,7 +849,7 @@ onClick={() => setStartTime(slot)}
                                 <tr>
                                   <td className="py-2 text-emerald-400 flex items-center gap-1.5">
                                     <Tag className="h-3.5 w-3.5" />
-                                    {couponCode} ({couponDiscount}% off)
+                                    {couponCode} ({couponDiscount > 0 ? `${couponDiscount}% off` : `₹${Math.abs(couponDiscount)} off`})
                                   </td>
                                   <td className="py-2 text-right text-emerald-400">− ₹{couponSavings.toLocaleString()}</td>
                                 </tr>

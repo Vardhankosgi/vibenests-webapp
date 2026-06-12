@@ -1,3 +1,5 @@
+import i18n from '../i18n';
+
 const BASE = 'http://localhost:4000';
 
 function getToken() {
@@ -31,8 +33,13 @@ async function refreshAccessToken(): Promise<string | null> {
 
 async function request<T>(path: string, options: RequestInit = {}, retry = true): Promise<T> {
   const token = getToken();
+  const lang = i18n.language || localStorage.getItem('i18nextLng') || 'en';
+  const shortLang = lang.split('-')[0].toLowerCase();
+
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    'Accept-Language': shortLang,
+    'X-Locale': shortLang,
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(options.headers as Record<string, string> | undefined),
   };
@@ -83,6 +90,7 @@ export const bookingsApi = {
   updateStatus: (id: number, status: string) =>
     request<any>(`/bookings/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
   cancel: (id: number) => request<any>(`/bookings/${id}/cancel`, { method: 'PATCH' }),
+  getMeetingLink: (id: number) => request<{ meeting_link: string }>(`/bookings/${id}/meeting-link`, { method: 'POST' }),
 };
 
 // ── Suites ───────────────────────────────────────────────────────────────────
@@ -105,6 +113,7 @@ export const addonsApi = {
 export const usersApi = {
   getAll: () => request<any[]>('/users'),
   me: () => request<any>('/users/me'),
+  updateMe: (body: { fullName?: string; phone?: string; dateOfBirth?: string }) => request<any>('/users/me', { method: 'PATCH', body: JSON.stringify(body) }),
   getById: (id: string) => request<any>(`/users/${id}`),
   create: (body: { fullName: string; email: string; phone?: string }) =>
     request<any>('/users', { method: 'POST', body: JSON.stringify(body) }),
@@ -117,6 +126,7 @@ export const usersApi = {
 // ── Payments ─────────────────────────────────────────────────────────────────
 export const paymentsApi = {
   getAll: () => request<any[]>('/payments/all'),
+  getMine: () => request<any[]>('/payments/me'),
   createOrder: (bookingId: number, amount: number, method: string) =>
     request<{ paymentId: number; orderId: string; amount: number; keyId: string }>(
       '/payments/create-order',
@@ -158,4 +168,39 @@ export const reportsApi = {
     if (end) q.set('end', end);
     return request<any>(`/reports/customers?${q}`);
   },
+};
+
+// ── Offers & Coupons ────────────────────────────────────────────────────────
+export const offersApi = {
+  getAll: () => request<{ data: any[]; total: number }>('/offers'),
+  getActive: () => request<any[]>('/offers/active'),
+  create: (body: any) => request<any>('/offers', { method: 'POST', body: JSON.stringify(body) }),
+  update: (id: number, body: any) => request<any>(`/offers/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  remove: (id: number) => request<any>(`/offers/${id}`, { method: 'DELETE' }),
+};
+
+export const couponsApi = {
+  getAll: () => request<{ data: any[]; total: number }>('/coupons'),
+  getActive: () => request<any[]>('/coupons/active'),
+  create: (body: any) => request<any>('/coupons', { method: 'POST', body: JSON.stringify(body) }),
+  remove: (id: number) => request<any>(`/coupons/${id}`, { method: 'DELETE' }),
+};
+
+export const offerConfigsApi = {
+  getMap: () => request<Record<string, string>>('/offer-configurations/map'),
+  upsert: (body: { configKey: string; configValue: string; valueType?: string; label?: string; description?: string }) =>
+    request<any>('/offer-configurations', { method: 'POST', body: JSON.stringify(body) }),
+};
+
+export const bookingRulesApi = {
+  getMap: () => request<Record<string, string>>('/booking-rules/map'),
+  upsert: (body: { ruleKey: string; ruleValue: string; valueType?: string; label?: string; description?: string }) =>
+    request<any>('/booking-rules', { method: 'POST', body: JSON.stringify(body) }),
+};
+
+// Public: map for frontend
+export const liveCelebrationSettingsApi = {
+  getMap: () => request<Record<string, string>>('/live-celebration-settings/map'),
+  upsert: (body: { settingKey: string; settingValue: string; valueType?: string; label?: string; description?: string }) =>
+    request<any>('/live-celebration-settings', { method: 'POST', body: JSON.stringify(body) }),
 };

@@ -4,7 +4,7 @@ import { AdminHeader } from "@/components/admin/AdminHeader";
 import { useSuitesContext, type Suite } from "@/components/admin/SuitesContext";
 import { useTranslation } from "react-i18next";
 
-const emptyForm: Omit<Suite, "id"> = { name: "", minCapacity: 1, capacity: 2, price: "", ratePerExtraPerson: 199, baseDiscount: 0, slotStartTime: "09:00", slotEndTime: "21:00", slotDurationMins: 150, occasions: "", status: "Active", description: "", images: [], amenities: [] };
+const emptyForm: Omit<Suite, "id"> = { name: "", minCapacity: 1, capacity: 2, price: "", ratePerExtraPerson: 199, baseDiscount: 0, slotStartTime: "09:00", slotEndTime: "21:00", slotDurationMins: 150, gapBetweenSlotsMins: 30, occasions: "", status: "Active", description: "", images: [], amenities: [] };
 
 const statusStyle: Record<string, string> = {
   Active: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
@@ -121,7 +121,7 @@ export default function SuitesPage() {
   });
 
   function openAdd() { setEditId(null); setForm(emptyForm); setShowModal(true); }
-  function openEdit(s: Suite) { setEditId(s.id); setForm({ name: s.name, minCapacity: s.minCapacity, capacity: s.capacity, price: s.price, ratePerExtraPerson: s.ratePerExtraPerson, baseDiscount: s.baseDiscount, slotStartTime: s.slotStartTime, slotEndTime: s.slotEndTime, slotDurationMins: s.slotDurationMins, occasions: s.occasions, status: s.status, description: s.description, images: s.images, amenities: s.amenities }); setShowModal(true); }
+  function openEdit(s: Suite) { setEditId(s.id); setForm({ name: s.name, minCapacity: s.minCapacity, capacity: s.capacity, price: s.price, ratePerExtraPerson: s.ratePerExtraPerson, baseDiscount: s.baseDiscount, slotStartTime: s.slotStartTime, slotEndTime: s.slotEndTime, slotDurationMins: s.slotDurationMins, gapBetweenSlotsMins: s.gapBetweenSlotsMins, occasions: s.occasions, status: s.status, description: s.description, images: s.images, amenities: s.amenities }); setShowModal(true); }
 
   async function handleSave() {
     if (!form.name.trim()) return;
@@ -302,9 +302,13 @@ export default function SuitesPage() {
                     <label className="text-[10px] text-muted-foreground">{t("app.admin.endTime", "End Time")}</label>
                     <input type="time" value={form.slotEndTime} onChange={(e) => setForm((f) => ({ ...f, slotEndTime: e.target.value }))} className="luxury-input w-full rounded-lg px-3 py-1.5 text-sm mt-0.5" style={{ colorScheme: "dark" }} />
                   </div>
-                  <div className="col-span-2">
+                  <div>
                     <label className="text-[10px] text-muted-foreground">{t("app.admin.slotDurationMins", "Slot Duration (minutes)")}</label>
                     <input type="number" min={30} step={15} value={form.slotDurationMins} onChange={(e) => setForm((f) => ({ ...f, slotDurationMins: Number(e.target.value) }))} className="luxury-input w-full rounded-lg px-3 py-1.5 text-sm mt-0.5" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-muted-foreground">{t("app.admin.gapBetweenSlotsMins", "Gap Between Slots (minutes)")}</label>
+                    <input type="number" min={0} step={5} value={form.gapBetweenSlotsMins} onChange={(e) => setForm((f) => ({ ...f, gapBetweenSlotsMins: Number(e.target.value) }))} className="luxury-input w-full rounded-lg px-3 py-1.5 text-sm mt-0.5" />
                   </div>
                 </div>
                 {/* Preview generated slots */}
@@ -313,8 +317,12 @@ export default function SuitesPage() {
                   const [sh, sm] = form.slotStartTime.split(":").map(Number);
                   const [eh, em] = form.slotEndTime.split(":").map(Number);
                   let cur = sh * 60 + sm;
-                  const end = eh * 60 + em;
-                  const step = form.slotDurationMins + 30; // slot + 30-min gap
+                  let end = eh * 60 + em;
+                  if (end < cur) {
+                    end += 24 * 60;
+                  }
+                  const gapMins = form.gapBetweenSlotsMins ?? 30;
+                  const step = form.slotDurationMins + gapMins;
                   while (cur + form.slotDurationMins <= end) {
                     const hh = Math.floor(cur / 60) % 24;
                     const mm = cur % 60;
@@ -325,7 +333,7 @@ export default function SuitesPage() {
                   }
                   return slots.length > 0 ? (
                     <div className="mt-2">
-                      <p className="text-[10px] text-muted-foreground mb-1">{slots.length} {t("app.admin.slotsOf", "slots")} · {form.slotDurationMins} {t("app.admin.minEach", "min each")} · {t("app.admin.minGap", "30 min gap")}</p>
+                      <p className="text-[10px] text-muted-foreground mb-1">{slots.length} {t("app.admin.slotsOf", "slots")} · {form.slotDurationMins} {t("app.admin.minEach", "min each")} · {t("app.admin.minGapDynamic", `${gapMins} min gap`, { gap: gapMins })}</p>
                       <div className="flex flex-wrap gap-1">
                         {slots.map((s) => <span key={s} className="px-2 py-0.5 rounded-full bg-gold/10 border border-gold/20 text-[10px] text-gold">{s}</span>)}
                       </div>

@@ -272,7 +272,7 @@ export default function UsersPage() {
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-foreground truncate">{b.suite}</p>
                         <p className="text-xs text-muted-foreground mt-0.5">{b.eventType} · {b.date} · {b.timeSlot}</p>
-                        <p className="text-[11px] text-muted-foreground mt-0.5">Booking #VN{b.id}</p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">Booking {b.orderId ? `#${b.orderId}` : `#VN${b.id}`}</p>
                       </div>
                       <div className="flex flex-col items-end gap-1.5 shrink-0">
                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium border ${bookingStatusStyle[b.status] ?? ""}`}>{b.status}</span>

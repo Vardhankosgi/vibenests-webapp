@@ -22,7 +22,9 @@ export function LanguageSelector() {
   const currentLang = LANGUAGES.find(l => i18n.language && i18n.language.startsWith(l.code)) || LANGUAGES[0];
 
   const handleLangChange = (code: string) => {
-    i18n.changeLanguage(code);
+    i18n.changeLanguage(code).then(() => {
+      window.location.reload();
+    });
     setOpen(false);
   };
 

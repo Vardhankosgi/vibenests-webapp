@@ -1,18 +1,24 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { useTranslation } from "react-i18next";
-
-const data = [
-  { day: "Mon", bookings: 4 },
-  { day: "Tue", bookings: 7 },
-  { day: "Wed", bookings: 5 },
-  { day: "Thu", bookings: 9 },
-  { day: "Fri", bookings: 13 },
-  { day: "Sat", bookings: 18 },
-  { day: "Sun", bookings: 15 },
-];
+import { useAppData } from "@/components/admin/AppDataContext";
 
 export function BookingChart() {
   const { t } = useTranslation();
+  const { bookings } = useAppData();
+
+  const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const dayIndices = [1, 2, 3, 4, 5, 6, 0]; // Monday (1) to Sunday (0)
+
+  const data = DAYS.map((day, idx) => {
+    const targetDayIndex = dayIndices[idx];
+    const count = bookings.filter((b) => {
+      if (!b.date) return false;
+      const d = new Date(b.date);
+      return !isNaN(d.getTime()) && d.getDay() === targetDayIndex;
+    }).length;
+    return { day, bookings: count };
+  });
+
   return (
     <div className="glass-card rounded-2xl p-5">
       <h3 className="font-display text-lg font-medium text-foreground mb-4">{t("app.admin.weeklyBookings", "Weekly Bookings")}</h3>

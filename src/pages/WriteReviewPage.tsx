@@ -8,6 +8,7 @@ import {
   HelpCircle, LogOut, Package, History, Bell,
 } from "lucide-react";
 import { LanguageSelector } from "@/components/shared/LanguageSelector";
+import { useAuth } from "@/components/auth/AuthContext";
 import { useTranslation } from "react-i18next";
 
 /* ─── Types ──────────────────────────────────────────── */
@@ -67,6 +68,10 @@ function StarRating({ value, onChange, size = "md" }: {
 export default function WriteReviewPage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const displayName = user?.fullName || t("app.userDashboard.welcome_back_name", "Guest");
+  const displayLetter = displayName ? displayName.charAt(0).toUpperCase() : "U";
+  const displayEmail = user?.email || "";
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [ratings, setRatings] = useState<Record<CategoryKey, number>>({
     ambience: 0, cleanliness: 0, service: 0, decoration: 0, value: 0,
@@ -118,7 +123,7 @@ export default function WriteReviewPage() {
             <Bell className="h-4 w-4" />
             <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-gold" />
           </button>
-          <div className="h-9 w-9 rounded-xl bg-gradient-gold flex items-center justify-center font-bold text-[oklch(0.12_0.02_260)] text-sm">A</div>
+          <div className="h-9 w-9 rounded-xl bg-gradient-gold flex items-center justify-center font-bold text-[oklch(0.12_0.02_260)] text-sm">{displayLetter}</div>
         </div>
       </header>
 
@@ -136,27 +141,21 @@ export default function WriteReviewPage() {
         {/* ── Sidebar ── */}
         <aside className={`absolute lg:relative top-0 left-0 h-full w-64 z-40 flex flex-col shrink-0 glass-card border-r border-white/5 rounded-none transition-transform duration-300 ease-in-out ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}>
           <div className="flex items-center justify-between px-4 py-4 border-b border-white/5">
-            <div>
-              <p className="text-xs text-muted-foreground">{t("app.userDashboard.welcome", "Welcome back")}</p>
-              <p className="text-sm font-medium text-foreground font-display">{t("app.userDashboard.welcome_back_name", "Adithya Reddy")}</p>
+            <div className="flex items-center gap-3 p-2 rounded-xl glass flex-1 min-w-0 border border-white/5">
+              <div className="h-9 w-9 rounded-full bg-gradient-gold flex items-center justify-center font-bold text-[oklch(0.12_0.02_260)] text-sm shrink-0">{displayLetter}</div>
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-foreground truncate">{displayName}</p>
+                {displayEmail && <p className="text-[10px] text-muted-foreground truncate">{displayEmail}</p>}
+              </div>
             </div>
             <button onClick={() => setSidebarOpen(false)}
-              className="flex flex-col justify-center items-center gap-[5px] p-2 rounded-lg hover:bg-white/5 transition-colors group">
+              className="flex lg:hidden flex-col justify-center items-center gap-[5px] p-2 rounded-lg hover:bg-white/5 transition-colors group ml-2 shrink-0">
               <span className="block w-5 h-0.5 bg-muted-foreground group-hover:bg-gold transition-colors" />
               <span className="block w-5 h-0.5 bg-muted-foreground group-hover:bg-gold transition-colors" />
               <span className="block w-5 h-0.5 bg-muted-foreground group-hover:bg-gold transition-colors" />
             </button>
           </div>
 
-          <div className="px-4 py-4 border-b border-white/5">
-            <div className="flex items-center gap-3 p-3 rounded-xl glass-gold">
-              <div className="h-9 w-9 rounded-full bg-gradient-gold flex items-center justify-center font-bold text-[oklch(0.12_0.02_260)] text-sm shrink-0">A</div>
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-foreground truncate">{t("app.userDashboard.welcome_back_name", "Adithya Reddy")}</p>
-                <p className="text-[11px] text-gold">{t("app.userDashboard.goldMember", "Gold Member")}</p>
-              </div>
-            </div>
-          </div>
 
           <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto scrollbar-none">
             {NAV_ITEMS.map(({ id, label, icon: Icon }) => {
@@ -176,7 +175,7 @@ export default function WriteReviewPage() {
                 label;
               return (
                 <button key={id} onClick={() => handleNav(id)}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${active ? "bg-gold/15 border border-gold/25 text-gold font-medium" : "text-muted-foreground hover:bg-white/5 hover:text-foreground"}`}>
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 border rounded-xl text-sm transition-all ${active ? "bg-gold/15 border-gold/25 text-gold font-medium" : "border-transparent text-muted-foreground hover:bg-white/5 hover:text-foreground"}`}>
                   <Icon className={`h-4 w-4 shrink-0 ${active ? "text-gold" : ""}`} />
                   {translatedLabel}
                 </button>
@@ -186,7 +185,7 @@ export default function WriteReviewPage() {
 
           <div className="px-3 pb-6 pt-2 border-t border-white/5">
             <button onClick={() => navigate("/login")}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10 transition-all">
+              className="w-full flex items-center gap-3 px-3 py-2.5 border border-transparent rounded-xl text-sm text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10 transition-all">
               <LogOut className="h-4 w-4 shrink-0" />
               {t("app.userDashboard.logout", "Logout")}
             </button>

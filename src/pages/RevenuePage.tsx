@@ -1,9 +1,10 @@
-import { useState } from "react";
-import { IndianRupee, TrendingUp, TrendingDown, ArrowLeft, Download, CreditCard, Banknote, Wallet } from "lucide-react";
+import { useState, useEffect } from "react";
+import { IndianRupee, TrendingUp, TrendingDown, ArrowLeft, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { useAppData, parseAmount } from "@/components/admin/AppDataContext";
 import { useTranslation } from "react-i18next";
+import { paymentsApi } from "@/lib/api";
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Cell, PieChart, Pie,
@@ -12,17 +13,37 @@ import {
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const PERIODS = ["Monthly", "Quarterly", "Yearly"];
 
+function getMonthIndex(dateStr: string): number {
+  if (!dateStr) return -1;
+  const d = new Date(dateStr);
+  if (!isNaN(d.getTime())) {
+    return d.getMonth(); // 0-11
+  }
+  for (let i = 0; i < MONTHS.length; i++) {
+    if (dateStr.toLowerCase().includes(MONTHS[i].toLowerCase())) {
+      return i;
+    }
+  }
+  return -1;
+}
+
 export default function RevenuePage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { bookings, stats } = useAppData();
   const [period, setPeriod] = useState("Monthly");
-  const [txFilter, setTxFilter] = useState("All");
+  const [payments, setPayments] = useState<any[]>([]);
+
+  useEffect(() => {
+    paymentsApi.getAll()
+      .then(setPayments)
+      .catch((err) => console.error("Failed to load payments on revenue page:", err));
+  }, []);
 
   // Monthly revenue derived from real confirmed bookings
-  const monthly = MONTHS.map((month) => {
+  const monthly = MONTHS.map((month, index) => {
     const rev = bookings
-      .filter((b) => b.status === "Confirmed" && b.date.includes(month))
+      .filter((b) => b.status === "Confirmed" && getMonthIndex(b.date) === index)
       .reduce((s, b) => s + parseAmount(b.amount), 0);
     return { month, revenue: rev, expenses: Math.round(rev * 0.28) };
   });
@@ -42,16 +63,21 @@ export default function RevenuePage() {
     { name: "Suites", value: 100, color: "oklch(0.78 0.13 80)" },
   ];
 
-  // Derive transactions from real bookings
-  const transactions = bookings.map((b, i) => ({
-    id: `#TXN${8821 - i}`,
-    guest: b.guest,
-    suite: b.suite,
-    date: b.date,
-    amount: parseAmount(b.amount),
-    method: ["UPI", "Card", "Cash"][i % 3],
-    status: b.status === "Confirmed" ? "Settled" : "Pending",
-  }));
+  // Get transactions from real payments
+  const transactions = payments.map((p) => {
+    const guestName = p.booking?.guestFirstName
+      ? `${p.booking.guestFirstName} ${p.booking.guestLastName ?? ''}`.trim()
+      : (p.booking?.user?.fullName ?? 'Guest');
+    return {
+      id: `#TXN${p.id}`,
+      guest: guestName,
+      suite: p.booking?.suiteName || `Suite #${p.booking?.suiteId ?? ''}`,
+      date: p.createdAt ? new Date(p.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—",
+      amount: Number(p.amount || 0),
+      method: p.method || "Other",
+      status: p.status === "success" ? "Settled" : "Pending",
+    };
+  });
 
   // Derive suite revenue from real bookings
   const suiteMap: Record<string, { revenue: number; bookings: number }> = {};
@@ -68,8 +94,6 @@ export default function RevenuePage() {
   const totalRevenue = stats.totalRevenue;
   const totalExpenses = Math.round(totalRevenue * 0.28);
   const netProfit = totalRevenue - totalExpenses;
-
-  const filteredTx = txFilter === "All" ? transactions : transactions.filter((t) => t.status === txFilter);
 
   return (
     <div className="flex-1 overflow-y-auto">
@@ -236,58 +260,15 @@ export default function RevenuePage() {
           </div>
         </div>
 
-        {/* Transactions */}
-        <div className="glass-card rounded-2xl p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-display text-lg font-medium">{t("app.admin.recentTransactionsTitle", "Recent Transactions")}</h3>
-            <div className="flex gap-1 p-1 rounded-lg bg-white/[0.04] border border-white/[0.06]">
-              {[t("app.admin.allFilter","All"), t("app.admin.settledFilter","Settled"), t("app.admin.pendingFilter","Pending")].map((f, i) => {
-                const vals = ["All","Settled","Pending"];
-                return (
-                <button key={f} onClick={() => setTxFilter(vals[i])}
-                  className={`px-3 py-1 rounded-md text-xs font-medium transition ${txFilter === vals[i] ? "bg-[var(--gold)]/20 text-gold border border-[var(--gold)]/30" : "text-muted-foreground hover:text-foreground"}`}>
-                  {f}
-                </button>
-                );
-              })}
-            </div>
+        {/* Transactions — link to real Transactions page */}
+        <div className="glass-card rounded-2xl p-5 flex items-center justify-between">
+          <div>
+            <h3 className="font-display text-lg font-medium text-foreground">{t("app.admin.recentTransactionsTitle", "Recent Transactions")}</h3>
+            <p className="text-xs text-muted-foreground mt-1">{t("app.admin.allTransactions", "View all payment transactions")}</p>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs text-muted-foreground uppercase tracking-wide border-b border-white/[0.06]">
-                  <th className="pb-3 pr-4">{t("app.admin.txnIdCol","Txn ID")}</th>
-                  <th className="pb-3 pr-4">{t("app.admin.guest","Guest")}</th>
-                  <th className="pb-3 pr-4">{t("app.admin.suite","Suite")}</th>
-                  <th className="pb-3 pr-4">{t("app.admin.date","Date")}</th>
-                  <th className="pb-3 pr-4">{t("app.admin.amount","Amount")}</th>
-                  <th className="pb-3 pr-4">{t("app.admin.methodCol","Method")}</th>
-                  <th className="pb-3">{t("app.admin.status","Status")}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/[0.04]">
-                {filteredTx.map((t) => (
-                  <tr key={t.id} className="hover:bg-white/[0.02] transition">
-                    <td className="py-3 pr-4 text-gold font-medium">{t.id}</td>
-                    <td className="py-3 pr-4 text-foreground">{t.guest}</td>
-                    <td className="py-3 pr-4 text-muted-foreground text-xs">{t.suite}</td>
-                    <td className="py-3 pr-4 text-muted-foreground text-xs">{t.date}</td>
-                    <td className="py-3 pr-4 text-foreground font-medium">₹{t.amount.toLocaleString()}</td>
-                    <td className="py-3 pr-4">
-                      <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                        {t.method === "UPI" ? <Wallet className="h-3 w-3" /> : t.method === "Card" ? <CreditCard className="h-3 w-3" /> : <Banknote className="h-3 w-3" />} {t.method}
-                      </span>
-                    </td>
-                    <td className="py-3">
-                      <span className={`px-2.5 py-1 rounded-full text-[11px] font-medium border ${t.status === "Settled" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-amber-500/10 text-amber-400 border-amber-500/20"}`}>
-                        {t.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <button onClick={() => navigate("/transactions")} className="flex items-center gap-2 text-xs gold-btn px-4 py-2 rounded-lg font-medium">
+            {t("app.admin.viewAllTransactions", "View All Transactions →")}
+          </button>
         </div>
 
       </div>

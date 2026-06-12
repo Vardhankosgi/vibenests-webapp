@@ -1,13 +1,6 @@
 import { useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-
-const bookings = [
-  { id: "#VN1042", guest: "Arjun Sharma", suite: "Royal Celebration Suite", date: "12 Jun 2025", amount: "₹8,500", status: "Confirmed" },
-  { id: "#VN1041", guest: "Priya Reddy", suite: "Starlight Romance Suite", date: "11 Jun 2025", amount: "₹6,200", status: "Pending" },
-  { id: "#VN1040", guest: "Rahul Mehta", suite: "Garden Bliss Suite", date: "10 Jun 2025", amount: "₹5,000", status: "Confirmed" },
-  { id: "#VN1039", guest: "Sneha Patel", suite: "Midnight Luxe Suite", date: "09 Jun 2025", amount: "₹7,800", status: "Cancelled" },
-  { id: "#VN1038", guest: "Vikram Nair", suite: "Royal Celebration Suite", date: "08 Jun 2025", amount: "₹9,200", status: "Confirmed" },
-];
+import { useAppData } from "@/components/admin/AppDataContext";
 
 const statusStyle: Record<string, string> = {
   Confirmed: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
@@ -27,6 +20,7 @@ interface RecentBookingsProps {
 export function RecentBookings({ filterDate, onClear }: RecentBookingsProps) {
   const ref = useRef<HTMLDivElement>(null);
   const { t } = useTranslation();
+  const { bookings } = useAppData();
 
   useEffect(() => {
     if (filterDate) {
@@ -79,7 +73,12 @@ export function RecentBookings({ filterDate, onClear }: RecentBookingsProps) {
               filtered.map((b) => (
                 <tr key={b.id} className="hover:bg-white/[0.02] transition">
                   <td className="py-3 pr-4 text-gold font-medium">{b.id}</td>
-                  <td className="py-3 pr-4 text-foreground">{b.guest}</td>
+                  <td className="py-3 pr-4">
+                    <div className="flex flex-col">
+                      <span className="text-foreground">{b.guest}</span>
+                      {b.email && <span className="text-[11px] text-muted-foreground">{b.email}</span>}
+                    </div>
+                  </td>
                   <td className="py-3 pr-4 text-muted-foreground">{b.suite}</td>
                   <td className="py-3 pr-4 text-muted-foreground">{b.date}</td>
                   <td className="py-3 pr-4 text-foreground font-medium">{b.amount}</td>

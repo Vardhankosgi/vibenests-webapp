@@ -3,9 +3,13 @@ import { bookingsApi, usersApi } from "@/lib/api";
 
 export type Booking = {
   rawId?: string;
-  id: string; guest: string; phone: string; suite: string;
+  orderId?: string;
+  id: string; guest: string; email: string; phone: string; suite: string;
   occasion: string; date: string; time: string; endTime: string;
   guests: number; amount: string; status: "Confirmed" | "Pending" | "Cancelled";
+  basePrice?: number;
+  addonsTotal?: number;
+  totalAmount?: number;
 };
 
 export type UserType = {
@@ -24,9 +28,11 @@ function mapApiBooking(b: any): Booking {
     ? `${b.guestFirstName} ${b.guestLastName ?? ''}`.trim()
     : (b.user?.fullName ?? 'Guest');
   return {
-    id: `#VN${b.id}`,
+    id: b.orderId ? `#${b.orderId}` : `#VN${b.id}`,
     rawId: String(b.id),
+    orderId: b.orderId,
     guest: guestName,
+    email: b.guestEmail ?? b.user?.email ?? '',
     phone: b.guestPhone ?? b.user?.phone ?? '',
     suite: b.suite?.name ?? `Suite ${b.suiteId}`,
     occasion: b.eventType ?? '',
@@ -38,6 +44,9 @@ function mapApiBooking(b: any): Booking {
       ? `₹${Number(b.totalAmount).toLocaleString()}`
       : (b.payment?.amount ? `₹${Number(b.payment.amount).toLocaleString()}` : '₹0'),
     status: (b.status?.charAt(0).toUpperCase() + b.status?.slice(1)) as Booking['status'],
+    basePrice: Number(b.basePrice || 0),
+    addonsTotal: Number(b.addonsTotal || 0),
+    totalAmount: Number(b.totalAmount || 0),
   };
 }
 

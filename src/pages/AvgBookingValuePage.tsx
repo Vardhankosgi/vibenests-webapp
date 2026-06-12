@@ -3,71 +3,126 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Download, TrendingUp, TrendingDown, IndianRupee, BarChart2 } from "lucide-react";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { useTranslation } from "react-i18next";
+import { useAppData, parseAmount } from "@/components/admin/AppDataContext";
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Cell, PieChart, Pie,
 } from "recharts";
 
-const monthlyAvg = [
-  { month: "Jan", avg: 3200, bookings: 18 },
-  { month: "Feb", avg: 3540, bookings: 22 },
-  { month: "Mar", avg: 3280, bookings: 21 },
-  { month: "Apr", avg: 3890, bookings: 26 },
-  { month: "May", avg: 3710, bookings: 24 },
-  { month: "Jun", avg: 4100, bookings: 29 },
-  { month: "Jul", avg: 4020, bookings: 28 },
-  { month: "Aug", avg: 4450, bookings: 31 },
-  { month: "Sep", avg: 4230, bookings: 27 },
-  { month: "Oct", avg: 4580, bookings: 32 },
-  { month: "Nov", avg: 4820, bookings: 33 },
-  { month: "Dec", avg: 5100, bookings: 36 },
-];
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-const suiteAvg = [
-  { suite: "Royal Celebration", avg: 8210, color: "oklch(0.78 0.13 80)" },
-  { suite: "Starlight Romance", avg: 5900, color: "oklch(0.70 0.11 80)" },
-  { suite: "Midnight Luxe", avg: 6320, color: "oklch(0.62 0.13 75)" },
-  { suite: "Garden Bliss", avg: 4470, color: "oklch(0.55 0.10 75)" },
-  { suite: "Pearl Terrace", avg: 4710, color: "oklch(0.48 0.08 75)" },
-];
-
-const occasionAvg = [
-  { occasion: "Anniversary", avg: 7400, color: "oklch(0.78 0.13 80)" },
-  { occasion: "Proposal", avg: 6800, color: "oklch(0.70 0.11 80)" },
-  { occasion: "Birthday", avg: 5200, color: "oklch(0.62 0.12 75)" },
-  { occasion: "Surprise Party", avg: 4600, color: "oklch(0.55 0.09 75)" },
-  { occasion: "Date Night", avg: 3900, color: "oklch(0.48 0.08 75)" },
-];
-
-const valueRanges = [
-  { range: "< ₹3k", count: 28 },
-  { range: "₹3k–5k", count: 76 },
-  { range: "₹5k–7k", count: 89 },
-  { range: "₹7k–10k", count: 54 },
-  { range: "> ₹10k", count: 37 },
-];
-
-const recentBookings = [
-  { id: "#VN1042", guest: "Arjun Sharma", suite: "Royal Celebration Suite", occasion: "Birthday", date: "12 Jun 2025", amount: 8500, addons: 1200 },
-  { id: "#VN1041", guest: "Priya Reddy", suite: "Starlight Romance Suite", occasion: "Anniversary", date: "11 Jun 2025", amount: 6200, addons: 800 },
-  { id: "#VN1040", guest: "Rahul Mehta", suite: "Garden Bliss Suite", occasion: "Proposal", date: "10 Jun 2025", amount: 5000, addons: 500 },
-  { id: "#VN1038", guest: "Vikram Nair", suite: "Royal Celebration Suite", occasion: "Anniversary", date: "08 Jun 2025", amount: 9200, addons: 1500 },
-  { id: "#VN1037", guest: "Divya Krishnan", suite: "Starlight Romance Suite", occasion: "Surprise Party", date: "07 Jun 2025", amount: 11000, addons: 2200 },
-  { id: "#VN1035", guest: "Ananya Singh", suite: "Midnight Luxe Suite", occasion: "Proposal", date: "05 Jun 2025", amount: 6500, addons: 900 },
-  { id: "#VN1033", guest: "Meera Iyer", suite: "Starlight Romance Suite", occasion: "Birthday", date: "03 Jun 2025", amount: 7200, addons: 1100 },
-];
-
-const overallAvg = Math.round(monthlyAvg.reduce((s, m) => s + m.avg, 0) / monthlyAvg.length);
-const highestMonth = monthlyAvg.reduce((a, b) => (b.avg > a.avg ? b : a));
-const lowestMonth = monthlyAvg.reduce((a, b) => (b.avg < a.avg ? b : a));
-const growth = Math.round(((monthlyAvg[11].avg - monthlyAvg[0].avg) / monthlyAvg[0].avg) * 100);
+function getMonthIndex(dateStr: string): number {
+  if (!dateStr) return -1;
+  const d = new Date(dateStr);
+  if (!isNaN(d.getTime())) {
+    return d.getMonth(); // 0-11
+  }
+  for (let i = 0; i < MONTHS.length; i++) {
+    if (dateStr.toLowerCase().includes(MONTHS[i].toLowerCase())) {
+      return i;
+    }
+  }
+  return -1;
+}
 
 export default function AvgBookingValuePage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { bookings } = useAppData();
   const [sortBy, setSortBy] = useState<"amount" | "addons">("amount");
 
-  const sorted = [...recentBookings].sort((a, b) => b[sortBy] - a[sortBy]);
+  const confirmedBookings = bookings.filter((b) => b.status === "Confirmed");
+
+  // Overall statistics
+  const overallAvg = confirmedBookings.length
+    ? Math.round(confirmedBookings.reduce((sum, b) => sum + parseAmount(b.amount), 0) / confirmedBookings.length)
+    : 0;
+
+  const totalAddon = confirmedBookings.reduce((sum, b) => sum + (b.addonsTotal || 0), 0);
+  const avgAddon = confirmedBookings.length ? Math.round(totalAddon / confirmedBookings.length) : 0;
+
+  // Monthly average trend
+  const monthlyAvg = MONTHS.map((month, index) => {
+    const monthBookings = confirmedBookings.filter((b) => getMonthIndex(b.date) === index);
+    const total = monthBookings.reduce((sum, b) => sum + parseAmount(b.amount), 0);
+    const avg = monthBookings.length ? Math.round(total / monthBookings.length) : 0;
+    return { month, avg, bookings: monthBookings.length };
+  });
+
+  const highestMonth = monthlyAvg.reduce((a, b) => (b.avg > a.avg ? b : a), { month: "—", avg: 0 });
+  const lowestMonth = monthlyAvg.reduce((a, b) => (b.avg > 0 && (a.avg === 0 || b.avg < a.avg) ? b : a), { month: "—", avg: 0 });
+  const growth = monthlyAvg[0].avg ? Math.round(((monthlyAvg[11].avg - monthlyAvg[0].avg) / monthlyAvg[0].avg) * 100) : 0;
+
+  // Suite averages
+  const suiteMap: Record<string, { total: number; count: number }> = {};
+  confirmedBookings.forEach((b) => {
+    const key = b.suite.replace(" Suite", "");
+    if (!suiteMap[key]) suiteMap[key] = { total: 0, count: 0 };
+    suiteMap[key].total += parseAmount(b.amount);
+    suiteMap[key].count += 1;
+  });
+  const SUITE_COLORS = [
+    "oklch(0.78 0.13 80)",
+    "oklch(0.70 0.11 80)",
+    "oklch(0.62 0.13 75)",
+    "oklch(0.55 0.10 75)",
+    "oklch(0.48 0.08 75)"
+  ];
+  const suiteAvg = Object.entries(suiteMap).map(([suite, data], idx) => ({
+    suite,
+    avg: Math.round(data.total / data.count),
+    color: SUITE_COLORS[idx % SUITE_COLORS.length]
+  }));
+
+  // Occasion averages
+  const occasionMap: Record<string, { total: number; count: number }> = {};
+  confirmedBookings.forEach((b) => {
+    const key = b.occasion || "Other";
+    if (!occasionMap[key]) occasionMap[key] = { total: 0, count: 0 };
+    occasionMap[key].total += parseAmount(b.amount);
+    occasionMap[key].count += 1;
+  });
+  const OCCASION_COLORS = [
+    "oklch(0.78 0.13 80)",
+    "oklch(0.70 0.11 80)",
+    "oklch(0.62 0.12 75)",
+    "oklch(0.55 0.09 75)",
+    "oklch(0.48 0.08 75)"
+  ];
+  const occasionAvg = Object.entries(occasionMap).map(([occasion, data], idx) => ({
+    occasion,
+    avg: Math.round(data.total / data.count),
+    color: OCCASION_COLORS[idx % OCCASION_COLORS.length]
+  }));
+
+  // Value Ranges
+  const ranges = [
+    { range: "< ₹3k", min: 0, max: 2999 },
+    { range: "₹3k–5k", min: 3000, max: 4999 },
+    { range: "₹5k–7k", min: 5000, max: 6999 },
+    { range: "₹7k–10k", min: 7000, max: 9999 },
+    { range: "> ₹10k", min: 10000, max: Infinity }
+  ];
+  const valueRanges = ranges.map((r) => {
+    const count = confirmedBookings.filter((b) => {
+      const amt = parseAmount(b.amount);
+      return amt >= r.min && amt <= r.max;
+    }).length;
+    return { range: r.range, count };
+  });
+
+  // Recent Bookings List
+  const recentBookingsList = confirmedBookings.map((b) => ({
+    id: b.id,
+    guest: b.guest,
+    suite: b.suite,
+    occasion: b.occasion,
+    date: b.date,
+    amount: parseAmount(b.amount),
+    addons: b.addonsTotal || 0
+  }));
+
+  const sorted = [...recentBookingsList].sort((a, b) => b[sortBy] - a[sortBy]);
 
   return (
     <div className="flex-1 overflow-y-auto">
@@ -90,7 +145,7 @@ export default function AvgBookingValuePage() {
             { label: t("app.admin.avgBookingValueLabel", "Avg. Booking Value"), value: `₹${overallAvg.toLocaleString()}`, sub: `+${growth}% YoY growth`, up: true, icon: IndianRupee, accent: "border-[var(--gold)]/30" },
             { label: t("app.admin.highestMonth", "Highest Month"), value: `₹${highestMonth.avg.toLocaleString()}`, sub: highestMonth.month + " 2025", up: true, icon: TrendingUp, accent: "border-emerald-500/30" },
             { label: t("app.admin.lowestMonth", "Lowest Month"), value: `₹${lowestMonth.avg.toLocaleString()}`, sub: lowestMonth.month + " 2025", up: false, icon: TrendingDown, accent: "border-amber-500/30" },
-            { label: t("app.admin.avgAddonValue", "Avg. Add-on Value"), value: "₹1,080", sub: "+14% vs last month", up: true, icon: BarChart2, accent: "border-[var(--gold)]/20" },
+            { label: t("app.admin.avgAddonValue", "Avg. Add-on Value"), value: `₹${avgAddon.toLocaleString()}`, sub: "Per booking avg", up: true, icon: BarChart2, accent: "border-[var(--gold)]/20" },
           ].map((c) => (
             <div key={c.label} className={`glass-card rounded-2xl p-5 border ${c.accent} flex items-start justify-between gap-4`}>
               <div>

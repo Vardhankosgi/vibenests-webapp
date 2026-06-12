@@ -1310,7 +1310,8 @@
       "adminTermsOfService": "Admin Terms of Service",
       "and": "and",
       "adminTermsSuffix": "This account will be reviewed before activation.",
-      "savedLabel": "Saved!"
+      "savedLabel": "Saved!",
+      "transactions": "વ્યવહારો"
     },
     "validation": {
       "validEmail": "Enter a valid email address",

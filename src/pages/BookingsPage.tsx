@@ -48,12 +48,15 @@ function StepIndicator({ step, stepLabels }: { step: number; stepLabels: string[
 
 function NewBookingModal({ onClose, onCreated }: { onClose: () => void; onCreated: (b: any) => void }) {
   const { t } = useTranslation();
+  const { users } = useAppData();
   const stepLabels = [
     t("app.admin.scheduleAndSuite", "Schedule & Suite"),
     t("app.admin.guestDetails", "Guest Details"),
     t("app.admin.reviewAndConfirm", "Review & Confirm"),
   ];
   const [step, setStep] = useState(0);
+  const [userSearch, setUserSearch] = useState("");
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [suites, setSuites] = useState<ApiSuite[]>([]);
   const [addons, setAddons] = useState<ApiAddon[]>([]);
   const [loading, setLoading] = useState(false);
@@ -238,6 +241,75 @@ function NewBookingModal({ onClose, onCreated }: { onClose: () => void; onCreate
         {/* ── Step 1: Guest Details ── */}
         {step === 1 && (
           <div className="space-y-3">
+            <div className="relative">
+              <label className="text-xs text-gold uppercase tracking-wide font-medium">{t("app.admin.selectRegisteredUser", "Select Registered User (Optional)")}</label>
+              <div className="relative mt-0.5">
+                <input
+                  type="text"
+                  placeholder={t("app.admin.searchRegisteredUser", "Type to search user by name or email...")}
+                  value={userSearch}
+                  onChange={(e) => {
+                    setUserSearch(e.target.value);
+                    setShowUserDropdown(true);
+                  }}
+                  onFocus={() => setShowUserDropdown(true)}
+                  onBlur={() => setTimeout(() => setShowUserDropdown(false), 200)}
+                  className="luxury-input w-full rounded-lg px-3 py-1.5 text-sm"
+                />
+                {userSearch && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUserSearch("");
+                      setShowUserDropdown(false);
+                      setGuest(emptyGuest);
+                    }}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+              {showUserDropdown && (
+                <div className="absolute z-[10000] w-full mt-1 bg-[oklch(0.15_0.02_260)] border border-[var(--gold)]/20 rounded-lg shadow-xl max-h-48 overflow-y-auto divide-y divide-white/[0.04]">
+                  {users
+                    .filter((u) => u.role !== "Admin")
+                    .filter(
+                      (u) =>
+                        u.name.toLowerCase().includes(userSearch.toLowerCase()) ||
+                        u.email.toLowerCase().includes(userSearch.toLowerCase())
+                    )
+                    .map((u) => (
+                      <div
+                        key={u.id}
+                        onClick={() => {
+                          const [first, ...rest] = u.name.split(" ");
+                          setGuest({
+                            firstName: first || "",
+                            lastName: rest.join(" ") || "",
+                            email: u.email,
+                            phone: u.phone || "",
+                          });
+                          setUserSearch(`${u.name} (${u.email})`);
+                          setShowUserDropdown(false);
+                        }}
+                        className="px-3 py-2 text-xs hover:bg-[var(--gold)]/10 text-foreground cursor-pointer transition flex flex-col"
+                      >
+                        <span className="font-medium">{u.name}</span>
+                        <span className="text-muted-foreground text-[10px]">{u.email}</span>
+                      </div>
+                    ))}
+                  {users.filter((u) => u.role !== "Admin").filter(
+                    (u) =>
+                      u.name.toLowerCase().includes(userSearch.toLowerCase()) ||
+                      u.email.toLowerCase().includes(userSearch.toLowerCase())
+                  ).length === 0 && (
+                    <div className="px-3 py-2 text-xs text-muted-foreground">{t("app.admin.noUsersFound", "No users found")}</div>
+                  )}
+                </div>
+              )}
+            </div>
+
             <div className="grid grid-cols-2 gap-3">
               {[
                 { label: t("app.admin.firstName", "First Name"), key: "firstName", placeholder: "John" },
@@ -469,7 +541,12 @@ export default function BookingsPage() {
                   <tr key={b.id} className={`hover:bg-white/[0.02] transition ${selected.includes(b.id) ? "bg-[var(--gold)]/5" : ""}`}>
                     <td className="py-3 pr-3"><input type="checkbox" checked={selected.includes(b.id)} onChange={() => toggleSelect(b.id)} className="h-3.5 w-3.5 accent-[var(--gold)] cursor-pointer" /></td>
                     <td className="py-3 pr-4 text-gold font-medium">{b.id}</td>
-                    <td className="py-3 pr-4 text-foreground font-medium">{b.guest}</td>
+                    <td className="py-3 pr-4">
+                      <div className="flex flex-col">
+                        <span className="text-foreground font-medium">{b.guest}</span>
+                        {b.email && <span className="text-[11px] text-muted-foreground">{b.email}</span>}
+                      </div>
+                    </td>
                     <td className="py-3 pr-4 text-xs">
                       <button onClick={() => navigate("/rooms")} className="text-gold hover:underline underline-offset-2 text-left transition">{b.suite}</button>
                     </td>

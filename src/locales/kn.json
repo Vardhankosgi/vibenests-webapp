@@ -1310,7 +1310,8 @@
       "adminTermsOfService": "ನಿರ್ವಾಹಕ ಸೇವಾ ನಿಯಮಗಳಿಗೆ",
       "and": "ಮತ್ತು",
       "adminTermsSuffix": "ಸಕ್ರಿಯಗೊಳಿಸುವ ಮೊದಲು ಈ ಖಾತೆಯನ್ನು ಪರಿಶೀಲಿಸಲಾಗುತ್ತದೆ.",
-      "savedLabel": "Saved!"
+      "savedLabel": "Saved!",
+      "transactions": "ವಹಿವಾಟುಗಳು"
     },
     "validation": {
       "validEmail": "Enter a valid email address",

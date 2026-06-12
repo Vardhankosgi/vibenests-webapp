@@ -8,6 +8,7 @@ import { LogoPopover } from "@/components/shared/LogoPopover";
 import { useTranslation } from "react-i18next";
 
 const navItemKeys: { [key: string]: string } = {
+  "Transactions": "transactions",
   "Dashboard": "dashboard",
   "Bookings": "bookings",
   "Suite Booking": "suiteBooking",
@@ -21,10 +22,11 @@ const navItemKeys: { [key: string]: string } = {
 };
 
 const navItems = [
-  { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
-  { icon: CalendarDays, label: "Bookings", to: "/bookings" },
-  { icon: BedDouble, label: "Suites", to: "/rooms" },
-  { icon: Package, label: "Add-on Management", to: "/addons" },
+  { icon: LayoutDashboard, label: "Dashboard",                    to: "/dashboard" },
+  { icon: CalendarDays,    label: "Bookings",                     to: "/bookings" },
+  { icon: BedDouble,       label: "Suites",                       to: "/rooms" },
+  { icon: CreditCard,      label: "Transactions",                 to: "/transactions" },
+  { icon: Package,         label: "Add-on Management",            to: "/addons" },
   { icon: Gift, label: "Celebration Packages", to: "/celebration-packages" },
   { icon: Users, label: "User Management", to: "/customers" },
   { icon: BarChart2, label: "Analytics", to: "/analytics" },

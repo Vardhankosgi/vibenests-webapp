@@ -1140,7 +1140,7 @@
     },
     "admin": {
       "dashboard": "डैशबोर्ड",
-      "bookings": "बुकिंग के",
+      "bookings": "बुकिंग",
       "suiteBooking": "सुइट बुकिंग",
       "suites": "सुइट्स",
       "addonManagement": "ऐड-ऑन प्रबंधन",
@@ -1155,7 +1155,7 @@
       "yesLogout": "हाँ, लॉगआउट करें",
       "cancel": "रद्द करना",
       "search": "खोज...",
-      "revenue": "आय",
+      "revenue": "राजस्व",
       "avgBookingValue": "औसत बुकिंग मूल्य",
       "adminUser": "व्यवस्थापक उपयोगकर्ता",
       "profile": "प्रोफ़ाइल",
@@ -1164,7 +1164,6 @@
       "totalRevenue": "कुल राजस्व",
       "totalBookings": "कुल बुकिंग",
       "totalCustomers": "कुल ग्राहक",
-      "avgBookingValue": "औसत बुकिंग मूल्य",
       "revenueOverview": "राजस्व अवलोकन",
       "revenueBreakdown": "राजस्व विभाजन",
       "weeklyBookings": "साप्ताहिक बुकिंग",
@@ -1215,8 +1214,6 @@
       "minGap": "30 मिनट का अंतराल",
       "target": "लक्ष्य",
       "returning": "वापसी",
-      "revenue": "राजस्व",
-      "bookings": "बुकिंग",
       "confirmed": "पुष्टि",
       "pending": "लंबित",
       "cancelled": "रद्द",
@@ -1328,7 +1325,8 @@
       "agreePrefix": "मैं सहमत हूं",
       "adminTermsOfService": "व्यवस्थापक सेवा की शर्तें",
       "and": "और",
-      "adminTermsSuffix": "सक्रियण से पहले इस खाते की समीक्षा की जाएगी।"
+      "adminTermsSuffix": "सक्रियण से पहले इस खाते की समीक्षा की जाएगी।",
+      "transactions": "लेनदेन"
     }
   }
 }

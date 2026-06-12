@@ -1,23 +1,34 @@
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { useTranslation } from "react-i18next";
+import { useAppData, parseAmount } from "@/components/admin/AppDataContext";
 
-const data = [
-  { month: "Jan", revenue: 42000 },
-  { month: "Feb", revenue: 58000 },
-  { month: "Mar", revenue: 51000 },
-  { month: "Apr", revenue: 73000 },
-  { month: "May", revenue: 68000 },
-  { month: "Jun", revenue: 91000 },
-  { month: "Jul", revenue: 87000 },
-  { month: "Aug", revenue: 105000 },
-  { month: "Sep", revenue: 98000 },
-  { month: "Oct", revenue: 112000 },
-  { month: "Nov", revenue: 124000 },
-  { month: "Dec", revenue: 138000 },
-];
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+function getMonthIndex(dateStr: string): number {
+  if (!dateStr) return -1;
+  const d = new Date(dateStr);
+  if (!isNaN(d.getTime())) {
+    return d.getMonth(); // 0-11
+  }
+  for (let i = 0; i < MONTHS.length; i++) {
+    if (dateStr.toLowerCase().includes(MONTHS[i].toLowerCase())) {
+      return i;
+    }
+  }
+  return -1;
+}
 
 export function RevenueChart() {
   const { t } = useTranslation();
+  const { bookings } = useAppData();
+
+  const data = MONTHS.map((month, index) => {
+    const revenue = bookings
+      .filter((b) => b.status === "Confirmed" && getMonthIndex(b.date) === index)
+      .reduce((s, b) => s + parseAmount(b.amount), 0);
+    return { month, revenue };
+  });
+
   return (
     <div className="glass-card rounded-2xl p-5">
       <h3 className="font-display text-lg font-medium text-foreground mb-4">{t("app.admin.revenueOverview", "Revenue Overview")}</h3>

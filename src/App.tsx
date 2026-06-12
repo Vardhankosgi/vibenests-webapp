@@ -26,6 +26,7 @@ import WriteReviewPage from "@/pages/WriteReviewPage";
 import PrivacyPolicyPage from "@/pages/PrivacyPolicyPage";
 import TermsOfUsePage from "@/pages/TermsOfUsePage";
 import ContactUsPage from "@/pages/ContactUsPage";
+import TransactionsPage from "@/pages/TransactionsPage";
 import { SuitesProvider } from "@/components/admin/SuitesContext";
 import RazorpayProvider from "@/components/shared/RazorpayProvider";
 import { AppDataProvider } from "@/components/admin/AppDataContext";
@@ -63,6 +64,7 @@ export default function App() {
               <Route path="/customers" element={<UsersPage />} />
               <Route path="/analytics" element={<AnalyticsPage />} />
               <Route path="/offers" element={<OffersPage />} />
+              <Route path="/transactions" element={<TransactionsPage />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Route>
           </Route>

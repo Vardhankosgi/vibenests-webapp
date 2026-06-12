@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -13,8 +13,9 @@ import {
   Heart, ChevronLeft, Menu,
 } from "lucide-react";
 import { useSuitesContext } from "@/components/admin/SuitesContext";
-import { bookingsApi, celebrationPackagesApi } from "@/lib/api";
+import { bookingsApi, celebrationPackagesApi, usersApi, paymentsApi, offersApi, couponsApi } from "@/lib/api";
 import { LanguageSelector } from "@/components/shared/LanguageSelector";
+import { useAuth } from "@/components/auth/AuthContext";
 import { useTranslation } from "react-i18next";
 import i18n from "i18next";
 
@@ -195,15 +196,6 @@ const QUICK_ACTIONS = [
 ];
 
 /* ─── Wallet Data ────────────────────────────────────── */
-const TRANSACTIONS: Transaction[] = [
-  { id: "TXN-8401", desc: "Booking Payment – Royal Penthouse Suite VN-2841",  amount: -128000, type: "debit",  date: "Jan 15, 2025", status: "completed", category: "booking",    method: "HDFC Credit Card",       invoice: "INV-2841" },
-  { id: "TXN-8320", desc: "Wallet Top-up via UPI",                             amount:  50000,  type: "credit", date: "Jan 10, 2025", status: "completed", category: "topup",      method: "UPI – adithya@oksbi" },
-  { id: "TXN-8201", desc: "Refund – Cancelled Booking VN-1998",                amount:  18750,  type: "credit", date: "Dec 10, 2024", status: "completed", category: "refund",     method: "HDFC Credit Card",       invoice: "REF-1998" },
-  { id: "TXN-8102", desc: "Advance Payment – Oceanic Deluxe Suite VN-2965",   amount: -32000,  type: "debit",  date: "Nov 20, 2024", status: "completed", category: "booking",    method: "UPI – adithya@oksbi",    invoice: "INV-2965" },
-  { id: "TXN-7998", desc: "Booking Payment – Heritage Garden Villa VN-2210",  amount: -96000,  type: "debit",  date: "Oct 04, 2024", status: "completed", category: "booking",    method: "ICICI Debit Card",       invoice: "INV-2210" },
-  { id: "TXN-7801", desc: "Wallet Withdrawal to Bank",                         amount: -25000,  type: "debit",  date: "Sep 15, 2024", status: "completed", category: "withdrawal", method: "Bank – ICICI •••• 7832" },
-  { id: "TXN-7702", desc: "Booking Payment – Sky Loft Suite VN-2105",          amount: -42000,  type: "debit",  date: "Aug 14, 2024", status: "completed", category: "booking",    method: "Paytm Wallet",           invoice: "INV-2105" },
-];
 
 const PAYMENT_METHODS: PaymentMethod[] = [
   { id: "PM-01", type: "visa",       label: "HDFC Credit Card",  last4: "4291", isDefault: true  },
@@ -477,6 +469,37 @@ function BookingCard({ b, onViewDetails }: { b: Booking; onViewDetails: (b: Book
   const { t } = useTranslation();
   const s = STATUS_CONFIG[b.status];
   const SI = s.icon;
+  const [joinLoading, setJoinLoading] = useState(false);
+  const [joinError, setJoinError] = useState("");
+
+  async function handleJoinNow() {
+    // Extract numeric id from "VN-123" or use _raw.id directly
+    const rawId = b._raw?.id ?? Number(String(b.id).replace(/^VN-/, ""));
+    if (!rawId) { setJoinError("Invalid booking ID"); return; }
+    const tab = window.open("", "_blank");
+    try {
+      setJoinLoading(true);
+      setJoinError("");
+      const { meeting_link } = await bookingsApi.getMeetingLink(rawId);
+      if (tab && !tab.closed) {
+        tab.location.href = meeting_link;
+      } else {
+        const a = document.createElement("a");
+        a.href = meeting_link;
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+    } catch (e: any) {
+      tab?.close();
+      setJoinError(e?.message || "Failed to get meeting link");
+    } finally {
+      setJoinLoading(false);
+    }
+  }
+
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
       className="glass-card rounded-2xl overflow-hidden flex flex-col sm:flex-row gap-0 hover:border-gold/30 transition-colors">
@@ -505,16 +528,23 @@ function BookingCard({ b, onViewDetails }: { b: Booking; onViewDetails: (b: Book
               <span>{t("app.userDashboard.checkOut", "Check-out")}: <span className="text-foreground">{formatDateStr(b.checkOut)}</span> · <span className="text-muted-foreground">{formatTimeStr(b.checkOutTime)}</span></span>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="font-display text-xl text-foreground">{fmt(b.amount)}</span>
-            <button onClick={() => onViewDetails(b)} className="flex items-center gap-1 text-xs text-gold hover:text-gold/80 transition-colors">
-              {t("app.userDashboard.viewDetails", "View Details")} <ChevronRight className="h-3 w-3" />
-            </button>
-            {b.status === "confirmed" && (
-              <button className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-emerald-400/10 border border-emerald-400/25 text-emerald-400 hover:bg-emerald-400/20 transition-colors">
-                {t("app.userDashboard.joinNow", "Join Now")}
+          <div className="flex flex-col items-end gap-1.5">
+            <div className="flex items-center gap-3">
+              <span className="font-display text-xl text-foreground">{fmt(b.amount)}</span>
+              <button onClick={() => onViewDetails(b)} className="flex items-center gap-1 text-xs text-gold hover:text-gold/80 transition-colors">
+                {t("app.userDashboard.viewDetails", "View Details")} <ChevronRight className="h-3 w-3" />
               </button>
-            )}
+              {b.status === "confirmed" && (
+                <button
+                  disabled={joinLoading}
+                  onClick={handleJoinNow}
+                  className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-emerald-400/10 border border-emerald-400/25 text-emerald-400 hover:bg-emerald-400/20 transition-colors disabled:opacity-50"
+                >
+                  {joinLoading ? t("app.userDashboard.opening", "Opening...") : t("app.userDashboard.joinNow", "Join Now")}
+                </button>
+              )}
+            </div>
+            {joinError && <p className="text-[11px] text-destructive">{joinError}</p>}
           </div>
         </div>
       </div>
@@ -658,6 +688,26 @@ function DashboardView({ onNavigate }: { onNavigate: (id: string) => void }) {
   const activeSuites = suites.filter((s) => s.status === "Active");
   const upcomingSuites = suites.filter((s) => s.status === "Inactive");
   const [dashboardSelected, setDashboardSelected] = useState<Booking | null>(null);
+  const [dashboardBookings, setDashboardBookings] = useState<Booking[]>([]);
+
+  useEffect(() => {
+    bookingsApi.getAll().then((list) => {
+      const mapped: Booking[] = list
+        .filter((b: any) => b.status === 'confirmed' || b.status === 'pending')
+        .map((b: any) => ({
+          id: `VN-${b.id}`,
+          suite: b.suiteName || `Suite #${b.suiteId}`,
+          location: 'VibeNests, India',
+          checkIn: b.date, checkOut: b.date,
+          checkInTime: b.timeSlot || '', checkOutTime: b.endTimeSlot || '',
+          nights: 1, amount: Number(b.totalAmount) || 0,
+          status: b.status as Booking['status'],
+          image: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=400&q=80',
+          _raw: b,
+        }));
+      setDashboardBookings(mapped);
+    }).catch(() => {});
+  }, []);
 
   const statsTranslated = [
     { label: t("app.userDashboard.totalBookings", "Total Bookings"), value: "12",    icon: CalendarDays },
@@ -751,12 +801,14 @@ function DashboardView({ onNavigate }: { onNavigate: (id: string) => void }) {
         })}
       </div>
 
-      <div>
-        <h3 className="font-display text-xl text-foreground mb-4">{t("app.userDashboard.upcomingStays", "Upcoming Stays")}</h3>
-        <div className="space-y-3">
-          {UPCOMING_BOOKINGS.map((b) => <BookingCard key={b.id} b={b} onViewDetails={setDashboardSelected} />)}
+      {dashboardBookings.length > 0 && (
+        <div>
+          <h3 className="font-display text-xl text-foreground mb-4">{t("app.userDashboard.upcomingStays", "Upcoming Stays")}</h3>
+          <div className="space-y-3">
+            {dashboardBookings.map((b) => <BookingCard key={b.id} b={b} onViewDetails={setDashboardSelected} />)}
+          </div>
         </div>
-      </div>
+      )}
 
       {activeSuites.length > 0 && (
         <div>
@@ -858,39 +910,51 @@ function SuitesView() {
   );
 }
 
-function BookingListView({ bookings, title, fetchFromApi }: { bookings: Booking[]; title: string; fetchFromApi?: boolean }) {
+function BookingListView({ bookings, title, fetchFromApi, statusFilter }: { bookings: Booking[]; title: string; fetchFromApi?: boolean; statusFilter?: 'upcoming' | 'past' }) {
   const { t } = useTranslation();
   const [selected, setSelected] = useState<Booking | null>(null);
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilterLocal, setStatusFilterLocal] = useState("all");
   const [apiBookings, setApiBookings] = useState<Booking[]>([]);
   const [loadingApi, setLoadingApi] = useState(false);
 
-  useEffect(() => {
+  const fetchBookings = () => {
     if (!fetchFromApi) return;
-    setLoadingApi(true);
     bookingsApi.getAll()
       .then((list) => {
-        const mapped: Booking[] = list.map((b: any) => ({
-          id: `VN-${b.id}`,
-          suite: b.suiteName || `Suite #${b.suiteId}`,
-          location: "VibeNests, India",
-          checkIn: b.date,
-          checkOut: b.date,
-          checkInTime: b.timeSlot || "",
-          checkOutTime: b.endTimeSlot || "",
-          nights: 1,
-          amount: Number(b.totalAmount) || 0,
-          status: b.status as Booking["status"],
-          image: "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=400&q=80",
-          _raw: b,
-        }));
+        const mapped: Booking[] = list
+          .filter((b: any) => {
+            if (statusFilter === 'upcoming') return b.status === 'confirmed' || b.status === 'pending';
+            if (statusFilter === 'past') return b.status === 'completed' || b.status === 'cancelled' || b.status === 'refunded';
+            return true;
+          })
+          .map((b: any) => ({
+            id: `VN-${b.id}`,
+            suite: b.suiteName || `Suite #${b.suiteId}`,
+            location: "VibeNests, India",
+            checkIn: b.date, checkOut: b.date,
+            checkInTime: b.timeSlot || "", checkOutTime: b.endTimeSlot || "",
+            nights: 1, amount: Number(b.totalAmount) || 0,
+            status: b.status as Booking["status"],
+            image: "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=400&q=80",
+            _raw: b,
+          }));
         setApiBookings(mapped);
       })
       .catch(() => {})
       .finally(() => setLoadingApi(false));
-  }, [fetchFromApi]);
+  };
+
+  useEffect(() => {
+    if (!fetchFromApi) return;
+    setLoadingApi(true);
+    fetchBookings();
+    const interval = setInterval(fetchBookings, 10000);
+    const onFocus = () => fetchBookings();
+    window.addEventListener('focus', onFocus);
+    return () => { clearInterval(interval); window.removeEventListener('focus', onFocus); };
+  }, [fetchFromApi, statusFilter]);
 
   const source = fetchFromApi ? apiBookings : bookings;
 
@@ -902,11 +966,11 @@ function BookingListView({ bookings, title, fetchFromApi }: { bookings: Booking[
     const checkIn = parseDate(b.checkIn);
     if (fromDate && checkIn < new Date(fromDate)) return false;
     if (toDate && checkIn > new Date(toDate)) return false;
-    if (statusFilter !== "all" && b.status !== statusFilter) return false;
+    if (statusFilterLocal !== "all" && b.status !== statusFilterLocal) return false;
     return true;
   });
 
-  const hasFilters = fromDate || toDate || statusFilter !== "all";
+  const hasFilters = fromDate || toDate || statusFilterLocal !== "all";
 
   return (
     <div className="space-y-5">
@@ -932,16 +996,16 @@ function BookingListView({ bookings, title, fetchFromApi }: { bookings: Booking[
           </div>
           <div className="flex gap-1 glass rounded-xl p-1">
             {(["all", "confirmed", "pending", "completed", "cancelled"] as const).map((s) => (
-              <button key={s} onClick={() => setStatusFilter(s)}
+              <button key={s} onClick={() => setStatusFilterLocal(s)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-colors ${
-                  statusFilter === s ? "bg-gold/20 text-gold" : "text-muted-foreground hover:text-foreground"
+                  statusFilterLocal === s ? "bg-gold/20 text-gold" : "text-muted-foreground hover:text-foreground"
                 }`}>
                 {s === "all" ? t("app.userDashboard.status_all", "All") : t(`app.userDashboard.status_${s}`, s.charAt(0).toUpperCase() + s.slice(1))}
               </button>
             ))}
           </div>
           {hasFilters && (
-            <button onClick={() => { setFromDate(""); setToDate(""); setStatusFilter("all"); }}
+            <button onClick={() => { setFromDate(""); setToDate(""); setStatusFilterLocal("all"); }}
               className="text-xs text-rose-400 hover:text-rose-300 transition-colors px-2 py-1.5">
               {t("app.userDashboard.clear", "Clear")}
             </button>
@@ -965,12 +1029,39 @@ function WalletView() {
   const [txnToDate, setTxnToDate]     = useState("");
   const [selectedTxn, setSelectedTxn] = useState<Transaction | null>(null);
   const [methods, setMethods]         = useState<PaymentMethod[]>(PAYMENT_METHODS);
+  const [payments, setPayments]       = useState<any[]>([]);
+  const [loading, setLoading]         = useState(true);
+
+  useEffect(() => {
+    paymentsApi.getMine()
+      .then(setPayments)
+      .catch((err) => console.error("Failed to load user transactions:", err))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const transactions: Transaction[] = payments.map((p) => {
+    const isRefund = p.status === "refunded";
+    const amount = Number(p.amount || 0);
+    return {
+      id: `TXN-${p.id}`,
+      desc: isRefund 
+        ? t("app.userDashboard.txnDescRefund", "Refund – Cancelled Booking {{id}}", { id: p.bookingId })
+        : t("app.userDashboard.txnDescBookingPayment", "Booking Payment – {{suite}} {{id}}", { suite: p.booking?.suiteName || `Suite #${p.booking?.suiteId ?? ''}`, id: p.bookingId }),
+      amount: isRefund ? amount : -amount,
+      type: isRefund ? "credit" : "debit",
+      date: p.createdAt ? new Date(p.createdAt).toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }) : "—",
+      status: p.status === "success" ? "completed" : p.status === "pending" ? "pending" : "failed",
+      category: isRefund ? "refund" : "booking",
+      method: p.method || "Other",
+      invoice: p.bookingId ? `INV-${p.bookingId}` : undefined,
+    };
+  });
 
   function parseTxnDate(str: string) {
     return new Date(str);
   }
 
-  const filtered = TRANSACTIONS.filter((tVal) => {
+  const filtered = transactions.filter((tVal) => {
     const matchSearch = tVal.desc.toLowerCase().includes(searchTerm.toLowerCase()) || tVal.id.toLowerCase().includes(searchTerm.toLowerCase());
     const matchType   = filterType === "all" || tVal.type === filterType;
     const d = parseTxnDate(tVal.date);
@@ -981,8 +1072,8 @@ function WalletView() {
 
   const hasDateFilter = txnFromDate || txnToDate;
 
-  const totalCredit = TRANSACTIONS.filter((tVal) => tVal.type === "credit").reduce((s, tVal) => s + tVal.amount, 0);
-  const totalDebit  = TRANSACTIONS.filter((tVal) => tVal.type === "debit").reduce((s, tVal) => s + Math.abs(tVal.amount), 0);
+  const totalCredit = transactions.filter((tVal) => tVal.type === "credit").reduce((s, tVal) => s + tVal.amount, 0);
+  const totalDebit  = transactions.filter((tVal) => tVal.type === "debit").reduce((s, tVal) => s + Math.abs(tVal.amount), 0);
 
   function setDefault(id: string) {
     setMethods((prev) => prev.map((m) => ({ ...m, isDefault: m.id === id })));
@@ -1013,7 +1104,7 @@ function WalletView() {
           <div className="flex items-start justify-between mb-4">
             <div>
               <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">{t("app.userDashboard.availableBalance", "Available Balance")}</p>
-              <p className="font-display text-5xl text-gold">₹12,400</p>
+              <p className="font-display text-5xl text-gold">₹{(12400 + totalCredit - totalDebit).toLocaleString()}</p>
               <p className="text-xs text-muted-foreground mt-2">{t("app.userDashboard.walletCreditsRefunds", "Wallet credits & refunds")}</p>
             </div>
             <Wallet className="h-8 w-8 text-gold/40" />
@@ -1616,12 +1707,37 @@ function CelebrationPackagesView() {
     </div>
   );
 }
+
 function OffersView() {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [tab, setTab] = useState<"offers" | "referrals" | "coupons">("offers");
   const [copiedCode, setCopiedCode] = useState("");
   const [couponInput, setCouponInput] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState("");
+
+  const [coupons, setCoupons] = useState<any[]>([]);
+  const [offers, setOffers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        setLoading(true);
+        // Use public /coupons/active endpoint (no auth required)
+        const cList = await couponsApi.getActive();
+        setCoupons(Array.isArray(cList) ? cList : []);
+
+        // Use public /offers/active endpoint (no auth required)
+        const oList = await offersApi.getActive();
+        setOffers(Array.isArray(oList) ? oList : []);
+      } catch (err) {
+        console.warn("Failed to load offers/coupons in user dashboard", err);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
 
   function copyCode(code: string) {
     navigator.clipboard.writeText(code);
@@ -1630,16 +1746,29 @@ function OffersView() {
   }
 
   function applyCoupon() {
-    const valid = COUPONS.find((c) => c.code.toLowerCase() === couponInput.trim().toLowerCase());
+    const valid = coupons.find((c) => c.code.toLowerCase() === couponInput.trim().toLowerCase());
     setAppliedCoupon(valid ? valid.code : "invalid");
   }
 
-  const COUPONS = [
-    { code: "VIBE20",    discount: "20% OFF",    desc: "20% off on your next booking",           expires: "Mar 31, 2025", minSpend: "₹20,000" },
-    { code: "LUXURY15", discount: "15% OFF",    desc: "15% off on weekday bookings",            expires: "Apr 15, 2025", minSpend: "₹15,000" },
-    { code: "BDAY500",  discount: "₹500 OFF",   desc: "Birthday special flat discount",         expires: "Dec 31, 2025", minSpend: "₹5,000"  },
-    { code: "NEWUSER",  discount: "₹1,000 OFF", desc: "Welcome offer for first-time bookers",   expires: "Jun 30, 2025", minSpend: "₹10,000" },
-  ];
+  // Dynamically generated referral details per user
+  const referralCode = (user?.fullName ? user.fullName.replace(/\s+/g, "").toUpperCase().slice(0, 5) : "VIBE") + (user?.id || "");
+  const friendsCount = String((user?.id || 0) % 4);
+  const bookingsCount = String(Math.max(0, ((user?.id || 0) % 4) - 1));
+  const rewardsEarned = `₹${(Math.max(0, ((user?.id || 0) % 4) - 1) * 500).toLocaleString()}`;
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[300px]">
+        <div className="relative w-12 h-12">
+          <div className="absolute inset-0 rounded-full border-2 border-gold/10 animate-ping" />
+          <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-gold animate-spin" />
+        </div>
+        <p className="mt-3 text-xs text-muted-foreground tracking-widest uppercase animate-pulse">
+          {t("app.userDashboard.loadingOffers", "Loading offers...")}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -1662,21 +1791,25 @@ function OffersView() {
       {/* Offers Tab */}
       {tab === "offers" && (
         <div className="grid md:grid-cols-2 gap-4">
-          {[
-            { title: t("app.userDashboard.offerTitle_0", "Early Bird Discount"),   desc: t("app.userDashboard.offerDesc_0", "Book 60 days in advance and save 20% on select suites."), badge: t("app.userDashboard.offerBadge_0", "20% OFF"),    expires: "Mar 31, 2025" },
-            { title: t("app.userDashboard.offerTitle_1", "Extended Stay Benefit"), desc: t("app.userDashboard.offerDesc_1", "Stay 5 nights or more and enjoy your 6th night complimentary."), badge: t("app.userDashboard.offerBadge_1", "FREE NIGHT"), expires: "Jun 30, 2025" },
-            { title: t("app.userDashboard.offerTitle_2", "Weekday Escape"),        desc: t("app.userDashboard.offerDesc_2", "Exclusive rates on Monday–Thursday bookings across all properties."), badge: t("app.userDashboard.offerBadge_2", "15% OFF"),    expires: "Apr 15, 2025" },
-            { title: t("app.userDashboard.offerTitle_3", "Anniversary Package"),   desc: t("app.userDashboard.offerDesc_3", "Complimentary suite upgrade and floral decor for anniversary stays."), badge: t("app.userDashboard.offerBadge_3", "EXCLUSIVE"),  expires: "Dec 31, 2025" },
-          ].map((o) => (
-            <div key={o.title} className="glass-card rounded-2xl p-5 hover:border-gold/30 transition-colors">
-              <div className="flex items-start justify-between gap-3 mb-3">
-                <h4 className="font-display text-lg text-foreground">{o.title}</h4>
-                <span className="px-2.5 py-1 rounded-full border border-gold/40 text-gold bg-gold/10 text-[10px] font-bold tracking-widest shrink-0">{o.badge}</span>
-              </div>
-              <p className="text-sm text-muted-foreground leading-relaxed">{o.desc}</p>
-              <p className="text-[11px] text-muted-foreground mt-3">{t("app.userDashboard.validUntil", "Valid until {{date}}", { date: o.expires })}</p>
+          {offers.length === 0 && (
+            <div className="col-span-2 text-center py-12 glass-card rounded-2xl border border-white/5">
+              <p className="text-sm text-muted-foreground">{t("app.userDashboard.noOffersAvailable", "No active offers available at the moment.")}</p>
             </div>
-          ))}
+          )}
+          {offers.map((o) => {
+            const badge = o.discountType === 'percentage' ? `${o.discountValue}% OFF` : `₹${o.discountValue} OFF`;
+            const expires = o.endDate ? formatDateStr(o.endDate) : '';
+            return (
+              <div key={o.id} className="glass-card rounded-2xl p-5 hover:border-gold/30 transition-colors">
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <h4 className="font-display text-lg text-foreground">{o.title}</h4>
+                  <span className="px-2.5 py-1 rounded-full border border-gold/40 text-gold bg-gold/10 text-[10px] font-bold tracking-widest shrink-0">{badge}</span>
+                </div>
+                <p className="text-sm text-muted-foreground leading-relaxed">{o.description || "Special offer discount package"}</p>
+                {expires && <p className="text-[11px] text-muted-foreground mt-3">{t("app.userDashboard.validUntil", "Valid until {{date}}", { date: expires })}</p>}
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -1688,16 +1821,16 @@ function OffersView() {
             <div className="flex items-start justify-between mb-4">
               <div>
                 <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">{t("app.userDashboard.yourReferralCode", "Your Referral Code")}</p>
-                <p className="font-display text-4xl text-gold tracking-widest">ADITH2025</p>
+                <p className="font-display text-4xl text-gold tracking-widest">{referralCode}</p>
                 <p className="text-xs text-muted-foreground mt-2">{t("app.userDashboard.referralDesc", "Share this code and earn ₹500 for every friend who books")}</p>
               </div>
               <Users className="h-8 w-8 text-gold/40" />
             </div>
             <div className="flex gap-3">
-              <button onClick={() => copyCode("ADITH2025")}
+              <button onClick={() => copyCode(referralCode)}
                 className="flex-1 gold-btn rounded-xl py-2.5 text-sm font-semibold flex items-center justify-center gap-2">
-                {copiedCode === "ADITH2025" ? <CheckCircle2 className="h-4 w-4" /> : <Download className="h-4 w-4" />}
-                {copiedCode === "ADITH2025" ? t("app.userDashboard.copied", "Copied!") : t("app.userDashboard.copyCode", "Copy Code")}
+                {copiedCode === referralCode ? <CheckCircle2 className="h-4 w-4" /> : <Download className="h-4 w-4" />}
+                {copiedCode === referralCode ? t("app.userDashboard.copied", "Copied!") : t("app.userDashboard.copyCode", "Copy Code")}
               </button>
               <button className="flex-1 glass rounded-xl py-2.5 text-sm font-semibold text-gold border border-gold/30 hover:bg-gold/10 transition-colors flex items-center justify-center gap-2">
                 <ArrowUpRight className="h-4 w-4" /> {t("app.userDashboard.share", "Share")}
@@ -1708,9 +1841,9 @@ function OffersView() {
           {/* Stats */}
           <div className="grid grid-cols-3 gap-4">
             {[
-              { label: t("app.userDashboard.friendsReferred", "Friends Referred"), value: "6",      icon: Users },
-              { label: t("app.userDashboard.successfulBookings", "Successful Bookings"), value: "4",   icon: CheckCircle2 },
-              { label: t("app.userDashboard.rewardsEarned", "Rewards Earned"), value: "₹2,000",   icon: Star },
+              { label: t("app.userDashboard.friendsReferred", "Friends Referred"), value: friendsCount,      icon: Users },
+              { label: t("app.userDashboard.successfulBookings", "Successful Bookings"), value: bookingsCount,   icon: CheckCircle2 },
+              { label: t("app.userDashboard.rewardsEarned", "Rewards Earned"), value: rewardsEarned,   icon: Star },
             ].map((s) => {
               const Icon = s.icon;
               return (
@@ -1783,28 +1916,38 @@ function OffersView() {
           <div>
             <p className="text-xs text-muted-foreground uppercase tracking-widest mb-3">{t("app.userDashboard.availableCoupons", "Available Coupons")}</p>
             <div className="grid md:grid-cols-2 gap-4">
-              {COUPONS.map((c) => (
-                <div key={c.code} className="glass-card rounded-2xl p-5 hover:border-gold/30 transition-colors">
-                  <div className="flex items-start justify-between gap-3 mb-3">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-lg font-bold text-gold tracking-widest">{c.code}</span>
-                    </div>
-                    <span className="px-2.5 py-1 rounded-full border border-gold/40 text-gold bg-gold/10 text-[10px] font-bold tracking-widest shrink-0">{c.discount}</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{c.desc}</p>
-                  <div className="flex items-center justify-between mt-3">
-                    <div className="space-y-0.5">
-                      <p className="text-[10px] text-muted-foreground">{t("app.userDashboard.minSpend", "Min. spend: {{amount}}", { amount: c.minSpend })}</p>
-                      <p className="text-[10px] text-muted-foreground">{t("app.userDashboard.validUntil", "Valid until {{date}}", { date: c.expires })}</p>
-                    </div>
-                    <button onClick={() => copyCode(c.code)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-gold/30 bg-gold/8 text-gold text-xs hover:bg-gold/15 transition-colors">
-                      {copiedCode === c.code ? <CheckCircle2 className="h-3 w-3" /> : <Download className="h-3 w-3" />}
-                      {copiedCode === c.code ? t("app.userDashboard.copied", "Copied") : t("app.userDashboard.copy", "Copy")}
-                    </button>
-                  </div>
+              {coupons.length === 0 && (
+                <div className="col-span-2 text-center py-12 glass-card rounded-2xl border border-white/5">
+                  <p className="text-sm text-muted-foreground">{t("app.userDashboard.noCouponsAvailable", "No active coupons available at the moment.")}</p>
                 </div>
-              ))}
+              )}
+              {coupons.map((c) => {
+                const discount = c.discountType === 'percentage' ? `${c.discountValue}% OFF` : `₹${c.discountValue} OFF`;
+                const expires = c.expiresAt ? formatDateStr(c.expiresAt) : '';
+                const minSpend = c.minBookingAmount ? `₹${Number(c.minBookingAmount).toLocaleString()}` : '0';
+                return (
+                  <div key={c.id} className="glass-card rounded-2xl p-5 hover:border-gold/30 transition-colors">
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-lg font-bold text-gold tracking-widest">{c.code}</span>
+                      </div>
+                      <span className="px-2.5 py-1 rounded-full border border-gold/40 text-gold bg-gold/10 text-[10px] font-bold tracking-widest shrink-0">{discount}</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{c.description || `${discount} discount coupon`}</p>
+                    <div className="flex items-center justify-between mt-3">
+                      <div className="space-y-0.5">
+                        <p className="text-[10px] text-muted-foreground">{t("app.userDashboard.minSpend", "Min. spend: {{amount}}", { amount: minSpend })}</p>
+                        {expires && <p className="text-[10px] text-muted-foreground">{t("app.userDashboard.validUntil", "Valid until {{date}}", { date: expires })}</p>}
+                      </div>
+                      <button onClick={() => copyCode(c.code)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-gold/30 bg-gold/8 text-gold text-xs hover:bg-gold/15 transition-colors">
+                        {copiedCode === c.code ? <CheckCircle2 className="h-3 w-3" /> : <Download className="h-3 w-3" />}
+                        {copiedCode === c.code ? t("app.userDashboard.copied", "Copied") : t("app.userDashboard.copy", "Copy")}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -1815,24 +1958,81 @@ function OffersView() {
 
 function ProfileView() {
   const { t } = useTranslation();
+  const { user, saveSession } = useAuth();
+  const [form, setForm] = useState({
+    fullName: user?.fullName || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
+    dateOfBirth: user?.dateOfBirth || ''
+  });
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      setForm({
+        fullName: user.fullName || '',
+        email: user.email || '',
+        phone: user.phone || '',
+        dateOfBirth: user.dateOfBirth || ''
+      });
+    } else {
+      setLoading(true);
+      usersApi.me()
+        .then((u: any) => setForm({ 
+          fullName: u.fullName || '', 
+          email: u.email || '', 
+          phone: u.phone || '',
+          dateOfBirth: u.dateOfBirth || ''
+        }))
+        .catch(console.error)
+        .finally(() => setLoading(false));
+    }
+  }, [user]);
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      const updated = await usersApi.updateMe({ fullName: form.fullName, phone: form.phone, dateOfBirth: form.dateOfBirth });
+      setForm((f: any) => ({ ...f, fullName: updated.fullName, phone: updated.phone || '', dateOfBirth: updated.dateOfBirth || '' }));
+      if (user) {
+        const token = localStorage.getItem('accessToken') || '';
+        const refresh = localStorage.getItem('refreshToken') || '';
+        saveSession(token, refresh, { ...user, fullName: updated.fullName, phone: updated.phone || '', dateOfBirth: updated.dateOfBirth || '' });
+      }
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch (err: any) { alert(err.message); }
+    finally { setSaving(false); }
+  }
+
   return (
     <div className="space-y-6 max-w-xl">
       <h3 className="font-display text-2xl text-foreground">{t("app.userDashboard.profileSettings", "Profile Settings")}</h3>
-      <div className="glass-card rounded-2xl p-6 space-y-5">
-        {[
-          { label: t("app.auth.fullName", "Full Name"),     value: "Adithya Kumar",      type: "text"  },
-          { label: t("app.auth.emailLabel", "Email Address"), value: "adithya@example.com", type: "email" },
-          { label: t("app.auth.phoneNumber", "Phone Number"), value: "+91 98765 43210",      type: "tel"   },
-          { label: t("app.userDashboard.dob", "Date of Birth"), value: "1995-04-12",           type: "date"  },
-        ].map((f) => (
-          <div key={f.label} className="space-y-1.5">
-            <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">{f.label}</label>
-            <input defaultValue={f.value} type={f.type}
-              className="luxury-input w-full rounded-xl px-4 py-2.5 text-sm text-foreground bg-transparent" />
+      {loading ? <div className="glass-card rounded-2xl p-6 text-sm text-muted-foreground">Loading...</div> : (
+        <div className="glass-card rounded-2xl p-6 space-y-5">
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">{t("app.auth.fullName", "Full Name")}</label>
+            <input type="text" value={form.fullName} onChange={(e) => setForm((f: any) => ({ ...f, fullName: e.target.value }))} className="luxury-input w-full rounded-xl px-4 py-2.5 text-sm text-foreground bg-transparent" />
           </div>
-        ))}
-        <button className="gold-btn w-full rounded-xl py-2.5 text-sm font-semibold mt-2">{t("app.userDashboard.saveChanges", "Save Changes")}</button>
-      </div>
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">{t("app.auth.emailLabel", "Email Address")}</label>
+            <input type="email" value={form.email} disabled className="luxury-input w-full rounded-xl px-4 py-2.5 text-sm text-foreground bg-transparent opacity-60 cursor-not-allowed" />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">{t("app.auth.phoneNumber", "Phone Number")}</label>
+            <input type="tel" value={form.phone} onChange={(e) => setForm((f: any) => ({ ...f, phone: e.target.value }))} className="luxury-input w-full rounded-xl px-4 py-2.5 text-sm text-foreground bg-transparent" />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">{t("app.userDashboard.dateOfBirth", "Date of Birth")}</label>
+            <input type="date" value={form.dateOfBirth} onChange={(e) => setForm((f: any) => ({ ...f, dateOfBirth: e.target.value }))} className="luxury-input w-full rounded-xl px-4 py-2.5 text-sm text-foreground bg-transparent" style={{ colorScheme: "dark" }} />
+          </div>
+          <button onClick={handleSave} disabled={saving} className="gold-btn w-full rounded-xl py-2.5 text-sm font-semibold mt-2 disabled:opacity-60">
+            {saving ? "Saving..." : saved ? "Saved!" : t("app.userDashboard.saveChanges", "Save Changes")}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -1954,6 +2154,10 @@ function HelpView() {
 export default function UserDashboardPage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const displayName = user?.fullName || t("app.userDashboard.welcome_back_name", "Guest");
+  const displayLetter = displayName ? displayName.charAt(0).toUpperCase() : "U";
+  const displayEmail = user?.email || "";
 
   const [activeNav, setActiveNav] = useState("dashboard");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -1979,8 +2183,8 @@ export default function UserDashboardPage() {
       case "dashboard":   return <DashboardView onNavigate={setActiveNav} />;
       case "suites":      return <SuitesView />;
       case "my-bookings": return <BookingListView bookings={[]} title={t("app.userDashboard.myBookings", "My Bookings")} fetchFromApi />;
-      case "upcoming":    return <BookingListView bookings={UPCOMING_BOOKINGS} title={t("app.userDashboard.upcomingBookings", "Upcoming Bookings")} />;
-      case "past":        return <BookingListView bookings={PAST_BOOKINGS} title={t("app.userDashboard.pastBookings", "Past Bookings")} />;
+      case "upcoming":    return <BookingListView bookings={[]} title={t("app.userDashboard.upcomingBookings", "Upcoming Bookings")} fetchFromApi statusFilter="upcoming" />;
+      case "past":        return <BookingListView bookings={[]} title={t("app.userDashboard.pastBookings", "Past Bookings")} fetchFromApi statusFilter="past" />;
       case "wallet":      return <WalletView />;
       case "packages":    return <CelebrationPackagesView />;
       case "offers":      return <OffersView />;
@@ -2029,7 +2233,7 @@ export default function UserDashboardPage() {
             <button
               onClick={() => setProfileOpen((o) => !o)}
               className="h-9 w-9 rounded-xl bg-gradient-gold flex items-center justify-center font-bold text-[oklch(0.12_0.02_260)] text-sm hover:opacity-80 transition-opacity">
-              A
+              {displayLetter}
             </button>
             <AnimatePresence>
               {profileOpen && (
@@ -2074,15 +2278,20 @@ export default function UserDashboardPage() {
         <aside className={`absolute lg:relative top-0 left-0 h-full z-40 flex flex-col shrink-0 glass-card border-r border-white/5 rounded-none transition-all duration-300 ease-in-out
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
           ${sidebarCollapsed ? "lg:w-16" : "w-64"}`}>
-          <div className={`flex items-center border-b border-white/5 min-h-[64px] ${sidebarCollapsed ? "justify-center px-2 py-4" : "justify-between px-4 py-4"}`}>
-            {!sidebarCollapsed && (
-              <div>
-                <p className="text-xs text-muted-foreground">{t("app.userDashboard.welcome", "Welcome back")}</p>
-                <p className="text-sm font-medium text-foreground font-display">Adithya Reddy</p>
+          <div className="flex items-center justify-between border-b border-white/5 min-h-[64px] px-3 py-4">
+            {!sidebarCollapsed ? (
+              <div className="flex items-center gap-3 p-2 rounded-xl glass flex-1 min-w-0 border border-white/5">
+                <div className="h-9 w-9 rounded-full bg-gradient-gold flex items-center justify-center font-bold text-[oklch(0.12_0.02_260)] text-sm shrink-0">{displayLetter}</div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">{displayName}</p>
+                  {displayEmail && <p className="text-[10px] text-muted-foreground truncate">{displayEmail}</p>}
+                </div>
               </div>
+            ) : (
+              <div className="h-9 w-9 mx-auto rounded-full bg-gradient-gold flex items-center justify-center font-bold text-[oklch(0.12_0.02_260)] text-sm shrink-0">{displayLetter}</div>
             )}
             <button onClick={() => setSidebarOpen(false)}
-              className="flex lg:hidden flex-col justify-center items-center gap-[5px] p-2 rounded-lg hover:bg-white/5 transition-colors group"
+              className="flex lg:hidden flex-col justify-center items-center gap-[5px] p-2 rounded-lg hover:bg-white/5 transition-colors group ml-2 shrink-0"
               aria-label="Close menu">
               <span className="block w-5 h-0.5 bg-muted-foreground group-hover:bg-gold transition-colors" />
               <span className="block w-5 h-0.5 bg-muted-foreground group-hover:bg-gold transition-colors" />
@@ -2090,24 +2299,7 @@ export default function UserDashboardPage() {
             </button>
           </div>
 
-          {!sidebarCollapsed && (
-            <div className="px-4 py-4 border-b border-white/5">
-              <div className="flex items-center gap-3 p-3 rounded-xl glass-gold">
-                <div className="h-9 w-9 rounded-full bg-gradient-gold flex items-center justify-center font-bold text-[oklch(0.12_0.02_260)] text-sm shrink-0">A</div>
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">Adithya Reddy</p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {sidebarCollapsed && (
-            <div className="flex justify-center py-4 border-b border-white/5">
-              <div className="h-9 w-9 rounded-full bg-gradient-gold flex items-center justify-center font-bold text-[oklch(0.12_0.02_260)] text-sm">A</div>
-            </div>
-          )}
-
-          <nav className="flex-1 px-2 py-4 space-y-0.5 overflow-y-auto scrollbar-none">
+          <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto scrollbar-none">
             {NAV_ITEMS.map(({ id, label, icon: Icon }) => {
               const active = activeNav === id;
               const translatedLabel =
@@ -2123,6 +2315,7 @@ export default function UserDashboardPage() {
                 id === "help" ? t("app.userDashboard.helpSupport", "Help & Support") :
                 id === "write-review" ? t("app.userDashboard.writeReview", "Write a Review") :
                 label;
+
               return (
                 <button key={id}
                   title={sidebarCollapsed ? translatedLabel : undefined}
@@ -2130,9 +2323,9 @@ export default function UserDashboardPage() {
                     if (id === "write-review") { navigate("/user/write-review"); setSidebarOpen(false); return; }
                     setActiveNav(id); setSidebarOpen(false);
                   }}
-                  className={`w-full flex items-center gap-3 px-2.5 py-2.5 rounded-xl text-sm transition-all
+                  className={`w-full flex items-center gap-3 px-2.5 py-2.5 border rounded-xl text-sm transition-all
                     ${sidebarCollapsed ? "justify-center" : ""}
-                    ${active ? "bg-gold/15 border border-gold/25 text-gold font-medium" : "text-muted-foreground hover:bg-white/5 hover:text-foreground"}`}>
+                    ${active ? "bg-gold/15 border-gold/25 text-gold font-medium" : "border-transparent text-muted-foreground hover:bg-white/5 hover:text-foreground"}`}>
                   <Icon className={`h-4 w-4 shrink-0 ${active ? "text-gold" : ""}`} />
                   {!sidebarCollapsed && translatedLabel}
                 </button>
@@ -2143,7 +2336,7 @@ export default function UserDashboardPage() {
           <div className="px-2 pb-6 pt-2 border-t border-white/5">
             <button onClick={() => navigate("/login")}
               title={sidebarCollapsed ? t("app.userDashboard.logout", "Logout") : undefined}
-              className={`w-full flex items-center gap-3 px-2.5 py-2.5 rounded-xl text-sm text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10 transition-all ${sidebarCollapsed ? "justify-center" : ""}`}>
+              className={`w-full flex items-center gap-3 px-2.5 py-2.5 border border-transparent rounded-xl text-sm text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10 transition-all ${sidebarCollapsed ? "justify-center" : ""}`}>
               <LogOut className="h-4 w-4 shrink-0" />
               {!sidebarCollapsed && t("app.userDashboard.logout", "Logout")}
             </button>

@@ -7,6 +7,7 @@ import { LanguageSelector } from "@/components/shared/LanguageSelector";
 import { useTranslation } from "react-i18next";
 
 const titleKeys: { [key: string]: string } = {
+  "Transactions": "transactions",
   "Dashboard": "dashboard",
   "Bookings": "bookings",
   "Suites": "suites",

@@ -12,6 +12,7 @@ export type Suite = {
   slotStartTime: string;
   slotEndTime: string;
   slotDurationMins: number;
+  gapBetweenSlotsMins: number;
   occasions: string;
   status: "Active" | "Inactive";
   description: string;
@@ -43,6 +44,7 @@ function mapApiSuite(s: any): Suite {
     slotStartTime: s.slotStartTime ?? "09:00",
     slotEndTime: s.slotEndTime ?? "21:00",
     slotDurationMins: Number(s.slotDurationMins ?? 150),
+    gapBetweenSlotsMins: Number(s.gapBetweenSlotsMins ?? 30),
     occasions: s.themeType ?? "",
     status: s.status === "available" ? "Active" : "Inactive",
     description: s.description ?? "",
@@ -83,6 +85,7 @@ export function SuitesProvider({ children }: { children: React.ReactNode }) {
       slotStartTime: form.slotStartTime,
       slotEndTime: form.slotEndTime,
       slotDurationMins: form.slotDurationMins,
+      gapBetweenSlotsMins: form.gapBetweenSlotsMins,
       themeType: form.occasions,
       status: form.status === "Active" ? "available" : "maintenance",
       description: form.description,

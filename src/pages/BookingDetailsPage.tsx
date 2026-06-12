@@ -126,7 +126,7 @@ export default function BookingDetailsPage() {
               <div>
                 <div className="flex items-center gap-2">
                   <Ticket className="h-4 w-4 text-gold" />
-                  <h2 className="font-display text-lg">Booking {booking.id ? `#${booking.id}` : bookingId ? `#${bookingId}` : ""}</h2>
+                  <h2 className="font-display text-lg">Booking {booking.orderId ? `#${booking.orderId}` : (booking.id ? `#${booking.id}` : bookingId ? `#${bookingId}` : "")}</h2>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">View all details for this booking</p>
               </div>
@@ -332,6 +332,8 @@ export default function BookingDetailsPage() {
                   >
                     <CheckCircle2 className="h-4 w-4" /> Check-in
                   </button>
+
+
                 </div>
               )}
 
