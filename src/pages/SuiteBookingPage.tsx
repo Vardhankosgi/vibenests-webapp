@@ -52,15 +52,32 @@ const OCCASIONS = [
   { id: "other",       label: "Other Celebrations", description: "Bespoke styling for any exclusive experience.",                    icon: MessageSquare, highlight: "bg-lime-500/10 text-lime-300" },
 ];
 
-const TIME_SLOTS = [
-  "09:00 AM", "12:00 PM", "03:00 PM", "06:00 PM", "09:00 PM",
-];
+const TIME_SLOTS: string[] = []; // replaced by suite-specific generated slots
 
 // Each slot is 2h 30m — auto-calculate end time
-function getEndTime(start: string): string {
+// Generate time slots from suite settings with 30-min gap between slots
+export function generateSlots(startTime: string, endTime: string, durationMins: number): string[] {
+  const slots: string[] = [];
+  const [sh, sm] = startTime.split(":").map(Number);
+  const [eh, em] = endTime.split(":").map(Number);
+  let cur = sh * 60 + sm;
+  const end = eh * 60 + em;
+  const step = durationMins + 30;
+  while (cur + durationMins <= end) {
+    const hh = Math.floor(cur / 60) % 24;
+    const mm = cur % 60;
+    const period = hh >= 12 ? "PM" : "AM";
+    const dh = hh > 12 ? hh - 12 : hh === 0 ? 12 : hh;
+    slots.push(`${String(dh).padStart(2, "0")}:${String(mm).padStart(2, "0")} ${period}`);
+    cur += step;
+  }
+  return slots;
+}
+
+function getEndTime(start: string, durationMins: number): string {
   const [time, period] = start.split(" ");
   const [h, m] = time.split(":").map(Number);
-  let totalMin = ((period === "PM" && h !== 12 ? h + 12 : period === "AM" && h === 12 ? 0 : h) * 60) + m + 150;
+  let totalMin = ((period === "PM" && h !== 12 ? h + 12 : period === "AM" && h === 12 ? 0 : h) * 60) + m + durationMins;
   const endH = Math.floor(totalMin / 60) % 24;
   const endM = totalMin % 60;
   const endPeriod = endH >= 12 ? "PM" : "AM";
@@ -124,6 +141,45 @@ export default function SuiteBookingPage() {
   const [bookingId, setBookingId] = useState<number | null>(null);
   const [paying, setPaying] = useState(false);
   const [payError, setPayError] = useState<string>("");
+  const [couponCode, setCouponCode] = useState("");
+  const [couponInput, setCouponInput] = useState("");
+  const [couponDiscount, setCouponDiscount] = useState(0);
+  const [couponError, setCouponError] = useState("");
+  const [couponApplying, setCouponApplying] = useState(false);
+
+  const MOCK_COUPONS: Record<string, number> = {
+    VIBE10: 10,
+    VIBE20: 20,
+    LAUNCH15: 15,
+    SAVE5: 5,
+  };
+
+  function applyCoupon() {
+    const code = couponInput.trim().toUpperCase();
+    if (!code) return;
+    setCouponApplying(true);
+    setCouponError("");
+    setTimeout(() => {
+      if (MOCK_COUPONS[code]) {
+        const pct = MOCK_COUPONS[code];
+        setCouponCode(code);
+        setCouponDiscount(pct);
+        setCouponError("");
+      } else {
+        setCouponCode("");
+        setCouponDiscount(0);
+        setCouponError(t("app.userDashboard.couponInvalid", "Invalid or expired coupon code."));
+      }
+      setCouponApplying(false);
+    }, 600);
+  }
+
+  function removeCoupon() {
+    setCouponCode("");
+    setCouponInput("");
+    setCouponDiscount(0);
+    setCouponError("");
+  }
 
   const suite = suites.find((s) => s.id === selectedSuite);
 
@@ -139,6 +195,11 @@ export default function SuiteBookingPage() {
       </div>
     );
   }
+
+  const slotDuration = suite?.slotDurationMins ?? 150;
+  const timeSlots = suite
+    ? generateSlots(suite.slotStartTime, suite.slotEndTime, slotDuration)
+    : [];
 
   const suiteMinCap = suite?.minCapacity ?? 1;
 
@@ -198,11 +259,9 @@ export default function SuiteBookingPage() {
     }
   }, [suites, location.state]);
   const subtotal   = basePrice + addonsTotal;
-  // const savings    = Math.round(subtotal * 0.08);
-
   // Requested: remove serviceFee & taxes from UI. Total is suite + persons + add-ons - discount.
-  // const grandTotal = subtotal - savings;
-  const grandTotal = subtotal;
+  const couponSavings = couponDiscount > 0 ? Math.round(subtotal * couponDiscount / 100) : 0;
+  const grandTotal = subtotal - couponSavings;
 
   // Requested: dynamic payable amount (full vs 20% advance).
   const advanceAmount = Math.round(grandTotal * 0.2);
@@ -241,17 +300,6 @@ export default function SuiteBookingPage() {
         <div className="leading-tight">
           <p className="font-display text-xs font-semibold tracking-[0.15em] text-gradient-gold">VIBENESTS</p>
           <p className="text-[9px] tracking-[0.25em] text-muted-foreground uppercase">Private Luxury Suites</p>
-        </div>
-      </div>
-
-      {/* User card */}
-      <div className="px-4 py-3 border-b border-gold/10">
-        <div className="flex items-center gap-3 p-2.5 rounded-xl glass-gold">
-          <div className="h-8 w-8 rounded-full bg-gradient-gold flex items-center justify-center font-bold text-[oklch(0.12_0.02_260)] text-xs shrink-0">A</div>
-          <div className="min-w-0">
-            <p className="text-xs font-medium text-foreground truncate">Adithya Reddy</p>
-            <p className="text-[10px] text-gold">{t("app.userDashboard.goldMember", "Gold Member")}</p>
-          </div>
         </div>
       </div>
 
@@ -301,7 +349,7 @@ export default function SuiteBookingPage() {
             <div className="glass rounded-2xl p-4 text-left space-y-2 border border-white/10">
               <p className="text-xs text-muted-foreground">{OCCASIONS.find(o => o.id === selectedOccasion)?.label}</p>
               <p className="text-sm text-foreground font-medium">{suite?.name}</p>
-              <p className="text-xs text-muted-foreground">{bookingDate} · {startTime}{startTime ? ` – ${getEndTime(startTime)}` : ""}</p>
+              <p className="text-xs text-muted-foreground">{bookingDate} · {startTime}{startTime ? ` – ${getEndTime(startTime, slotDuration)}` : ""}</p>
               <p className="text-gold font-semibold">₹{grandTotal.toLocaleString()}</p>
             </div>
             <button onClick={() => navigate("/user/dashboard")} className="gold-btn w-full rounded-2xl py-3 text-sm font-semibold">
@@ -531,11 +579,11 @@ export default function SuiteBookingPage() {
                       <div className="space-y-3">
                         <div className="flex items-center gap-2">
                           <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground">{t("app.userDashboard.selectTimeSlot", "Select Time Slot")}</p>
-                          <span className="px-2 py-0.5 rounded-full bg-gold/10 border border-gold/25 text-[10px] text-gold font-semibold">{t("app.userDashboard.slotDuration", "2h 30m per slot")}</span>
+                          <span className="px-2 py-0.5 rounded-full bg-gold/10 border border-gold/25 text-[10px] text-gold font-semibold">{slotDuration} min per slot · 30 min gap</span>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-{TIME_SLOTS.map((slot) => {
-                            const end = getEndTime(slot);
+{timeSlots.map((slot) => {
+                            const end = getEndTime(slot, slotDuration);
                             const active = startTime === slot;
                             return (
                               <button
@@ -554,7 +602,7 @@ onClick={() => setStartTime(slot)}
                                 </div>
                                 <span className={`text-[10px] px-2 py-0.5 rounded-full border ${
                                   active ? "border-gold/40 bg-gold/10 text-gold" : "border-white/10 bg-white/5 text-muted-foreground"
-                                }`}>{t("app.userDashboard.slotDurationShort", "2h 30m")}</span>
+                                }`}>{slotDuration} min</span>
                               </button>
                             );
                           })}
@@ -566,8 +614,8 @@ onClick={() => setStartTime(slot)}
                         <div className="flex items-center gap-2.5 px-4 py-3 rounded-2xl border border-gold/25 bg-gold/8">
                           <Clock className="h-4 w-4 text-gold shrink-0" />
                           <p className="text-sm text-foreground">
-                            {t("app.userDashboard.selectedSlot", "Selected: {{start}} – {{end}}", { start: startTime, end: getEndTime(startTime) })}
-                            <span className="text-muted-foreground ml-2 text-xs">{t("app.userDashboard.durationShort", "· 2 hrs 30 mins")}</span>
+                            {t("app.userDashboard.selectedSlot", "Selected: {{start}} – {{end}}", { start: startTime, end: getEndTime(startTime, slotDuration) })}
+                            <span className="text-muted-foreground ml-2 text-xs">· {slotDuration} mins</span>
                           </p>
                         </div>
                       )}
@@ -658,7 +706,7 @@ onClick={() => setStartTime(slot)}
                           <h4 className="text-xs uppercase tracking-[0.25em] text-muted-foreground">{t("app.userDashboard.yourCelebration", "Your Celebration")}</h4>
                           <p className="mt-3 text-base text-foreground font-semibold">{localizedOccasions.find((o) => o.id === selectedOccasion)?.label ?? t("app.userDashboard.noOccasion", "No occasion")}</p>
                           <p className="text-xs text-muted-foreground mt-1">{bookingDate ? new Date(bookingDate).toLocaleDateString() : t("app.userDashboard.noDate", "No date")}</p>
-                          <p className="text-xs text-muted-foreground">{startTime ? `${startTime} – ${getEndTime(startTime)}` : t("app.userDashboard.noTime", "No time")}</p>
+                          <p className="text-xs text-muted-foreground">{startTime ? `${startTime} – ${getEndTime(startTime, slotDuration)}` : t("app.userDashboard.noTime", "No time")}</p>
                         </div>
                         <div className="glass-card rounded-2xl border border-white/10 p-4">
                           <h4 className="text-xs uppercase tracking-[0.25em] text-muted-foreground">{t("app.userDashboard.suite", "Suite")}</h4>
@@ -703,6 +751,54 @@ onClick={() => setStartTime(slot)}
                       <div className="glass-card rounded-2xl border border-white/10 p-4 space-y-4">
                         <h4 className="text-xs uppercase tracking-[0.25em] text-muted-foreground">Full Payment Breakdown</h4>
 
+                        {/* ── Coupon section ── */}
+                        <div className="space-y-2">
+                          <label className="flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-muted-foreground font-semibold">
+                            <Tag className="h-3.5 w-3.5 text-gold" />
+                            {t("app.userDashboard.applyCoupon", "Apply a Coupon")}
+                          </label>
+                          {couponCode ? (
+                            <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-2xl border border-emerald-500/40 bg-emerald-500/10">
+                              <div className="flex items-center gap-2">
+                                <Tag className="h-4 w-4 text-emerald-400 shrink-0" />
+                                <span className="text-sm font-semibold text-emerald-400">{couponCode}</span>
+                                <span className="text-xs text-emerald-400/80">{couponDiscount}% {t("app.userDashboard.discount", "off")}</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={removeCoupon}
+                                className="text-xs text-rose-400 hover:text-rose-300 transition-colors border border-rose-400/30 px-2.5 py-1 rounded-full"
+                              >
+                                {t("app.userDashboard.remove", "Remove")}
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                value={couponInput}
+                                onChange={(e) => { setCouponInput(e.target.value.toUpperCase()); setCouponError(""); }}
+                                onKeyDown={(e) => e.key === "Enter" && applyCoupon()}
+                                placeholder={t("app.userDashboard.couponPlaceholder", "Enter coupon code...")}
+                                className="luxury-input flex-1 rounded-2xl px-4 py-2.5 text-sm bg-black/40 tracking-widest font-mono"
+                              />
+                              <button
+                                type="button"
+                                onClick={applyCoupon}
+                                disabled={!couponInput.trim() || couponApplying}
+                                className="gold-btn rounded-2xl px-5 py-2.5 text-sm font-semibold disabled:opacity-50 shrink-0"
+                              >
+                                {couponApplying ? "..." : t("app.userDashboard.apply", "Apply")}
+                              </button>
+                            </div>
+                          )}
+                          {couponError && (
+                            <p className="text-xs text-rose-400 flex items-center gap-1">
+                              <span>✕</span> {couponError}
+                            </p>
+                          )}
+                        </div>
+
                         <div className="overflow-x-auto">
                           <table className="w-full text-sm">
                             <tbody>
@@ -719,10 +815,15 @@ onClick={() => setStartTime(slot)}
                                 <td className="py-2 text-muted-foreground">Add-ons</td>
                                 <td className="py-2 text-right text-foreground">₹{(addonsTotal - personsTotal).toLocaleString()}</td>
                               </tr>
-                              {/* <tr>
-                                <td className="py-2 text-muted-foreground">Discount</td>
-                                <td className="py-2 text-right text-gold">- ₹{savings.toLocaleString()}</td>
-                              </tr> */}
+                              {couponSavings > 0 && (
+                                <tr>
+                                  <td className="py-2 text-emerald-400 flex items-center gap-1.5">
+                                    <Tag className="h-3.5 w-3.5" />
+                                    {couponCode} ({couponDiscount}% off)
+                                  </td>
+                                  <td className="py-2 text-right text-emerald-400">− ₹{couponSavings.toLocaleString()}</td>
+                                </tr>
+                              )}
                               <tr className="border-t border-white/10">
                                 <td className="py-3 font-semibold">Total</td>
                                 <td className="py-3 text-right font-display text-lg text-gold">₹{grandTotal.toLocaleString()}</td>
@@ -787,7 +888,7 @@ onClick={() => setStartTime(slot)}
                                 addOns: Object.keys(addonQty).filter((k) => (addonQty[k] ?? 0) > 0),
                                 date: bookingDate,
                                 timeSlot: startTime,
-                                endTimeSlot: getEndTime(startTime),
+                                endTimeSlot: getEndTime(startTime, slotDuration),
                                 persons,
                                 basePrice,
                                 addonsTotal,

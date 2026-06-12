@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -13,7 +13,7 @@ import {
   Heart, ChevronLeft, Menu,
 } from "lucide-react";
 import { useSuitesContext } from "@/components/admin/SuitesContext";
-import { bookingsApi } from "@/lib/api";
+import { bookingsApi, celebrationPackagesApi } from "@/lib/api";
 import { LanguageSelector } from "@/components/shared/LanguageSelector";
 import { useTranslation } from "react-i18next";
 import i18n from "i18next";
@@ -699,7 +699,6 @@ function DashboardView({ onNavigate }: { onNavigate: (id: string) => void }) {
         </div>
         {/* Content */}
         <div className="relative z-10 p-8 space-y-3">
-          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase border border-gold/40 text-gold bg-gold/10">{t("app.userDashboard.goldMember", "Gold Member")}</span>
           <h2 className="font-display text-4xl font-medium text-foreground">
             {t("app.userDashboard.makeEvery", "Make Every")}<br /><span className="text-gradient-gold italic">{t("app.userDashboard.momentMemorable", "Moment Memorable")}</span>
           </h2>
@@ -962,14 +961,25 @@ function WalletView() {
   const { t } = useTranslation();
   const [searchTerm, setSearchTerm]   = useState("");
   const [filterType, setFilterType]   = useState<"all" | "credit" | "debit">("all");
+  const [txnFromDate, setTxnFromDate] = useState("");
+  const [txnToDate, setTxnToDate]     = useState("");
   const [selectedTxn, setSelectedTxn] = useState<Transaction | null>(null);
   const [methods, setMethods]         = useState<PaymentMethod[]>(PAYMENT_METHODS);
+
+  function parseTxnDate(str: string) {
+    return new Date(str);
+  }
 
   const filtered = TRANSACTIONS.filter((tVal) => {
     const matchSearch = tVal.desc.toLowerCase().includes(searchTerm.toLowerCase()) || tVal.id.toLowerCase().includes(searchTerm.toLowerCase());
     const matchType   = filterType === "all" || tVal.type === filterType;
-    return matchSearch && matchType;
+    const d = parseTxnDate(tVal.date);
+    const matchFrom = !txnFromDate || d >= new Date(txnFromDate);
+    const matchTo   = !txnToDate   || d <= new Date(txnToDate + "T23:59:59");
+    return matchSearch && matchType && matchFrom && matchTo;
   });
+
+  const hasDateFilter = txnFromDate || txnToDate;
 
   const totalCredit = TRANSACTIONS.filter((tVal) => tVal.type === "credit").reduce((s, tVal) => s + tVal.amount, 0);
   const totalDebit  = TRANSACTIONS.filter((tVal) => tVal.type === "debit").reduce((s, tVal) => s + Math.abs(tVal.amount), 0);
@@ -1130,7 +1140,38 @@ function WalletView() {
         className="glass-card rounded-2xl p-6 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <h4 className="font-display text-lg text-foreground">{t("app.userDashboard.recentTransactions", "Recent Transactions")}</h4>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            {/* Date filters */}
+            <div className="flex items-center gap-2">
+              <div className="flex flex-col gap-0.5">
+                <label className="text-[9px] uppercase tracking-widest text-muted-foreground">{t("app.userDashboard.fromDate", "From")}</label>
+                <input
+                  type="date"
+                  value={txnFromDate}
+                  onChange={(e) => setTxnFromDate(e.target.value)}
+                  className="luxury-input rounded-xl px-3 py-1.5 text-xs bg-black/40 text-foreground"
+                  style={{ colorScheme: "dark" }}
+                />
+              </div>
+              <div className="flex flex-col gap-0.5">
+                <label className="text-[9px] uppercase tracking-widest text-muted-foreground">{t("app.userDashboard.toDate", "To")}</label>
+                <input
+                  type="date"
+                  value={txnToDate}
+                  onChange={(e) => setTxnToDate(e.target.value)}
+                  className="luxury-input rounded-xl px-3 py-1.5 text-xs bg-black/40 text-foreground"
+                  style={{ colorScheme: "dark" }}
+                />
+              </div>
+              {hasDateFilter && (
+                <button
+                  onClick={() => { setTxnFromDate(""); setTxnToDate(""); }}
+                  className="self-end text-xs text-rose-400 hover:text-rose-300 transition-colors px-2 py-1.5 border border-rose-400/20 rounded-lg"
+                >
+                  {t("app.userDashboard.clear", "Clear")}
+                </button>
+              )}
+            </div>
             <button
               onClick={() => alert("Import transactions from CSV/PDF")}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-gold/30 bg-gold/8 text-gold text-xs hover:bg-gold/15 transition-colors">
@@ -1202,86 +1243,62 @@ type CelebrationPackage = {
   amenities: string[]; bookings: number; wishlist?: boolean;
 };
 
-const CELEBRATION_PACKAGES: CelebrationPackage[] = [
-  {
-    id: "CP-001", name: "Royal Birthday Bash", occasion: "Birthday",
-    badge: "Most Popular", badgeColor: "bg-amber-400/20 border-amber-400/40 text-amber-300",
-    image: "https://images.unsplash.com/photo-1464349095431-e9a21285b5f3?w=600&q=80",
-    capacity: "2–10 guests", price: 8500, bookings: 124,
-    description: "A grand birthday setup with floral decor, personalised cake, and ambient lighting for an unforgettable celebration.",
-    amenities: ["Floral Decor", "Custom Cake", "LED Lights", "Balloons", "Photography"],
-  },
-  {
-    id: "CP-002", name: "Romantic Anniversary Suite", occasion: "Anniversary",
-    badge: "Best for Couples", badgeColor: "bg-rose-400/20 border-rose-400/40 text-rose-300",
-    image: "https://images.unsplash.com/photo-1522673607200-164d1b6ce486?w=600&q=80",
-    capacity: "2 guests", price: 12000, bookings: 98,
-    description: "Intimate candlelit setup with rose petals, champagne, and a private dining experience crafted for two.",
-    amenities: ["Rose Petals", "Champagne", "Candles", "Music System", "Photography"],
-  },
-  {
-    id: "CP-003", name: "Dream Proposal Package", occasion: "Proposal",
-    badge: "Perfect Surprise", badgeColor: "bg-purple-400/20 border-purple-400/40 text-purple-300",
-    image: "https://images.unsplash.com/photo-1515934751635-c81c6bc9a2d8?w=600&q=80",
-    capacity: "2 guests", price: 15000, bookings: 67,
-    description: "Craft the most magical moment with a surprise proposal setup — flower arch, ring reveal, and professional photography.",
-    amenities: ["Flower Arch", "Ring Reveal Box", "Candles", "Photography", "Champagne"],
-  },
-  {
-    id: "CP-004", name: "Gala Birthday Extravaganza", occasion: "Birthday",
-    badge: "Great for Parties", badgeColor: "bg-sky-400/20 border-sky-400/40 text-sky-300",
-    image: "https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=600&q=80",
-    capacity: "10–30 guests", price: 22000, bookings: 55,
-    description: "Party-ready suite with DJ setup, premium decorations, multi-tier cake, and welcome drinks for a grand birthday gala.",
-    amenities: ["DJ Setup", "Multi-tier Cake", "Welcome Drinks", "Streamers", "LED Lights"],
-  },
-  {
-    id: "CP-005", name: "Baby Shower Bliss", occasion: "Baby Shower",
-    badge: "Perfect Surprise", badgeColor: "bg-pink-400/20 border-pink-400/40 text-pink-300",
-    image: "https://images.unsplash.com/photo-1519689680058-324335c77eba?w=600&q=80",
-    capacity: "5–20 guests", price: 9500, bookings: 43,
-    description: "Soft pastel décor, baby-themed arrangements, and a warm celebration space for welcoming the little one.",
-    amenities: ["Pastel Decor", "Themed Cake", "Balloons", "Welcome Hamper", "Photography"],
-  },
-  {
-    id: "CP-006", name: "Corporate Excellence Event", occasion: "Corporate Events",
-    badge: "Most Popular", badgeColor: "bg-amber-400/20 border-amber-400/40 text-amber-300",
-    image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=600&q=80",
-    capacity: "10–50 guests", price: 35000, bookings: 38,
-    description: "Professional setup with AV equipment, premium catering, branded décor, and concierge service for corporate events.",
-    amenities: ["AV Equipment", "Catering", "Branded Decor", "Concierge", "Wi-Fi"],
-  },
-  {
-    id: "CP-007", name: "Silver Anniversary Special", occasion: "Anniversary",
-    badge: "Best for Couples", badgeColor: "bg-rose-400/20 border-rose-400/40 text-rose-300",
-    image: "https://images.unsplash.com/photo-1611271516799-3a08be1ec25a?w=600&q=80",
-    capacity: "2–6 guests", price: 18500, bookings: 29,
-    description: "A silver-themed premium anniversary celebration with fine dining, spa access, and a dedicated butler service.",
-    amenities: ["Fine Dining", "Spa Access", "Butler Service", "Photography", "Custom Cake"],
-  },
-  {
-    id: "CP-008", name: "Festive Surprise Celebration", occasion: "Other Celebrations",
-    badge: "Great for Parties", badgeColor: "bg-sky-400/20 border-sky-400/40 text-sky-300",
-    image: "https://images.unsplash.com/photo-1467810563316-b5476525c0f9?w=600&q=80",
-    capacity: "4–15 guests", price: 11000, bookings: 61,
-    description: "A versatile celebration package for any occasion — vibrant decor, custom menu, and a surprise element of your choice.",
-    amenities: ["Custom Decor", "Custom Menu", "Surprise Element", "Music", "Photography"],
-  },
-];
+const BADGE_COLORS: Record<string, string> = {
+  "Most Popular": "bg-amber-400/20 border-amber-400/40 text-amber-300",
+  "Best for Couples": "bg-rose-400/20 border-rose-400/40 text-rose-300",
+  "Great for Parties": "bg-sky-400/20 border-sky-400/40 text-sky-300",
+  "Perfect Surprise": "bg-purple-400/20 border-purple-400/40 text-purple-300",
+};
 
-const OCCASIONS = ["All", "Birthday", "Anniversary", "Proposal", "Baby Shower", "Corporate Events", "Other Celebrations"];
+function apiToPackage(p: any): CelebrationPackage {
+  return {
+    id: String(p.id),
+    name: p.name,
+    occasion: p.occasion,
+    badge: p.badge || "Most Popular",
+    badgeColor: BADGE_COLORS[p.badge] || BADGE_COLORS["Most Popular"],
+    image: p.image || "",
+    capacity: `Up to ${p.capacity} guests`,
+    price: Number(p.price),
+    description: p.description,
+    amenities: Array.isArray(p.amenities) ? p.amenities : [],
+    bookings: Number(p.booked) || 0,
+  };
+}
+
+const ALL_OCCASIONS = ["All", "Birthday", "Anniversary", "Proposal", "Baby Shower", "Corporate Events", "Other Celebrations"];
 const SORT_OPTIONS = ["Popularity", "Price: Low to High", "Price: High to Low", "Most Booked"];
 const AMENITY_ICON_MAP: Record<string, React.ElementType> = {
-  "Floral Decor": Sparkles, "Custom Cake": Cake, "LED Lights": Star,
-  "Balloons": Star, "Photography": Camera, "Rose Petals": Star,
-  "Champagne": Coffee, "Candles": Star, "Music System": Music,
-  "Flower Arch": Sparkles, "Ring Reveal Box": Star, "DJ Setup": Music,
-  "Multi-tier Cake": Cake, "Welcome Drinks": Coffee, "Streamers": Sparkles,
-  "Pastel Decor": Sparkles, "Themed Cake": Cake, "Welcome Hamper": Package,
-  "AV Equipment": Tv, "Catering": Coffee, "Branded Decor": Sparkles,
-  "Concierge": Phone, "Wi-Fi": Wifi, "Fine Dining": Coffee,
-  "Spa Access": Star, "Butler Service": Star, "Custom Decor": Sparkles,
-  "Custom Menu": Coffee, "Surprise Element": Sparkles, "Music": Music,
+  "Floral Decor": Sparkles,
+  "Custom Cake": Cake,
+  "LED Lights": Star,
+  "Balloons": Star,
+  "Photography": Camera,
+  "Rose Petals": Star,
+  "Champagne": Coffee,
+  "Candles": Star,
+  "Music System": Music,
+  "Flower Arch": Sparkles,
+  "Ring Reveal Box": Star,
+  "DJ Setup": Music,
+  "Multi-tier Cake": Cake,
+  "Welcome Drinks": Coffee,
+  "Streamers": Sparkles,
+  "Pastel Decor": Sparkles,
+  "Themed Cake": Cake,
+  "Welcome Hamper": Package,
+  "AV Equipment": Tv,
+  "Catering": Coffee,
+  "Branded Decor": Sparkles,
+  "Concierge": Phone,
+  "Wi-Fi": Wifi,
+  "Fine Dining": Coffee,
+  "Spa Access": Star,
+  "Butler Service": Star,
+  "Custom Decor": Sparkles,
+  "Custom Menu": Coffee,
+  "Surprise Element": Sparkles,
+  "Music": Music,
   "Pastel Balloons": Star,
 };
 
@@ -1356,24 +1373,41 @@ function CelebrationPackagesView() {
   const [page, setPage]                         = useState(1);
   const PER_PAGE = 6;
 
-  const filtered = CELEBRATION_PACKAGES
+  const [packages, setPackages]               = useState<CelebrationPackage[]>([]);
+  const [loading, setLoading]                 = useState(true);
+
+  useEffect(() => {
+    celebrationPackagesApi.getPublic()
+      .then((data) => setPackages(data.map(apiToPackage)))
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
+
+  const filtered = packages
     .filter((p) => (selectedOccasion === "All" || p.occasion === selectedOccasion) && p.price <= priceRange)
     .sort((a, b) => {
-      if (sortBy === "Price: Low to High")  return a.price - b.price;
-      if (sortBy === "Price: High to Low")  return b.price - a.price;
-      if (sortBy === "Most Booked")         return b.bookings - a.bookings;
-      return b.bookings - a.bookings; // Popularity default
+      if (sortBy === "Price: Low to High") return a.price - b.price;
+      if (sortBy === "Price: High to Low") return b.price - a.price;
+      if (sortBy === "Most Booked") return b.bookings - a.bookings;
+      return b.bookings - a.bookings;
     });
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
-  const paginated  = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+  const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
   function toggleWishlist(id: string) {
-    setWishlist((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+    setWishlist((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   }
+
   function toggleCompare(id: string) {
     setCompareList((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : prev.length < 3 ? [...prev, id] : prev);
   }
+
   function clearFilters() {
     setSelectedOccasion("All"); setPriceRange(40000); setSortBy("Popularity"); setPage(1);
   }
@@ -1402,7 +1436,7 @@ function CelebrationPackagesView() {
                 <button onClick={clearFilters} className="text-[10px] text-gold hover:text-gold/70 transition-colors">{t("app.userDashboard.clearAll", "Clear All")}</button>
               </div>
               <div className="space-y-1">
-                {OCCASIONS.map((o) => (
+                {ALL_OCCASIONS.map((o: string) => (
                   <button key={o} onClick={() => { setSelectedOccasion(o); setPage(1); }}
                     className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-all ${
                       selectedOccasion === o
@@ -1454,7 +1488,7 @@ function CelebrationPackagesView() {
               </p>
               <div className="space-y-1">
                 {compareList.map((id) => {
-                  const pkg = CELEBRATION_PACKAGES.find((p) => p.id === id)!;
+                  const pkg = packages.find((p) => p.id === id)!;
                   return (
                     <div key={id} className="flex items-center justify-between">
                       <p className="text-xs text-foreground truncate flex-1">{pkg.name}</p>
@@ -2062,7 +2096,6 @@ export default function UserDashboardPage() {
                 <div className="h-9 w-9 rounded-full bg-gradient-gold flex items-center justify-center font-bold text-[oklch(0.12_0.02_260)] text-sm shrink-0">A</div>
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">Adithya Reddy</p>
-                  <p className="text-[11px] text-gold">{t("app.userDashboard.goldMember", "Gold Member")}</p>
                 </div>
               </div>
             </div>

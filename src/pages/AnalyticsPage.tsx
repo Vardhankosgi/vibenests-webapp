@@ -96,6 +96,14 @@ export default function AnalyticsPage() {
     cancelled: Math.round(row.cancelled * scale),
   }));
 
+  const confirmedLabel = t("app.admin.confirmed", "Confirmed");
+  const pendingLabel   = t("app.admin.pending",   "Pending");
+  const cancelledLabel = t("app.admin.cancelled", "Cancelled");
+  const revenueLabel   = t("app.admin.revenue",   "Revenue");
+  const targetLabel    = t("app.admin.target",    "Target");
+  const newCustLabel   = t("app.admin.newCustomers", "New Customers");
+  const returningLabel = t("app.admin.returning",  "Returning");
+
   const occasionData = BASE_OCCASIONS.map((o) => ({ name: o.name, value: Math.round(o.value * scale) }));
 
   const customerGrowth = months.map((month, i) => ({
@@ -165,8 +173,8 @@ export default function AnalyticsPage() {
               <YAxis tick={axisStyle} axisLine={false} tickLine={false} tickFormatter={(v) => `₹${v / 1000}k`} />
               <Tooltip {...tooltipStyle} formatter={(v: number) => [`₹${v.toLocaleString()}`, ""]} />
               <Legend wrapperStyle={{ fontSize: "12px" }} />
-              <Area type="monotone" dataKey="revenue" name="Revenue" stroke={GOLD} strokeWidth={2} fill="url(#revGrad)" />
-              <Area type="monotone" dataKey="target" name="Target" stroke={BLUE} strokeWidth={2} strokeDasharray="5 5" fill="url(#tgtGrad)" />
+              <Area type="monotone" dataKey="revenue" name={revenueLabel} stroke={GOLD} strokeWidth={2} fill="url(#revGrad)" />
+              <Area type="monotone" dataKey="target" name={targetLabel} stroke={BLUE} strokeWidth={2} strokeDasharray="5 5" fill="url(#tgtGrad)" />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -181,9 +189,9 @@ export default function AnalyticsPage() {
                 <YAxis tick={axisStyle} axisLine={false} tickLine={false} />
                 <Tooltip {...tooltipStyle} cursor={{ fill: "oklch(1 0 0 / 0.04)" }} />
                 <Legend wrapperStyle={{ fontSize: "12px" }} />
-                <Bar dataKey="confirmed" name="Confirmed" fill={GREEN} radius={[4, 4, 0, 0]} />
-                <Bar dataKey="pending" name="Pending" fill={GOLD} radius={[4, 4, 0, 0]} />
-                <Bar dataKey="cancelled" name="Cancelled" fill={RED} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="confirmed" name={confirmedLabel} fill={GREEN} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="pending" name={pendingLabel} fill={GOLD} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="cancelled" name={cancelledLabel} fill={RED} radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -226,8 +234,8 @@ export default function AnalyticsPage() {
                 <YAxis tick={axisStyle} axisLine={false} tickLine={false} />
                 <Tooltip {...tooltipStyle} />
                 <Legend wrapperStyle={{ fontSize: "12px" }} />
-                <Line type="monotone" dataKey="new" name="New Customers" stroke={GOLD} strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="returning" name="Returning" stroke={PURPLE} strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="new" name={newCustLabel} stroke={GOLD} strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="returning" name={returningLabel} stroke={PURPLE} strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>

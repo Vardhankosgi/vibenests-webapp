@@ -1,4 +1,5 @@
 import { useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 const bookings = [
   { id: "#VN1042", guest: "Arjun Sharma", suite: "Royal Celebration Suite", date: "12 Jun 2025", amount: "₹8,500", status: "Confirmed" },
@@ -25,6 +26,7 @@ interface RecentBookingsProps {
 
 export function RecentBookings({ filterDate, onClear }: RecentBookingsProps) {
   const ref = useRef<HTMLDivElement>(null);
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (filterDate) {
@@ -41,36 +43,36 @@ export function RecentBookings({ filterDate, onClear }: RecentBookingsProps) {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <h3 className="font-display text-lg font-medium text-foreground">
-            {filterDate ? `Bookings for ${fmtDate(filterDate)}` : "Recent Bookings"}
+            {filterDate ? `${t("app.admin.bookingsFor", "Bookings for")} ${fmtDate(filterDate)}` : t("app.admin.recentBookings", "Recent Bookings")}
           </h3>
           {filterDate && (
             <button
               onClick={onClear}
               className="text-[11px] px-2.5 py-1 rounded-full border border-[var(--gold)]/30 text-gold hover:bg-[var(--gold)]/10 transition"
             >
-              Clear filter ✕
+              {t("app.admin.clearFilter", "Clear filter")} ✕
             </button>
           )}
         </div>
-        <a href="/admin/bookings" className="text-xs text-gold hover:underline underline-offset-4 transition">View All →</a>
+        <a href="/admin/bookings" className="text-xs text-gold hover:underline underline-offset-4 transition">{t("app.admin.viewAll", "View All")} →</a>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="text-left text-xs text-muted-foreground uppercase tracking-wide border-b border-white/[0.06]">
-              <th className="pb-3 pr-4">ID</th>
-              <th className="pb-3 pr-4">Guest</th>
-              <th className="pb-3 pr-4">Suite</th>
-              <th className="pb-3 pr-4">Date</th>
-              <th className="pb-3 pr-4">Amount</th>
-              <th className="pb-3">Status</th>
+              <th className="pb-3 pr-4">{t("app.admin.id", "ID")}</th>
+              <th className="pb-3 pr-4">{t("app.admin.guest", "Guest")}</th>
+              <th className="pb-3 pr-4">{t("app.admin.suite", "Suite")}</th>
+              <th className="pb-3 pr-4">{t("app.admin.date", "Date")}</th>
+              <th className="pb-3 pr-4">{t("app.admin.amount", "Amount")}</th>
+              <th className="pb-3">{t("app.admin.status", "Status")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-white/[0.04]">
             {filtered.length === 0 ? (
               <tr>
                 <td colSpan={6} className="py-8 text-center text-muted-foreground text-sm">
-                  No bookings found for {filterDate ? fmtDate(filterDate) : "this period"}.
+                  {t("app.admin.noBookingsFor", "No bookings found for")} {filterDate ? fmtDate(filterDate) : t("app.admin.thisPeriod", "this period")}.
                 </td>
               </tr>
             ) : (
@@ -83,7 +85,7 @@ export function RecentBookings({ filterDate, onClear }: RecentBookingsProps) {
                   <td className="py-3 pr-4 text-foreground font-medium">{b.amount}</td>
                   <td className="py-3">
                     <span className={`px-2.5 py-1 rounded-full text-[11px] font-medium border ${statusStyle[b.status]}`}>
-                      {b.status}
+                      {b.status === "Confirmed" ? t("app.admin.confirmed", "Confirmed") : b.status === "Pending" ? t("app.admin.pending", "Pending") : t("app.admin.cancelled", "Cancelled")}
                     </span>
                   </td>
                 </tr>

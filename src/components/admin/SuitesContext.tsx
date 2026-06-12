@@ -9,6 +9,9 @@ export type Suite = {
   price: string;
   ratePerExtraPerson: number;
   baseDiscount: number;
+  slotStartTime: string;
+  slotEndTime: string;
+  slotDurationMins: number;
   occasions: string;
   status: "Active" | "Inactive";
   description: string;
@@ -37,6 +40,9 @@ function mapApiSuite(s: any): Suite {
     price: s.price ? `₹${Number(s.price).toLocaleString()}` : "₹0",
     ratePerExtraPerson: Number(s.ratePerExtraPerson ?? 0),
     baseDiscount: Number(s.baseDiscount ?? 0),
+    slotStartTime: s.slotStartTime ?? "09:00",
+    slotEndTime: s.slotEndTime ?? "21:00",
+    slotDurationMins: Number(s.slotDurationMins ?? 150),
     occasions: s.themeType ?? "",
     status: s.status === "available" ? "Active" : "Inactive",
     description: s.description ?? "",
@@ -74,6 +80,9 @@ export function SuitesProvider({ children }: { children: React.ReactNode }) {
       price: parseFloat(String(form.price).replace(/[₹,]/g, "")) || 0,
       ratePerExtraPerson: form.ratePerExtraPerson,
       baseDiscount: form.baseDiscount,
+      slotStartTime: form.slotStartTime,
+      slotEndTime: form.slotEndTime,
+      slotDurationMins: form.slotDurationMins,
       themeType: form.occasions,
       status: form.status === "Active" ? "available" : "maintenance",
       description: form.description,

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Bell, CalendarDays, IndianRupee, X, AlertCircle, CheckCircle2, Clock } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export type NotificationType = "booking" | "payment" | "cancellation" | "alert" | "system";
@@ -78,6 +79,7 @@ export function NotificationPanel({
   onMarkRead,
 }: NotificationPanelProps) {
   const ref = useRef<HTMLDivElement>(null);
+  const { t } = useTranslation();
   const unread = notifications.filter((n) => !n.read).length;
 
   // Close on outside click
@@ -101,7 +103,7 @@ export function NotificationPanel({
       <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
         <div className="flex items-center gap-2">
           <Bell className="h-4 w-4 text-gold" />
-          <span className="text-sm font-semibold text-foreground">Notifications</span>
+          <span className="text-sm font-semibold text-foreground">{t("app.admin.notifications", "Notifications")}</span>
           {unread > 0 && (
             <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-[var(--gold)]/20 text-gold">
               {unread}
@@ -114,7 +116,7 @@ export function NotificationPanel({
               onClick={onMarkAllRead}
               className="text-[11px] text-muted-foreground hover:text-gold transition"
             >
-              Mark all read
+              {t("app.admin.markAllRead", "Mark all read")}
             </button>
           )}
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition">
@@ -128,7 +130,7 @@ export function NotificationPanel({
         {notifications.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 gap-2 text-muted-foreground">
             <Bell className="h-8 w-8 opacity-30" />
-            <p className="text-sm">No notifications</p>
+            <p className="text-sm">{t("app.admin.noNotifications", "No notifications")}</p>
           </div>
         ) : (
           notifications.map((n) => {
@@ -164,7 +166,7 @@ export function NotificationPanel({
       {/* Footer */}
       <div className="px-4 py-2.5 border-t border-white/[0.06] text-center">
         <button className="text-xs text-gold hover:underline underline-offset-4 transition">
-          View all notifications →
+          {t("app.admin.viewAllNotifications", "View all notifications")} →
         </button>
       </div>
     </div>

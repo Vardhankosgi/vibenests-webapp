@@ -491,7 +491,7 @@ export default function BookingsPage() {
                         }
                         className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs text-gold border border-gold/25 bg-gold/5 hover:bg-gold/10 hover:border-gold/40 transition"
                       >
-                        <Eye className="h-3.5 w-3.5" /> View Details
+                        <Eye className="h-3.5 w-3.5" /> {t("app.admin.viewDetails", "View Details")}
                       </button>
                     </td>
                   </tr>
