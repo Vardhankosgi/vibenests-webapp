@@ -15,6 +15,7 @@ export type Booking = {
 export type UserType = {
   id: string; name: string; email: string; phone: string;
   role: "Guest" | "Admin"; status: "Active" | "Blocked"; joined: string; bookings: number;
+  membership?: "Silver" | "Gold" | null;
 };
 
 // helper: parse "₹8,500" or number → number
@@ -60,6 +61,7 @@ function mapApiUser(u: any): UserType {
     status: u.isActive ? "Active" : "Blocked",
     joined: u.createdAt ? new Date(u.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "",
     bookings: u.bookingCount ?? 0,
+    membership: u.membership || null,
   };
 }
 

@@ -236,9 +236,9 @@ export default function CelebrationMembershipsPage() {
 
   // Filtered purchases list
   const filteredPurchases = purchases.filter((p) => {
-    const nameMatch = p.user?.fullName.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                      p.user?.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                      p.paymentId?.toLowerCase().includes(searchQuery.toLowerCase());
+    const nameMatch = (p.user?.fullName?.toLowerCase() || "").includes(searchQuery.toLowerCase()) || 
+                      (p.user?.email?.toLowerCase() || "").includes(searchQuery.toLowerCase()) ||
+                      (p.paymentId?.toLowerCase() || "").includes(searchQuery.toLowerCase());
     const statusMatch = statusFilter === "all" || p.status === statusFilter;
     return nameMatch && statusMatch;
   });
