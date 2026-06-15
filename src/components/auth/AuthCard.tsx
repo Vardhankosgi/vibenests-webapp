@@ -31,19 +31,19 @@ export function AuthCard() {
           <p className="mt-2 text-sm text-muted-foreground">{t("app.auth.loginDesc")}</p>
         </div>
 
-        <div className="px-4 py-4 mb-5">
-          <button
-            type="button"
-            className="w-full flex items-center justify-center gap-3 rounded-lg border border-[var(--gold)]/30 bg-white/[0.03] py-3 text-sm font-medium text-foreground hover:bg-white/[0.07] hover:border-[var(--gold)]/60 transition-all"
-          >
-            <GoogleIcon className="h-5 w-5" />
-            {t("app.auth.google")}
-          </button>
-        </div>
+        {/* <div className="px-4 py-4 mb-5"> */}
+          {/* <button */}
+            {/* type="button" */}
+            {/* className="w-full flex items-center justify-center gap-3 rounded-lg border border-[var(--gold)]/30 bg-white/[0.03] py-3 text-sm font-medium text-foreground hover:bg-white/[0.07] hover:border-[var(--gold)]/60 transition-all" */}
+          {/* // > */}
+            {/* <GoogleIcon className="h-5 w-5" /> */}
+            {/* {t("app.auth.google")} */}
+          {/* </button> */}
+        {/* {/* </div> */}
 
         <div className="my-5 flex items-center gap-3 text-[11px] tracking-[0.3em] text-muted-foreground uppercase">
           <div className="h-px flex-1 bg-gradient-to-r from-transparent to-[var(--gold)]/30" />
-          <span>{t("app.auth.or")}</span>
+          {/* <span>{t("app.auth.or")}</span> */}
           <div className="h-px flex-1 bg-gradient-to-l from-transparent to-[var(--gold)]/30" />
         </div>
 

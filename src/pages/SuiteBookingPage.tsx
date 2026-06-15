@@ -33,9 +33,9 @@ const NAV_ITEMS = [
   { id: "my-bookings", label: "My Bookings", icon: CalendarDays, path: "/user/dashboard" },
   { id: "upcoming", label: "Upcoming Bookings", icon: Clock, path: "/user/dashboard" },
   { id: "past", label: "Past Bookings", icon: History, path: "/user/dashboard" },
-  { id: "wallet", label: "Wallet & Payments", icon: Wallet, path: "/user/dashboard" },
+  { id: "wallet", label: "Payments", icon: Wallet, path: "/user/dashboard" },
   { id: "packages", label: "Celebration Packages", icon: Package, path: "/user/dashboard" },
-  { id: "offers", label: "Special Offers & Referrals", icon: Tag, path: "/user/dashboard" },
+  { id: "offers", label: "Special Offers", icon: Tag, path: "/user/dashboard" },
   { id: "profile", label: "Profile Settings", icon: UserCircle, path: "/user/dashboard" },
   { id: "help", label: "Help & Support", icon: HelpCircle, path: "/user/dashboard" },
   { id: "write-review", label: "Write a Review", icon: Star, path: "/user/write-review" },
@@ -389,8 +389,8 @@ export default function SuiteBookingPage() {
               key={id}
               onClick={() => { navigate(path); setSidebarOpen(false); }}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${active
-                  ? "bg-gold/15 border border-gold/25 text-gold font-medium"
-                  : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
+                ? "bg-gold/15 border border-gold/25 text-gold font-medium"
+                : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
                 }`}
             >
               <Icon className={`h-4 w-4 shrink-0 ${active ? "text-gold" : ""}`} />
@@ -546,13 +546,13 @@ export default function SuiteBookingPage() {
                         onClick={() => !active && index < step && setStep(index)}
                         disabled={index > step}
                         className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs transition-all ${active ? "bg-gold/15 border border-gold/30 text-gold font-semibold"
-                            : done ? "bg-white/5 border border-white/8 text-foreground/70 hover:bg-gold/8 hover:text-gold"
-                              : "text-muted-foreground/40 cursor-not-allowed"
+                          : done ? "bg-white/5 border border-white/8 text-foreground/70 hover:bg-gold/8 hover:text-gold"
+                            : "text-muted-foreground/40 cursor-not-allowed"
                           }`}
                       >
                         <span className={`h-5 w-5 rounded-full border-2 flex items-center justify-center text-[9px] font-bold shrink-0 ${done ? "border-gold bg-gold text-[oklch(0.12_0.02_260)]"
-                            : active ? "border-gold bg-gold/15 text-gold"
-                              : "border-white/15 bg-white/5 text-muted-foreground/40"
+                          : active ? "border-gold bg-gold/15 text-gold"
+                            : "border-white/15 bg-white/5 text-muted-foreground/40"
                           }`}>
                           {done ? "✓" : index + 1}
                         </span>
@@ -586,8 +586,8 @@ export default function SuiteBookingPage() {
                     return (
                       <div key={label} className="flex items-center shrink-0">
                         <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] font-medium border transition-all ${index === step ? "border-gold bg-gold/15 text-gold"
-                            : index < step ? "border-gold/30 bg-gold/8 text-gold/70"
-                              : "border-white/10 bg-white/5 text-muted-foreground"
+                          : index < step ? "border-gold/30 bg-gold/8 text-gold/70"
+                            : "border-white/10 bg-white/5 text-muted-foreground"
                           }`}>
                           <span className={`h-4 w-4 rounded-full border flex items-center justify-center text-[9px] font-bold shrink-0 ${index < step ? "border-gold bg-gold text-[oklch(0.12_0.02_260)]" : "border-current"
                             }`}>{index < step ? "✓" : index + 1}</span>
@@ -621,7 +621,7 @@ export default function SuiteBookingPage() {
                         return (
                           <button key={o.id} type="button" onClick={() => setSelectedOccasion(o.id)}
                             className={`flex flex-col gap-3 rounded-2xl border p-4 text-left transition-all ${active ? "border-gold bg-gold/10 shadow-[0_16px_40px_rgba(255,190,90,0.1)]"
-                                : "border-white/10 bg-white/5 hover:border-gold/20 hover:bg-white/10"
+                              : "border-white/10 bg-white/5 hover:border-gold/20 hover:bg-white/10"
                               }`}>
                             <span className={`inline-flex h-10 w-10 items-center justify-center rounded-2xl ${o.highlight}`}>
                               <Icon className="h-5 w-5" />
@@ -662,8 +662,8 @@ export default function SuiteBookingPage() {
                                 type="button"
                                 onClick={() => setStartTime(slot)}
                                 className={`flex items-center justify-between gap-3 px-4 py-3.5 rounded-2xl border text-sm font-medium transition-all ${active
-                                    ? "border-gold bg-gold/15 text-gold shadow-[0_0_16px_rgba(212,160,60,0.2)]"
-                                    : "border-white/10 bg-white/5 text-muted-foreground hover:border-gold/40 hover:text-foreground hover:bg-white/10"
+                                  ? "border-gold bg-gold/15 text-gold shadow-[0_0_16px_rgba(212,160,60,0.2)]"
+                                  : "border-white/10 bg-white/5 text-muted-foreground hover:border-gold/40 hover:text-foreground hover:bg-white/10"
                                   }`}
                               >
                                 <div className="flex items-center gap-2.5">
@@ -1105,11 +1105,16 @@ export default function SuiteBookingPage() {
                       className="flex-1 rounded-2xl border border-white/10 px-5 py-3 text-sm text-muted-foreground hover:text-foreground transition disabled:opacity-40">
                       <ChevronLeft className="inline-block h-4 w-4 mr-1" /> Back
                     </button>
-                    <button type="button" onClick={handleNext}
-                      className="flex-1 gold-btn rounded-2xl px-5 py-3 text-sm font-semibold flex items-center justify-center gap-2">
-                      Continue
-                      <ChevronRight className="h-4 w-4" />
-                    </button>
+                    {step !== 4 && (
+                      <button
+                        type="button"
+                        onClick={handleNext}
+                        className="flex-1 gold-btn rounded-2xl px-5 py-3 text-sm font-semibold flex items-center justify-center gap-2"
+                      >
+                        Continue
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    )}
 
                   </div>
                 </div>

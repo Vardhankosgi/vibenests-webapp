@@ -410,7 +410,7 @@
         "step3": "Share via WhatsApp"
       },
       "wallet": {
-        "title": "5. Wallet & Payments",
+        "title": "5. Payments",
         "item1": "Payment History",
         "item2": "Booking Transactions",
         "item3": "Refund Status",
@@ -942,9 +942,9 @@
       "myBookings": "My Bookings",
       "upcomingBookings": "Upcoming Bookings",
       "pastBookings": "Past Bookings",
-      "walletPayments": "Wallet & Payments",
+      "walletPayments": "Payments",
       "celebrationPackages": "Celebration Packages",
-      "specialOffersReferrals": "Special Offers & Referrals",
+      "specialOffersReferrals": "Special Offers",
       "helpSupport": "Help & Support",
       "makeEvery": "Make Every",
       "momentMemorable": "Moment Memorable",

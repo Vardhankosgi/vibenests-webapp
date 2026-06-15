@@ -36,9 +36,9 @@ const NAV_ITEMS = [
   { id: "my-bookings",  label: "My Bookings",                  icon: CalendarDays },
   { id: "upcoming",     label: "Upcoming Bookings",            icon: Clock },
   { id: "past",         label: "Past Bookings",                icon: History },
-  { id: "wallet",       label: "Wallet & Payments",            icon: Wallet },
+  { id: "wallet",       label: "Payments",            icon: Wallet },
   { id: "packages",     label: "Celebration Packages",         icon: Package },
-  { id: "offers",       label: "Special Offers & Referrals",   icon: Tag },
+  { id: "offers",       label: "Special Offers",   icon: Tag },
   { id: "profile",      label: "Profile Settings",             icon: UserCircle },
   { id: "help",         label: "Help & Support",               icon: HelpCircle },
   { id: "write-review", label: "Write a Review",               icon: Star },
@@ -166,9 +166,9 @@ export default function WriteReviewPage() {
                 id === "my-bookings" ? t("app.userDashboard.myBookings", "My Bookings") :
                 id === "upcoming" ? t("app.userDashboard.upcomingBookings", "Upcoming Bookings") :
                 id === "past" ? t("app.userDashboard.pastBookings", "Past Bookings") :
-                id === "wallet" ? t("app.userDashboard.walletPayments", "Wallet & Payments") :
+                id === "wallet" ? t("app.userDashboard.walletPayments", "Payments") :
                 id === "packages" ? t("app.userDashboard.celebrationPackages", "Celebration Packages") :
-                id === "offers" ? t("app.userDashboard.specialOffersReferrals", "Special Offers & Referrals") :
+                id === "offers" ? t("app.userDashboard.specialOffersReferrals", "Special Offers") :
                 id === "profile" ? t("app.userDashboard.profileSettings", "Profile Settings") :
                 id === "help" ? t("app.userDashboard.helpSupport", "Help & Support") :
                 id === "write-review" ? t("app.userDashboard.writeReview", "Write a Review") :
@@ -266,8 +266,10 @@ export default function WriteReviewPage() {
                     className="glass-card rounded-2xl overflow-hidden">
                     <div className="flex flex-col sm:flex-row">
                       <div className="relative sm:w-40 h-36 sm:h-auto shrink-0">
-                        <img src="https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=400&q=80"
-                          alt="Suite" className="w-full h-full object-cover" />
+                        {/* Image removed from My Bookings/booking flow; suite images now come from backend */}
+                        <div className="w-full h-full bg-white/[0.03] flex items-center justify-center">
+                          <BedDouble className="h-12 w-12 text-gold/20" />
+                        </div>
                         <div className="absolute inset-0 bg-gradient-to-r from-transparent to-black/30 sm:bg-gradient-to-b" />
                       </div>
                       <div className="flex-1 p-5 space-y-3">

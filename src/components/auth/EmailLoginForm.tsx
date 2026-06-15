@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Mail, Lock, ArrowRight } from "lucide-react";
+
 import { authApi } from "@/lib/api";
 import { useAuth } from "./AuthContext";
 import { useTranslation } from "react-i18next";
@@ -16,8 +17,23 @@ export function EmailLoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotError, setForgotError] = useState<string | null>(null);
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotDone, setForgotDone] = useState(false);
+
+  function openForgot(e: React.MouseEvent) {
+    e.preventDefault();
+    setForgotError(null);
+    setForgotDone(false);
+    setForgotEmail("");
+    setForgotOpen(true);
+  }
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+
     setError(null);
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       setError(t("app.validation.emailRequired", "Please enter a valid email address."));
@@ -79,6 +95,8 @@ export function EmailLoginForm() {
       </div>
 
       <div className="flex items-center justify-between text-xs">
+      
+
         <label className="flex items-center gap-2 cursor-pointer select-none">
           <input
             type="checkbox"
@@ -88,12 +106,119 @@ export function EmailLoginForm() {
           />
           <span className="text-muted-foreground">{t("app.auth.rememberMe")}</span>
         </label>
-        <a href="#" className="text-gold hover:underline underline-offset-4">{t("app.auth.forgotPassword")}</a>
+        <a href="#" onClick={openForgot} className="text-gold hover:underline underline-offset-4">{t("app.auth.forgotPassword")}</a>
       </div>
 
       {error && (
         <div className="text-xs text-destructive bg-destructive/10 border border-destructive/30 rounded-md px-3 py-2">
           {error}
+        </div>
+      )}
+
+      {/* Forgot Password Modal */}
+      {forgotOpen && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="glass-card relative w-full max-w-md rounded-2xl border border-[var(--gold)]/20 p-6">
+            <button
+              type="button"
+              className="absolute right-4 top-4 text-muted-foreground hover:text-gold"
+              onClick={() => setForgotOpen(false)}
+              aria-label="Close"
+            >
+              ✕
+            </button>
+
+            <div className="space-y-2">
+              <h2 className="text-lg font-display text-foreground">{t("app.auth.forgotPasswordTitle", "Reset your password")}</h2>
+              <p className="text-sm text-muted-foreground">
+                {t("app.auth.forgotPasswordDesc", "Enter your email and we’ll send a reset link.")}
+              </p>
+            </div>
+
+            {!forgotDone ? (
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  setForgotError(null);
+                  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(forgotEmail.trim())) {
+                    setForgotError(t("app.validation.emailRequired", "Please enter a valid email address."));
+                    return;
+                  }
+
+                  setForgotLoading(true);
+                  try {
+                    await authApi.forgotPassword(forgotEmail.trim());
+                    setForgotDone(true);
+                  } catch (err: any) {
+                    setForgotError(err.message || "Failed to send reset email");
+                  } finally {
+                    setForgotLoading(false);
+                  }
+                }}
+                className="mt-5 space-y-3"
+              >
+                <div className="space-y-1">
+                  <label className="text-[11px] text-muted-foreground uppercase tracking-wide">{t("app.auth.emailLabel", "Email")}</label>
+                  <input
+                    type="email"
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    className="luxury-input w-full rounded-lg py-3 px-4 text-sm"
+                    placeholder={t("forms.emailPlaceholder")}
+                    autoComplete="email"
+                  />
+                </div>
+
+                {forgotError && (
+                  <div className="text-xs text-destructive bg-destructive/10 border border-destructive/30 rounded-md px-3 py-2">
+                    {forgotError}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={forgotLoading}
+                  className="gold-btn w-full rounded-lg py-3.5 text-sm font-semibold disabled:opacity-70"
+                >
+                  {forgotLoading
+                    ? t("app.auth.sending", "Sending...")
+                    : t("app.auth.confirm", "Confirm")}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setForgotOpen(false)}
+                  className="w-full rounded-lg py-3.5 text-sm font-semibold border border-[var(--gold)]/30 text-muted-foreground hover:text-gold transition"
+                >
+                  {t("app.auth.cancel", "Cancel")}
+                </button>
+              </form>
+            ) : (
+              <div className="mt-5 space-y-3 text-center">
+                <div className="mx-auto h-12 w-12 rounded-full bg-gradient-gold/20 flex items-center justify-center">
+                  <span className="text-[var(--gold)] text-2xl">✓</span>
+                </div>
+                <h3 className="font-display text-foreground text-xl">{t("app.auth.resetEmailSent", "Check your email")}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {t(
+                    "app.auth.resetEmailSentDesc",
+                    "If the email exists, you’ll receive a link to reset your password."
+                  )}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setForgotOpen(false)}
+                  className="gold-btn w-full rounded-lg py-3.5 text-sm font-semibold"
+                >
+                  {t("app.auth.done", "Done")}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
