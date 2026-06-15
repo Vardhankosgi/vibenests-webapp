@@ -141,9 +141,10 @@ type Booking = {
   checkOut: string; checkInTime: string; checkOutTime: string;
   nights: number; amount: number;
   status: "confirmed" | "pending" | "completed" | "cancelled";
-  image: string;
+  image?: string;
   _raw?: any;
 };
+
 type Transaction = {
   id: string; desc: string; amount: number; type: "credit" | "debit";
   date: string; status: "completed" | "pending" | "failed";
@@ -162,9 +163,9 @@ const NAV_ITEMS: NavItem[] = [
   { id: "my-bookings", label: "My Bookings",       icon: CalendarDays },
   { id: "upcoming",    label: "Upcoming Bookings", icon: Clock },
   { id: "past",        label: "Past Bookings",     icon: History },
-  { id: "wallet",      label: "Wallet & Payments",     icon: Wallet },
+  { id: "wallet",      label: "Payments",     icon: Wallet },
   { id: "packages",    label: "Celebration Packages",  icon: Package },
-  { id: "offers",      label: "Special Offers & Referrals", icon: Tag },
+  { id: "offers",      label: "Special Offers", icon: Tag },
   { id: "profile",     label: "Profile Settings",  icon: UserCircle },
   { id: "help",        label: "Help & Support",    icon: HelpCircle },
   { id: "write-review", label: "Write a Review",   icon: Star },
@@ -172,26 +173,27 @@ const NAV_ITEMS: NavItem[] = [
 
 /* ─── Bookings Data ──────────────────────────────────── */
 const UPCOMING_BOOKINGS: Booking[] = [
-  { id: "VN-2841", suite: "Royal Penthouse Suite", location: "Mumbai, India",  checkIn: "Jan 28, 2025", checkOut: "Feb 01, 2025", checkInTime: "2:00 PM", checkOutTime: "11:00 AM", nights: 4, amount: 128000, status: "confirmed", image: "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=400&q=80" },
-  { id: "VN-2965", suite: "Oceanic Deluxe Suite",  location: "Goa, India",     checkIn: "Mar 10, 2025", checkOut: "Mar 14, 2025", checkInTime: "1:00 PM", checkOutTime: "10:00 AM", nights: 4, amount: 64000,  status: "pending",   image: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=400&q=80" },
+  { id: "VN-2841", suite: "Royal Penthouse Suite", location: "Mumbai, India",  checkIn: "Jan 28, 2025", checkOut: "Feb 01, 2025", checkInTime: "2:00 PM", checkOutTime: "11:00 AM", nights: 4, amount: 128000, status: "confirmed" },
+  { id: "VN-2965", suite: "Oceanic Deluxe Suite",  location: "Goa, India",     checkIn: "Mar 10, 2025", checkOut: "Mar 14, 2025", checkInTime: "1:00 PM", checkOutTime: "10:00 AM", nights: 4, amount: 64000,  status: "pending" },
 ];
 const PAST_BOOKINGS: Booking[] = [
-  { id: "VN-2210", suite: "Heritage Garden Villa", location: "Jaipur, India",  checkIn: "Oct 05, 2024", checkOut: "Oct 09, 2024", checkInTime: "2:00 PM", checkOutTime: "11:00 AM", nights: 4, amount: 96000, status: "completed",  image: "https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=400&q=80" },
-  { id: "VN-2105", suite: "Sky Loft Suite",         location: "Delhi, India",   checkIn: "Aug 15, 2024", checkOut: "Aug 17, 2024", checkInTime: "3:00 PM", checkOutTime: "12:00 PM", nights: 2, amount: 42000, status: "completed",  image: "https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=400&q=80" },
-  { id: "VN-1998", suite: "Lakefront Pool Suite",   location: "Udaipur, India", checkIn: "Jun 20, 2024", checkOut: "Jun 23, 2024", checkInTime: "2:00 PM", checkOutTime: "11:00 AM", nights: 3, amount: 75000, status: "cancelled", image: "https://images.unsplash.com/photo-1590490360182-c33d57733427?w=400&q=80" },
+  { id: "VN-2210", suite: "Heritage Garden Villa", location: "Jaipur, India",  checkIn: "Oct 05, 2024", checkOut: "Oct 09, 2024", checkInTime: "2:00 PM", checkOutTime: "11:00 AM", nights: 4, amount: 96000, status: "completed" },
+  { id: "VN-2105", suite: "Sky Loft Suite",         location: "Delhi, India",   checkIn: "Aug 15, 2024", checkOut: "Aug 17, 2024", checkInTime: "3:00 PM", checkOutTime: "12:00 PM", nights: 2, amount: 42000, status: "completed" },
+  { id: "VN-1998", suite: "Lakefront Pool Suite",   location: "Udaipur, India", checkIn: "Jun 20, 2024", checkOut: "Jun 23, 2024", checkInTime: "2:00 PM", checkOutTime: "11:00 AM", nights: 3, amount: 75000, status: "cancelled" },
 ];
 
+
 const STATS = [
-  { label: "Total Bookings", value: "12",    icon: CalendarDays },
-  { label: "Nights Stayed",  value: "38",    icon: BedDouble },
-  { label: "Total Spent",    value: "₹5.2L", icon: CreditCard },
-  { label: "Loyalty Points", value: "4,820", icon: Star },
+  // { label: "Total Bookings", value: "12",    icon: CalendarDays },
+  // { label: "Nights Stayed",  value: "38",    icon: BedDouble },
+  // { label: "Total Spent",    value: "₹5.2L", icon: CreditCard },
+  // { label: "Loyalty Points", value: "4,820", icon: Star },
 ];
 
 const QUICK_ACTIONS = [
   { label: "New Booking",       icon: BedDouble,     desc: "Explore & reserve suites" },
   { label: "Modify Booking",    icon: CalendarDays,  desc: "Change dates or room type" },
-  { label: "Contact Concierge", icon: Phone,         desc: "24/7 personal assistance" },
+  { label: "Contact", icon: Phone,         desc: "24/7 personal assistance" },
   { label: "Raise a Request",   icon: MessageSquare, desc: "Report issues or requests" },
 ];
 
@@ -339,7 +341,14 @@ function BookingDetailsDrawer({ booking, onClose }: { booking: Booking; onClose:
 
           <div className="flex-1 p-6 space-y-6">
             <div className="rounded-2xl overflow-hidden">
-              <img src={booking.image} alt={booking.suite} className="w-full h-44 object-cover" />
+              {booking.image ? (
+                <img src={booking.image} alt={booking.suite} className="w-full h-44 object-cover" />
+              ) : (
+                <div className="w-full h-44 bg-white/[0.03] flex items-center justify-center border-b border-white/5">
+                  <BedDouble className="h-12 w-12 text-gold/20" />
+                </div>
+              )}
+
               <div className="glass rounded-b-2xl p-4 grid grid-cols-2 gap-3 border border-white/8 border-t-0">
                 <div>
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{t("app.userDashboard.location", "Location")}</p>
@@ -503,7 +512,14 @@ function BookingCard({ b, onViewDetails }: { b: Booking; onViewDetails: (b: Book
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
       className="glass-card rounded-2xl overflow-hidden flex flex-col sm:flex-row gap-0 hover:border-gold/30 transition-colors">
-      <img src={b.image} alt={b.suite} className="w-full sm:w-36 h-40 sm:h-auto object-cover shrink-0" />
+      {b.image ? (
+        <img src={b.image} alt={b.suite} className="w-full sm:w-36 h-40 sm:h-auto object-cover shrink-0" />
+      ) : (
+        <div className="w-full sm:w-36 h-40 sm:h-auto bg-white/[0.03] flex items-center justify-center shrink-0">
+          <BedDouble className="h-12 w-12 text-gold/20" />
+        </div>
+      )}
+
       <div className="flex-1 p-5 flex flex-col justify-between gap-3">
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -694,26 +710,26 @@ function DashboardView({ onNavigate }: { onNavigate: (id: string) => void }) {
     bookingsApi.getAll().then((list) => {
       const mapped: Booking[] = list
         .filter((b: any) => b.status === 'confirmed' || b.status === 'pending')
-        .map((b: any) => ({
-          id: `VN-${b.id}`,
-          suite: b.suiteName || `Suite #${b.suiteId}`,
-          location: 'VibeNests, India',
-          checkIn: b.date, checkOut: b.date,
-          checkInTime: b.timeSlot || '', checkOutTime: b.endTimeSlot || '',
-          nights: 1, amount: Number(b.totalAmount) || 0,
-          status: b.status as Booking['status'],
-          image: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=400&q=80',
-          _raw: b,
-        }));
+          .map((b: any) => ({
+            id: `VN-${b.id}`,
+            suite: b.suiteName || `Suite #${b.suiteId}`,
+            location: 'VibeNests, India',
+            checkIn: b.date, checkOut: b.date,
+            checkInTime: b.timeSlot || '', checkOutTime: b.endTimeSlot || '',
+            nights: 1, amount: Number(b.totalAmount) || 0,
+            status: b.status as Booking['status'],
+            image: b.image || b.suiteImages?.[0],
+            _raw: b,
+          }));
       setDashboardBookings(mapped);
     }).catch(() => {});
   }, []);
 
   const statsTranslated = [
-    { label: t("app.userDashboard.totalBookings", "Total Bookings"), value: "12",    icon: CalendarDays },
-    { label: t("app.userDashboard.nightsStayed", "Nights Stayed"),  value: "38",    icon: BedDouble },
-    { label: t("app.userDashboard.totalSpent", "Total Spent"),    value: "₹5.2L", icon: CreditCard },
-    { label: t("app.userDashboard.loyaltyPoints", "Loyalty Points"), value: "4,820", icon: Star },
+    // { label: t("app.userDashboard.totalBookings", "Total Bookings"), value: "12",    icon: CalendarDays },
+    // { label: t("app.userDashboard.nightsStayed", "Nights Stayed"),  value: "38",    icon: BedDouble },
+    // { label: t("app.userDashboard.totalSpent", "Total Spent"),    value: "₹5.2L", icon: CreditCard },
+    // { label: t("app.userDashboard.loyaltyPoints", "Loyalty Points"), value: "4,820", icon: Star },
   ];
 
   const conciergeCards = [
@@ -724,8 +740,8 @@ function DashboardView({ onNavigate }: { onNavigate: (id: string) => void }) {
 
   const quickActionsTranslated = [
     { label: t("app.userDashboard.newBooking", "New Booking"),       icon: BedDouble,     desc: t("app.userDashboard.newBookingDesc", "Explore & reserve suites") },
-    { label: t("app.userDashboard.modifyBooking", "Modify Booking"),    icon: CalendarDays,  desc: t("app.userDashboard.modifyBookingDesc", "Change dates or room type") },
-    { label: t("app.userDashboard.contactConcierge", "Contact Concierge"), icon: Phone,         desc: t("app.userDashboard.contactConciergeDesc", "24/7 personal assistance") },
+    // { label: t("app.userDashboard.modifyBooking", "Modify Booking"),    icon: CalendarDays,  desc: t("app.userDashboard.modifyBookingDesc", "Change dates or room type") },
+    { label: t("app.userDashboard.contactConcierge", "Contact us"), icon: Phone,         desc: t("app.userDashboard.contactConciergeDesc", "24/7 personal assistance") },
     { label: t("app.userDashboard.raiseRequest", "Raise a Request"),   icon: MessageSquare, desc: t("app.userDashboard.raiseRequestDesc", "Report issues or requests") },
   ];
 
@@ -758,15 +774,15 @@ function DashboardView({ onNavigate }: { onNavigate: (id: string) => void }) {
           </button>
         </div>
         {/* Loyalty points badge */}
-        <div className="absolute right-8 bottom-6 hidden md:block z-10">
-          <div className="glass-gold rounded-2xl p-4 text-center min-w-[120px]">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">{t("app.userDashboard.loyaltyPoints", "Loyalty Points")}</p>
-            <p className="font-display text-3xl text-gold">4,820</p>
-          </div>
-        </div>
+        {/* <div className="absolute right-8 bottom-6 hidden md:block z-10"> */}
+          {/* <div className="glass-gold rounded-2xl p-4 text-center min-w-[120px]"> */}
+            {/* <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">{t("app.userDashboard.loyaltyPoints", "Loyalty Points")}</p> */}
+            {/* <p className="font-display text-3xl text-gold">4,820</p> */}
+          {/* </div> */}
+        {/* </div> */}
       </motion.div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {statsTranslated.map((s, i) => {
           const Icon = s.icon;
           return (
@@ -782,9 +798,9 @@ function DashboardView({ onNavigate }: { onNavigate: (id: string) => void }) {
             </motion.div>
           );
         })}
-      </div>
+      </div> */}
 
-      <div className="grid md:grid-cols-3 gap-4">
+      {/* <div className="grid md:grid-cols-3 gap-4">
         {conciergeCards.map((c, i) => {
           const Icon = c.icon;
           return (
@@ -799,7 +815,7 @@ function DashboardView({ onNavigate }: { onNavigate: (id: string) => void }) {
             </motion.div>
           );
         })}
-      </div>
+      </div> */}
 
       {dashboardBookings.length > 0 && (
         <div>
@@ -843,9 +859,21 @@ function DashboardView({ onNavigate }: { onNavigate: (id: string) => void }) {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {quickActionsTranslated.map((a, i) => {
             const Icon = a.icon;
+
+            let target: "suites" | "help" | null = null;
+            if (a.label === t("app.userDashboard.newBooking", "New Booking")) target = "suites";
+            if (a.label === t("app.userDashboard.contactConcierge", "Contact us")) target = "help";
+            if (a.label === t("app.userDashboard.raiseRequest", "Raise a Request")) target = "help";
+
             return (
-              <motion.button key={a.label} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.06 }}
-                className="glass-card rounded-2xl p-4 text-left hover:border-gold/35 hover:bg-gold/5 transition-all group">
+              <motion.button
+                key={a.label}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: i * 0.06 }}
+                onClick={() => target && onNavigate(target)}
+                className="glass-card rounded-2xl p-4 text-left hover:border-gold/35 hover:bg-gold/5 transition-all group"
+              >
                 <div className="h-9 w-9 rounded-xl bg-gold/10 border border-gold/20 flex items-center justify-center mb-3">
                   <Icon className="h-4 w-4 text-gold" />
                 </div>
@@ -929,17 +957,17 @@ function BookingListView({ bookings, title, fetchFromApi, statusFilter }: { book
             if (statusFilter === 'past') return b.status === 'completed' || b.status === 'cancelled' || b.status === 'refunded';
             return true;
           })
-          .map((b: any) => ({
-            id: `VN-${b.id}`,
-            suite: b.suiteName || `Suite #${b.suiteId}`,
-            location: "VibeNests, India",
-            checkIn: b.date, checkOut: b.date,
-            checkInTime: b.timeSlot || "", checkOutTime: b.endTimeSlot || "",
-            nights: 1, amount: Number(b.totalAmount) || 0,
-            status: b.status as Booking["status"],
-            image: "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=400&q=80",
-            _raw: b,
-          }));
+            .map((b: any) => ({
+              id: `VN-${b.id}`,
+              suite: b.suiteName || `Suite #${b.suiteId}`,
+              location: "VibeNests, India",
+              checkIn: b.date, checkOut: b.date,
+              checkInTime: b.timeSlot || "", checkOutTime: b.endTimeSlot || "",
+              nights: 1, amount: Number(b.totalAmount) || 0,
+              status: b.status as Booking["status"],
+              image: b.image || b.suiteImages?.[0],
+              _raw: b,
+            }));
         setApiBookings(mapped);
       })
       .catch(() => {})
@@ -1093,12 +1121,12 @@ function WalletView() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="font-display text-2xl text-foreground">{t("app.userDashboard.walletPayments", "Wallet & Payments")}</h3>
-        <span className="px-3 py-1 rounded-full bg-gold/10 border border-gold/25 text-gold text-xs font-semibold">{t("app.userDashboard.premiumMember", "Premium Member")}</span>
+        <h3 className="font-display text-2xl text-foreground">{t("app.userDashboard.walletPayments", "Payments")}</h3>
+        {/* <span className="px-3 py-1 rounded-full bg-gold/10 border border-gold/25 text-gold text-xs font-semibold">{t("app.userDashboard.premiumMember", "Premium Member")}</span> */}
       </div>
 
       {/* Balance Cards */}
-      <div className="grid md:grid-cols-3 gap-4">
+      {/* <div className="grid md:grid-cols-3 gap-4">
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
           className="glass-card rounded-2xl p-6 bg-gradient-to-br from-gold/10 to-transparent border-gold/25 md:col-span-2">
           <div className="flex items-start justify-between mb-4">
@@ -1125,10 +1153,10 @@ function WalletView() {
           <p className="text-xs text-muted-foreground mt-2">{t("app.userDashboard.loyaltyPointsDesc", "Earn 1 pt = ₹10 spent")}</p>
           <button className="mt-4 w-full glass rounded-xl py-2 text-xs font-semibold text-gold border border-gold/20 hover:bg-gold/10 transition-colors">{t("app.userDashboard.redeemPoints", "Redeem Points")}</button>
         </motion.div>
-      </div>
+      </div> */}
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+      {/* <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         {walletActions.map((a, i) => {
           const Icon = a.icon;
           return (
@@ -1141,10 +1169,10 @@ function WalletView() {
             </motion.button>
           );
         })}
-      </div>
+      </div> */}
 
       {/* Analytics */}
-      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+      {/* <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
         className="glass-card rounded-2xl p-6">
         <div className="flex items-center justify-between mb-4">
           <h4 className="font-display text-lg text-foreground">{t("app.userDashboard.paymentAnalytics", "Payment Analytics")}</h4>
@@ -1173,10 +1201,10 @@ function WalletView() {
             <p className="font-display text-2xl text-gold">₹{(totalCredit - totalDebit).toLocaleString()}</p>
           </div>
         </div>
-      </motion.div>
+      </motion.div> */}
 
       {/* Saved Payment Methods */}
-      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
+      {/* <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
         className="glass-card rounded-2xl p-6 space-y-4">
         <div className="flex items-center justify-between">
           <h4 className="font-display text-lg text-foreground">{t("app.userDashboard.savedPaymentMethods", "Saved Payment Methods")}</h4>
@@ -1224,7 +1252,7 @@ function WalletView() {
             );
           })}
         </div>
-      </motion.div>
+      </motion.div> */}
 
       {/* Recent Transactions */}
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
@@ -1711,7 +1739,7 @@ function CelebrationPackagesView() {
 function OffersView() {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const [tab, setTab] = useState<"offers" | "referrals" | "coupons">("offers");
+  const [tab, setTab] = useState<"offers" | "coupons">("offers");
   const [copiedCode, setCopiedCode] = useState("");
   const [couponInput, setCouponInput] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState("");
@@ -1773,17 +1801,17 @@ function OffersView() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="font-display text-2xl text-foreground">{t("app.userDashboard.specialOffersReferrals", "Special Offers & Referrals")}</h3>
+        <h3 className="font-display text-2xl text-foreground">{t("app.userDashboard.specialOffersReferrals", "Special Offers")}</h3>
       </div>
 
       {/* Tabs */}
       <div className="flex gap-1 glass rounded-xl p-1 w-fit">
-        {(["offers", "referrals", "coupons"] as const).map((tVal) => (
+        {(["offers", "coupons"] as const).map((tVal) => (
           <button key={tVal} onClick={() => setTab(tVal)}
             className={`px-4 py-2 rounded-lg text-xs font-medium capitalize transition-colors ${
               tab === tVal ? "bg-gold/20 text-gold" : "text-muted-foreground hover:text-foreground"
             }`}>
-            {tVal === "offers" ? t("app.userDashboard.tabOffers", "Offers") : tVal === "referrals" ? t("app.userDashboard.tabReferrals", "Referrals") : t("app.userDashboard.tabCoupons", "Coupons")}
+            {tVal === "offers" ? t("app.userDashboard.tabOffers", "Offers") : t("app.userDashboard.tabCoupons", "Coupons")}
           </button>
         ))}
       </div>
@@ -1814,10 +1842,10 @@ function OffersView() {
       )}
 
       {/* Referrals Tab */}
-      {tab === "referrals" && (
-        <div className="space-y-5">
+      {/* {tab === "referrals" && ( */}
+        {/* <div className="space-y-5"> */}
           {/* Referral Code Card */}
-          <div className="glass-card rounded-2xl p-6 bg-gradient-to-br from-gold/10 to-transparent border-gold/25">
+          {/* <div className="glass-card rounded-2xl p-6 bg-gradient-to-br from-gold/10 to-transparent border-gold/25">
             <div className="flex items-start justify-between mb-4">
               <div>
                 <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">{t("app.userDashboard.yourReferralCode", "Your Referral Code")}</p>
@@ -1839,7 +1867,7 @@ function OffersView() {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-3 gap-4">
+          {/* <div className="grid grid-cols-3 gap-4">
             {[
               { label: t("app.userDashboard.friendsReferred", "Friends Referred"), value: friendsCount,      icon: Users },
               { label: t("app.userDashboard.successfulBookings", "Successful Bookings"), value: bookingsCount,   icon: CheckCircle2 },
@@ -1858,10 +1886,10 @@ function OffersView() {
                 </div>
               );
             })}
-          </div>
+          </div> */}
 
           {/* How it works */}
-          <div className="glass-card rounded-2xl p-5 space-y-4">
+          {/* <div className="glass-card rounded-2xl p-5 space-y-4">
             <h4 className="font-display text-lg text-foreground">{t("app.userDashboard.howItWorks", "How It Works")}</h4>
             <div className="space-y-3">
               {[
@@ -1878,7 +1906,7 @@ function OffersView() {
             </div>
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Coupons Tab */}
       {tab === "coupons" && (
@@ -2308,9 +2336,9 @@ export default function UserDashboardPage() {
                 id === "my-bookings" ? t("app.userDashboard.myBookings", "My Bookings") :
                 id === "upcoming" ? t("app.userDashboard.upcomingBookings", "Upcoming Bookings") :
                 id === "past" ? t("app.userDashboard.pastBookings", "Past Bookings") :
-                id === "wallet" ? t("app.userDashboard.walletPayments", "Wallet & Payments") :
+                id === "wallet" ? t("app.userDashboard.walletPayments", "Payments") :
                 id === "packages" ? t("app.userDashboard.celebrationPackages", "Celebration Packages") :
-                id === "offers" ? t("app.userDashboard.specialOffersReferrals", "Special Offers & Referrals") :
+                id === "offers" ? t("app.userDashboard.specialOffersReferrals", "Special Offers") :
                 id === "profile" ? t("app.userDashboard.profileSettings", "Profile Settings") :
                 id === "help" ? t("app.userDashboard.helpSupport", "Help & Support") :
                 id === "write-review" ? t("app.userDashboard.writeReview", "Write a Review") :

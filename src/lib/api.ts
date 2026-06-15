@@ -65,6 +65,11 @@ export const authApi = {
     request<{ accessToken: string; refreshToken: string; user: { id: number; email: string; role: string; fullName: string } }>(
       '/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }
     ),
+  forgotPassword: (email: string) =>
+    request<{ message: string }>('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    }),
   sendOtp: (phone: string) =>
     request<{ message: string; otp?: string }>('/auth/otp/send', { method: 'POST', body: JSON.stringify({ phone }) }),
   verifyOtp: (phone: string, otp: string) =>

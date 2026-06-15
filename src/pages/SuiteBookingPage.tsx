@@ -33,9 +33,9 @@ const NAV_ITEMS = [
   { id: "my-bookings",  label: "My Bookings",              icon: CalendarDays,    path: "/user/dashboard" },
   { id: "upcoming",     label: "Upcoming Bookings",        icon: Clock,           path: "/user/dashboard" },
   { id: "past",         label: "Past Bookings",            icon: History,         path: "/user/dashboard" },
-  { id: "wallet",       label: "Wallet & Payments",        icon: Wallet,          path: "/user/dashboard" },
+  { id: "wallet",       label: "Payments",        icon: Wallet,          path: "/user/dashboard" },
   { id: "packages",     label: "Celebration Packages",     icon: Package,         path: "/user/dashboard" },
-  { id: "offers",       label: "Special Offers & Referrals", icon: Tag,           path: "/user/dashboard" },
+  { id: "offers",       label: "Special Offers", icon: Tag,           path: "/user/dashboard" },
   { id: "profile",      label: "Profile Settings",         icon: UserCircle,      path: "/user/dashboard" },
   { id: "help",         label: "Help & Support",           icon: HelpCircle,      path: "/user/dashboard" },
   { id: "write-review", label: "Write a Review",           icon: Star,            path: "/user/write-review" },
@@ -1069,11 +1069,16 @@ onClick={() => setStartTime(slot)}
                       className="flex-1 rounded-2xl border border-white/10 px-5 py-3 text-sm text-muted-foreground hover:text-foreground transition disabled:opacity-40">
                       <ChevronLeft className="inline-block h-4 w-4 mr-1" /> Back
                     </button>
-                    <button type="button" onClick={handleNext}
-                      className="flex-1 gold-btn rounded-2xl px-5 py-3 text-sm font-semibold flex items-center justify-center gap-2">
-                      Continue
-                      <ChevronRight className="h-4 w-4" />
-                    </button>
+                    {step !== 4 && (
+                      <button
+                        type="button"
+                        onClick={handleNext}
+                        className="flex-1 gold-btn rounded-2xl px-5 py-3 text-sm font-semibold flex items-center justify-center gap-2"
+                      >
+                        Continue
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    )}
 
                   </div>
                 </div>
