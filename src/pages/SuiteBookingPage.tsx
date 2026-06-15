@@ -6,7 +6,7 @@ import {
   LayoutDashboard, BedDouble, History, Wallet, Tag, UserCircle,
   HelpCircle, LogOut, Package, Bell, ChevronDown,
 } from "lucide-react";
-import { useSuitesContext } from "@/components/admin/SuitesContext";
+import { useSuitesContext, type Suite } from "@/components/admin/SuitesContext";
 import { addonsApi, bookingsApi, paymentsApi, couponsApi } from "@/lib/api";
 import { LanguageSelector } from "@/components/shared/LanguageSelector";
 import { useTranslation } from "react-i18next";
@@ -28,27 +28,27 @@ const ADDONS: ApiAddOn[] = [];
 
 /* ── Dashboard nav items (mirrors UserDashboardPage) ── */
 const NAV_ITEMS = [
-  { id: "dashboard",    label: "Dashboard",               icon: LayoutDashboard, path: "/user/dashboard" },
-  { id: "suites",       label: "Browse Suites",            icon: BedDouble,       path: "/user/dashboard" },
-  { id: "my-bookings",  label: "My Bookings",              icon: CalendarDays,    path: "/user/dashboard" },
-  { id: "upcoming",     label: "Upcoming Bookings",        icon: Clock,           path: "/user/dashboard" },
-  { id: "past",         label: "Past Bookings",            icon: History,         path: "/user/dashboard" },
-  { id: "wallet",       label: "Wallet & Payments",        icon: Wallet,          path: "/user/dashboard" },
-  { id: "packages",     label: "Celebration Packages",     icon: Package,         path: "/user/dashboard" },
-  { id: "offers",       label: "Special Offers & Referrals", icon: Tag,           path: "/user/dashboard" },
-  { id: "profile",      label: "Profile Settings",         icon: UserCircle,      path: "/user/dashboard" },
-  { id: "help",         label: "Help & Support",           icon: HelpCircle,      path: "/user/dashboard" },
-  { id: "write-review", label: "Write a Review",           icon: Star,            path: "/user/write-review" },
+  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, path: "/user/dashboard" },
+  { id: "suites", label: "Browse Suites", icon: BedDouble, path: "/user/dashboard" },
+  { id: "my-bookings", label: "My Bookings", icon: CalendarDays, path: "/user/dashboard" },
+  { id: "upcoming", label: "Upcoming Bookings", icon: Clock, path: "/user/dashboard" },
+  { id: "past", label: "Past Bookings", icon: History, path: "/user/dashboard" },
+  { id: "wallet", label: "Wallet & Payments", icon: Wallet, path: "/user/dashboard" },
+  { id: "packages", label: "Celebration Packages", icon: Package, path: "/user/dashboard" },
+  { id: "offers", label: "Special Offers & Referrals", icon: Tag, path: "/user/dashboard" },
+  { id: "profile", label: "Profile Settings", icon: UserCircle, path: "/user/dashboard" },
+  { id: "help", label: "Help & Support", icon: HelpCircle, path: "/user/dashboard" },
+  { id: "write-review", label: "Write a Review", icon: Star, path: "/user/write-review" },
 ];
 
 /* ── Booking data ── */
 const OCCASIONS = [
-  { id: "birthday",    label: "Birthday",           description: "Elevate every milestone with regal decor and premium service.",    icon: Gift,         highlight: "bg-amber-500/10 text-amber-300" },
-  { id: "anniversary", label: "Anniversary",        description: "Curated romance with intimate touches and champagne delights.",     icon: Sparkles,     highlight: "bg-rose-500/10 text-rose-300" },
-  { id: "proposal",    label: "Proposal",           description: "A private setting designed for unforgettable moments.",             icon: Star,         highlight: "bg-cyan-500/10 text-cyan-300" },
-  { id: "baby-shower", label: "Baby Shower",        description: "Gentle luxury with pastel styling and thoughtful details.",         icon: User,         highlight: "bg-violet-500/10 text-violet-300" },
-  { id: "corporate",   label: "Corporate Events",   description: "Executive event spaces with premium AV and hospitality.",           icon: Users,        highlight: "bg-sky-500/10 text-sky-300" },
-  { id: "other",       label: "Other Celebrations", description: "Bespoke styling for any exclusive experience.",                    icon: MessageSquare, highlight: "bg-lime-500/10 text-lime-300" },
+  { id: "birthday", label: "Birthday", description: "Elevate every milestone with regal decor and premium service.", icon: Gift, highlight: "bg-amber-500/10 text-amber-300" },
+  { id: "anniversary", label: "Anniversary", description: "Curated romance with intimate touches and champagne delights.", icon: Sparkles, highlight: "bg-rose-500/10 text-rose-300" },
+  { id: "proposal", label: "Proposal", description: "A private setting designed for unforgettable moments.", icon: Star, highlight: "bg-cyan-500/10 text-cyan-300" },
+  { id: "baby-shower", label: "Baby Shower", description: "Gentle luxury with pastel styling and thoughtful details.", icon: User, highlight: "bg-violet-500/10 text-violet-300" },
+  { id: "corporate", label: "Corporate Events", description: "Executive event spaces with premium AV and hospitality.", icon: Users, highlight: "bg-sky-500/10 text-sky-300" },
+  { id: "other", label: "Other Celebrations", description: "Bespoke styling for any exclusive experience.", icon: MessageSquare, highlight: "bg-lime-500/10 text-lime-300" },
 ];
 
 const TIME_SLOTS: string[] = []; // replaced by suite-specific generated slots
@@ -128,11 +128,24 @@ export default function SuiteBookingPage() {
 
 
 
-  const [step, setStep] = useState(0);
-  const [selectedOccasion, setSelectedOccasion] = useState("");
+  const passedPackage = useMemo(() => (location.state as any)?.package, [location.state]);
+  const mapOccasionToId = (occasion: string): string => {
+    const normalized = (occasion ?? "").toLowerCase().trim();
+    if (normalized.includes("birthday")) return "birthday";
+    if (normalized.includes("anniversary")) return "anniversary";
+    if (normalized.includes("proposal")) return "proposal";
+    if (normalized.includes("baby")) return "baby-shower";
+    if (normalized.includes("corporate")) return "corporate";
+    return "other";
+  };
+
+  const [step, setStep] = useState(passedPackage ? 1 : 0);
+  const [selectedOccasion, setSelectedOccasion] = useState(
+    passedPackage ? mapOccasionToId(passedPackage.occasion) : ""
+  );
   const [bookingDate, setBookingDate] = useState("");
   const [startTime, setStartTime] = useState("");
-  const [selectedSuite, setSelectedSuite] = useState("");
+  const [selectedSuite, setSelectedSuite] = useState(passedPackage ? "0" : "");
   const [addonQty, setAddonQty] = useState<Record<string, number>>({});
   const [persons, setPersons] = useState(1);
   const [specialRequests, setSpecialRequests] = useState("");
@@ -210,7 +223,29 @@ export default function SuiteBookingPage() {
     setCouponError("");
   }
 
-  const suite = suites.find((s) => s.id === selectedSuite);
+  const suite = useMemo(() => {
+    if (selectedSuite === "0" && passedPackage) {
+      return {
+        id: "0",
+        name: passedPackage.name,
+        price: passedPackage.price ? `₹${Number(passedPackage.price).toLocaleString()}` : "₹0",
+        minCapacity: 1,
+        capacity: parseInt(String(passedPackage.capacity)) || 2,
+        ratePerExtraPerson: 0,
+        baseDiscount: 0,
+        slotStartTime: "09:00",
+        slotEndTime: "21:00",
+        slotDurationMins: 150,
+        gapBetweenSlotsMins: 30,
+        occasions: passedPackage.occasion || "",
+        status: "Active" as const,
+        images: passedPackage.image ? [passedPackage.image] : [],
+        description: passedPackage.description || "",
+        amenities: passedPackage.amenities || [],
+      } as Suite;
+    }
+    return suites.find((s) => s.id === selectedSuite);
+  }, [selectedSuite, suites, passedPackage]);
 
   if (suitesLoading) {
     return (
@@ -278,7 +313,7 @@ export default function SuiteBookingPage() {
   }, []);
 
   const addonsTotal = addons.reduce((sum: number, a) => sum + Number(a.price) * (addonQty[String(a.id)] || 0), 0) + personsTotal;
-  const basePrice = suiteBasePrice;
+  const basePrice = passedPackage ? Number(passedPackage.price) : suiteBasePrice;
 
   // Pre-select suite passed from Book Now
   useEffect(() => {
@@ -288,7 +323,7 @@ export default function SuiteBookingPage() {
       if (found) { setSelectedSuite(String(passedId)); setPersons(found.minCapacity); }
     }
   }, [suites, location.state]);
-  const subtotal   = basePrice + addonsTotal;
+  const subtotal = basePrice + addonsTotal;
   // Requested: remove serviceFee & taxes from UI. Total is suite + persons + add-ons - discount.
   // couponDiscount > 0 means percentage off; couponDiscount < 0 means fixed ₹ amount off
   const couponSavings = couponDiscount > 0
@@ -316,7 +351,14 @@ export default function SuiteBookingPage() {
     setShowValidation(false);
     step < STEPS.length - 1 ? setStep((v) => v + 1) : setConfirmed(true);
   }
-  function handleBack() { setShowValidation(false); if (step > 0) setStep((v) => v - 1); }
+  function handleBack() {
+    setShowValidation(false);
+    if (passedPackage && step === 1) {
+      navigate("/user/dashboard");
+      return;
+    }
+    if (step > 0) setStep((v) => v - 1);
+  }
 
 
 
@@ -346,11 +388,10 @@ export default function SuiteBookingPage() {
             <button
               key={id}
               onClick={() => { navigate(path); setSidebarOpen(false); }}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${
-                active
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all ${active
                   ? "bg-gold/15 border border-gold/25 text-gold font-medium"
                   : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
-              }`}
+                }`}
             >
               <Icon className={`h-4 w-4 shrink-0 ${active ? "text-gold" : ""}`} />
               {label}
@@ -495,7 +536,7 @@ export default function SuiteBookingPage() {
                 <div className="glass-card sticky top-5 rounded-2xl border border-gold/15 p-4 space-y-1">
                   <p className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground font-semibold px-2 mb-3">{t("app.userDashboard.yourJourney", "Your Journey")}</p>
                   {STEPS.map((label, index) => {
-                    const done   = index < step;
+                    const done = index < step;
                     const active = index === step;
                     const translatedLabel = t(stepKeys[index], label);
                     return (
@@ -504,17 +545,15 @@ export default function SuiteBookingPage() {
                         type="button"
                         onClick={() => !active && index < step && setStep(index)}
                         disabled={index > step}
-                        className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs transition-all ${
-                          active ? "bg-gold/15 border border-gold/30 text-gold font-semibold"
-                          : done  ? "bg-white/5 border border-white/8 text-foreground/70 hover:bg-gold/8 hover:text-gold"
-                          : "text-muted-foreground/40 cursor-not-allowed"
-                        }`}
+                        className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs transition-all ${active ? "bg-gold/15 border border-gold/30 text-gold font-semibold"
+                            : done ? "bg-white/5 border border-white/8 text-foreground/70 hover:bg-gold/8 hover:text-gold"
+                              : "text-muted-foreground/40 cursor-not-allowed"
+                          }`}
                       >
-                        <span className={`h-5 w-5 rounded-full border-2 flex items-center justify-center text-[9px] font-bold shrink-0 ${
-                          done   ? "border-gold bg-gold text-[oklch(0.12_0.02_260)]"
-                          : active ? "border-gold bg-gold/15 text-gold"
-                          : "border-white/15 bg-white/5 text-muted-foreground/40"
-                        }`}>
+                        <span className={`h-5 w-5 rounded-full border-2 flex items-center justify-center text-[9px] font-bold shrink-0 ${done ? "border-gold bg-gold text-[oklch(0.12_0.02_260)]"
+                            : active ? "border-gold bg-gold/15 text-gold"
+                              : "border-white/15 bg-white/5 text-muted-foreground/40"
+                          }`}>
                           {done ? "✓" : index + 1}
                         </span>
                         <span className="text-left leading-tight">{translatedLabel}</span>
@@ -546,14 +585,12 @@ export default function SuiteBookingPage() {
                     const translatedLabel = t(stepKeys[index], label);
                     return (
                       <div key={label} className="flex items-center shrink-0">
-                        <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] font-medium border transition-all ${
-                          index === step ? "border-gold bg-gold/15 text-gold"
-                          : index < step ? "border-gold/30 bg-gold/8 text-gold/70"
-                          : "border-white/10 bg-white/5 text-muted-foreground"
-                        }`}>
-                          <span className={`h-4 w-4 rounded-full border flex items-center justify-center text-[9px] font-bold shrink-0 ${
-                            index < step ? "border-gold bg-gold text-[oklch(0.12_0.02_260)]" : "border-current"
-                          }`}>{index < step ? "✓" : index + 1}</span>
+                        <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] font-medium border transition-all ${index === step ? "border-gold bg-gold/15 text-gold"
+                            : index < step ? "border-gold/30 bg-gold/8 text-gold/70"
+                              : "border-white/10 bg-white/5 text-muted-foreground"
+                          }`}>
+                          <span className={`h-4 w-4 rounded-full border flex items-center justify-center text-[9px] font-bold shrink-0 ${index < step ? "border-gold bg-gold text-[oklch(0.12_0.02_260)]" : "border-current"
+                            }`}>{index < step ? "✓" : index + 1}</span>
                           {index === step && <span>{translatedLabel}</span>}
                         </div>
                         {index < STEPS.length - 1 && (
@@ -583,10 +620,9 @@ export default function SuiteBookingPage() {
                         const active = o.id === selectedOccasion;
                         return (
                           <button key={o.id} type="button" onClick={() => setSelectedOccasion(o.id)}
-                            className={`flex flex-col gap-3 rounded-2xl border p-4 text-left transition-all ${
-                              active ? "border-gold bg-gold/10 shadow-[0_16px_40px_rgba(255,190,90,0.1)]"
-                              : "border-white/10 bg-white/5 hover:border-gold/20 hover:bg-white/10"
-                            }`}>
+                            className={`flex flex-col gap-3 rounded-2xl border p-4 text-left transition-all ${active ? "border-gold bg-gold/10 shadow-[0_16px_40px_rgba(255,190,90,0.1)]"
+                                : "border-white/10 bg-white/5 hover:border-gold/20 hover:bg-white/10"
+                              }`}>
                             <span className={`inline-flex h-10 w-10 items-center justify-center rounded-2xl ${o.highlight}`}>
                               <Icon className="h-5 w-5" />
                             </span>
@@ -617,27 +653,25 @@ export default function SuiteBookingPage() {
                           <span className="px-2 py-0.5 rounded-full bg-gold/10 border border-gold/25 text-[10px] text-gold font-semibold">{slotDuration} min per slot · {slotGap} min gap</span>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-{timeSlots.map((slot) => {
+                          {timeSlots.map((slot) => {
                             const end = getEndTime(slot, slotDuration);
                             const active = startTime === slot;
                             return (
                               <button
                                 key={slot}
                                 type="button"
-onClick={() => setStartTime(slot)}
-                                className={`flex items-center justify-between gap-3 px-4 py-3.5 rounded-2xl border text-sm font-medium transition-all ${
-                                  active
+                                onClick={() => setStartTime(slot)}
+                                className={`flex items-center justify-between gap-3 px-4 py-3.5 rounded-2xl border text-sm font-medium transition-all ${active
                                     ? "border-gold bg-gold/15 text-gold shadow-[0_0_16px_rgba(212,160,60,0.2)]"
                                     : "border-white/10 bg-white/5 text-muted-foreground hover:border-gold/40 hover:text-foreground hover:bg-white/10"
-                                }`}
+                                  }`}
                               >
                                 <div className="flex items-center gap-2.5">
                                   <Clock className={`h-4 w-4 shrink-0 ${active ? "text-gold" : "text-gold/40"}`} />
                                   <span>{slot} – {end}</span>
                                 </div>
-                                <span className={`text-[10px] px-2 py-0.5 rounded-full border ${
-                                  active ? "border-gold/40 bg-gold/10 text-gold" : "border-white/10 bg-white/5 text-muted-foreground"
-                                }`}>{slotDuration} min</span>
+                                <span className={`text-[10px] px-2 py-0.5 rounded-full border ${active ? "border-gold/40 bg-gold/10 text-gold" : "border-white/10 bg-white/5 text-muted-foreground"
+                                  }`}>{slotDuration} min</span>
                               </button>
                             );
                           })}
@@ -683,7 +717,7 @@ onClick={() => setStartTime(slot)}
                           </div>
                           <p className="font-semibold text-gold shrink-0">₹{personsTotal.toLocaleString()}</p>
                         </div>
-                      <div className="mt-3 flex items-center gap-3">
+                        <div className="mt-3 flex items-center gap-3">
 
                           <div className="flex items-center gap-2 rounded-full border border-white/10 bg-black/40 px-3 py-1.5">
                             <button type="button" onClick={() => setPersons((p) => Math.max(suiteMinCap, p - 1))} className="h-7 w-7 rounded-full border border-white/10 text-muted-foreground hover:text-foreground flex items-center justify-center transition">
@@ -708,7 +742,7 @@ onClick={() => setStartTime(slot)}
                               <p className="font-semibold text-gold shrink-0">₹{addon.price.toLocaleString()}</p>
                             </div>
                             <div className="mt-3 flex items-center gap-3">
-<div className="flex items-center gap-2 rounded-full border border-white/10 bg-black/40 px-3 py-1.5">
+                              <div className="flex items-center gap-2 rounded-full border border-white/10 bg-black/40 px-3 py-1.5">
                                 <button type="button" onClick={() => updateQty(String(addon.id), -1)} className="h-7 w-7 rounded-full border border-white/10 text-muted-foreground hover:text-foreground flex items-center justify-center transition">
                                   <Minus className="h-3.5 w-3.5" />
                                 </button>
@@ -744,12 +778,14 @@ onClick={() => setStartTime(slot)}
                           <p className="text-xs text-muted-foreground">{startTime ? `${startTime} – ${getEndTime(startTime, slotDuration)}` : t("app.userDashboard.noTime", "No time")}</p>
                         </div>
                         <div className="glass-card rounded-2xl border border-white/10 p-4">
-                          <h4 className="text-xs uppercase tracking-[0.25em] text-muted-foreground">{t("app.userDashboard.suite", "Suite")}</h4>
+                          <h4 className="text-xs uppercase tracking-[0.25em] text-muted-foreground">{passedPackage ? "Package" : t("app.userDashboard.suite", "Suite")}</h4>
                           {suite ? (
                             <div className="mt-3 space-y-1">
                               <p className="text-base text-foreground font-semibold">{suite.name}</p>
                               <p className="text-xs text-muted-foreground">{t("app.userDashboard.capacityGuests", "Capacity: {{min}}–{{max}} guests", { min: suiteMinCap, max: suiteMaxCap })}</p>
-                              <p className="text-xs text-gold">{suite.price}</p>
+                              <p className="text-xs text-gold">
+                                {passedPackage ? `₹${passedPackage.price.toLocaleString()}` : suite.price}
+                              </p>
                             </div>
                           ) : <p className="text-xs text-muted-foreground mt-3">{t("app.userDashboard.noSuiteSelected", "No suite selected.")}</p>}
                         </div>
@@ -841,7 +877,7 @@ onClick={() => setStartTime(slot)}
                             <tbody>
 
                               <tr>
-                                <td className="py-2 text-muted-foreground">Suite</td>
+                                <td className="py-2 text-muted-foreground">{passedPackage ? "Package" : "Suite"}</td>
                                 <td className="py-2 text-right text-foreground">₹{basePrice.toLocaleString()}</td>
                               </tr>
                               <tr>
@@ -869,7 +905,7 @@ onClick={() => setStartTime(slot)}
                           </table>
                         </div>
 
-              <div className="grid gap-3 md:grid-cols-2">
+                        <div className="grid gap-3 md:grid-cols-2">
                           <button
                             type="button"
                             onClick={() => setPaymentMethod("pay-now")}
@@ -902,7 +938,7 @@ onClick={() => setStartTime(slot)}
                         <div className="rounded-2xl bg-gradient-to-r from-gold/15 to-gold/5 p-4 border border-gold/15">
                           <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground">You Pay</p>
                           <p className="mt-1 text-base text-foreground font-semibold">
-                            ₹{(paymentMethod === "pay-now" ? payableNow :payableAtVenue).toLocaleString()}
+                            ₹{(paymentMethod === "pay-now" ? payableNow : payableAtVenue).toLocaleString()}
                           </p>
                         </div>
 
@@ -914,7 +950,7 @@ onClick={() => setStartTime(slot)}
                               setPayError("");
                               setPaying(true);
 
-                                const authUserRaw = localStorage.getItem("authUser");
+                              const authUserRaw = localStorage.getItem("authUser");
                               const authUser = authUserRaw ? JSON.parse(authUserRaw) : null;
                               const bookingPayload: any = {
                                 userId: Number(authUser?.id),
@@ -940,7 +976,7 @@ onClick={() => setStartTime(slot)}
                               if (!createdBookingId) throw new Error("Booking creation failed: missing booking id");
                               setBookingId(Number(createdBookingId));
 
-                            if (paymentMethod === "pay-now") {
+                              if (paymentMethod === "pay-now") {
                                 const createOrderRes = await paymentsApi.createOrder(Number(createdBookingId), payableNow, "razorpay");
 
                                 const w = window as any;

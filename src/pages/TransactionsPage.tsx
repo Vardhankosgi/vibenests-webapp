@@ -26,6 +26,8 @@ export default function TransactionsPage() {
   const [search, setSearch]       = useState("");
   const [statusFilter, setStatus] = useState("All");
   const [methodFilter, setMethod] = useState("All");
+  const [fromDate, setFromDate]   = useState("");
+  const [toDate, setToDate]       = useState("");
 
   function load() {
     setLoading(true);
@@ -50,7 +52,25 @@ export default function TransactionsPage() {
       ((p.razorpayPaymentId || p.providerPaymentId || "").toLowerCase().includes(q));
     const matchStatus = statusFilter === "All" || p.status === statusFilter;
     const matchMethod = methodFilter === "All" || (p.method || "Other") === methodFilter;
-    return matchSearch && matchStatus && matchMethod;
+
+    let matchDate = true;
+    if (p.createdAt) {
+      const pDate = new Date(p.createdAt);
+      if (fromDate) {
+        const fDate = new Date(fromDate);
+        fDate.setHours(0, 0, 0, 0);
+        if (pDate < fDate) matchDate = false;
+      }
+      if (toDate) {
+        const tDate = new Date(toDate);
+        tDate.setHours(23, 59, 59, 999);
+        if (pDate > tDate) matchDate = false;
+      }
+    } else if (fromDate || toDate) {
+      matchDate = false;
+    }
+
+    return matchSearch && matchStatus && matchMethod && matchDate;
   });
 
   const totalAmount  = filtered.filter(p => p.status === "success").reduce((s, p) => s + Number(p.amount || 0), 0);
@@ -102,6 +122,26 @@ export default function TransactionsPage() {
               className="luxury-input w-full rounded-lg pl-9 pr-4 py-2 text-xs"
             />
           </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">From:</span>
+            <input
+              type="date"
+              value={fromDate}
+              onChange={(e) => setFromDate(e.target.value)}
+              className="luxury-input rounded-lg px-2 py-1.5 text-xs bg-transparent text-foreground cursor-pointer"
+              style={{ colorScheme: "dark" }}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">To:</span>
+            <input
+              type="date"
+              value={toDate}
+              onChange={(e) => setToDate(e.target.value)}
+              className="luxury-input rounded-lg px-2 py-1.5 text-xs bg-transparent text-foreground cursor-pointer"
+              style={{ colorScheme: "dark" }}
+            />
+          </div>
           <select value={statusFilter} onChange={(e) => setStatus(e.target.value)}
             className="luxury-input rounded-lg px-3 py-2 text-xs text-foreground bg-transparent cursor-pointer">
             {statuses.map((s) => (
@@ -118,7 +158,7 @@ export default function TransactionsPage() {
               </option>
             ))}
           </select>
-          <button onClick={() => { setSearch(""); setStatus("All"); setMethod("All"); }}
+          <button onClick={() => { setSearch(""); setStatus("All"); setMethod("All"); setFromDate(""); setToDate(""); }}
             className="text-xs text-muted-foreground hover:text-gold transition px-3 py-2 rounded-lg border border-white/10 hover:border-gold/30">
             {t("app.admin.clear", "Clear")}
           </button>

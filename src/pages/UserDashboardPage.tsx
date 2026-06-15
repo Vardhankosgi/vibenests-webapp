@@ -157,59 +157,59 @@ type PaymentMethod = {
 
 /* ─── Nav ────────────────────────────────────────────── */
 const NAV_ITEMS: NavItem[] = [
-  { id: "dashboard",   label: "Dashboard",        icon: LayoutDashboard },
-  { id: "suites",      label: "Browse Suites",     icon: BedDouble },
-  { id: "my-bookings", label: "My Bookings",       icon: CalendarDays },
-  { id: "upcoming",    label: "Upcoming Bookings", icon: Clock },
-  { id: "past",        label: "Past Bookings",     icon: History },
-  { id: "wallet",      label: "Wallet & Payments",     icon: Wallet },
-  { id: "packages",    label: "Celebration Packages",  icon: Package },
-  { id: "offers",      label: "Special Offers & Referrals", icon: Tag },
-  { id: "profile",     label: "Profile Settings",  icon: UserCircle },
-  { id: "help",        label: "Help & Support",    icon: HelpCircle },
-  { id: "write-review", label: "Write a Review",   icon: Star },
+  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { id: "suites", label: "Browse Suites", icon: BedDouble },
+  { id: "my-bookings", label: "My Bookings", icon: CalendarDays },
+  { id: "upcoming", label: "Upcoming Bookings", icon: Clock },
+  { id: "past", label: "Past Bookings", icon: History },
+  { id: "wallet", label: "Wallet & Payments", icon: Wallet },
+  { id: "packages", label: "Celebration Packages", icon: Package },
+  { id: "offers", label: "Special Offers & Referrals", icon: Tag },
+  { id: "profile", label: "Profile Settings", icon: UserCircle },
+  { id: "help", label: "Help & Support", icon: HelpCircle },
+  { id: "write-review", label: "Write a Review", icon: Star },
 ];
 
 /* ─── Bookings Data ──────────────────────────────────── */
 const UPCOMING_BOOKINGS: Booking[] = [
-  { id: "VN-2841", suite: "Royal Penthouse Suite", location: "Mumbai, India",  checkIn: "Jan 28, 2025", checkOut: "Feb 01, 2025", checkInTime: "2:00 PM", checkOutTime: "11:00 AM", nights: 4, amount: 128000, status: "confirmed", image: "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=400&q=80" },
-  { id: "VN-2965", suite: "Oceanic Deluxe Suite",  location: "Goa, India",     checkIn: "Mar 10, 2025", checkOut: "Mar 14, 2025", checkInTime: "1:00 PM", checkOutTime: "10:00 AM", nights: 4, amount: 64000,  status: "pending",   image: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=400&q=80" },
+  { id: "VN-2841", suite: "Royal Penthouse Suite", location: "Mumbai, India", checkIn: "Jan 28, 2025", checkOut: "Feb 01, 2025", checkInTime: "2:00 PM", checkOutTime: "11:00 AM", nights: 4, amount: 128000, status: "confirmed", image: "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=400&q=80" },
+  { id: "VN-2965", suite: "Oceanic Deluxe Suite", location: "Goa, India", checkIn: "Mar 10, 2025", checkOut: "Mar 14, 2025", checkInTime: "1:00 PM", checkOutTime: "10:00 AM", nights: 4, amount: 64000, status: "pending", image: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=400&q=80" },
 ];
 const PAST_BOOKINGS: Booking[] = [
-  { id: "VN-2210", suite: "Heritage Garden Villa", location: "Jaipur, India",  checkIn: "Oct 05, 2024", checkOut: "Oct 09, 2024", checkInTime: "2:00 PM", checkOutTime: "11:00 AM", nights: 4, amount: 96000, status: "completed",  image: "https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=400&q=80" },
-  { id: "VN-2105", suite: "Sky Loft Suite",         location: "Delhi, India",   checkIn: "Aug 15, 2024", checkOut: "Aug 17, 2024", checkInTime: "3:00 PM", checkOutTime: "12:00 PM", nights: 2, amount: 42000, status: "completed",  image: "https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=400&q=80" },
-  { id: "VN-1998", suite: "Lakefront Pool Suite",   location: "Udaipur, India", checkIn: "Jun 20, 2024", checkOut: "Jun 23, 2024", checkInTime: "2:00 PM", checkOutTime: "11:00 AM", nights: 3, amount: 75000, status: "cancelled", image: "https://images.unsplash.com/photo-1590490360182-c33d57733427?w=400&q=80" },
+  { id: "VN-2210", suite: "Heritage Garden Villa", location: "Jaipur, India", checkIn: "Oct 05, 2024", checkOut: "Oct 09, 2024", checkInTime: "2:00 PM", checkOutTime: "11:00 AM", nights: 4, amount: 96000, status: "completed", image: "https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=400&q=80" },
+  { id: "VN-2105", suite: "Sky Loft Suite", location: "Delhi, India", checkIn: "Aug 15, 2024", checkOut: "Aug 17, 2024", checkInTime: "3:00 PM", checkOutTime: "12:00 PM", nights: 2, amount: 42000, status: "completed", image: "https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=400&q=80" },
+  { id: "VN-1998", suite: "Lakefront Pool Suite", location: "Udaipur, India", checkIn: "Jun 20, 2024", checkOut: "Jun 23, 2024", checkInTime: "2:00 PM", checkOutTime: "11:00 AM", nights: 3, amount: 75000, status: "cancelled", image: "https://images.unsplash.com/photo-1590490360182-c33d57733427?w=400&q=80" },
 ];
 
 const STATS = [
-  { label: "Total Bookings", value: "12",    icon: CalendarDays },
-  { label: "Nights Stayed",  value: "38",    icon: BedDouble },
-  { label: "Total Spent",    value: "₹5.2L", icon: CreditCard },
+  { label: "Total Bookings", value: "12", icon: CalendarDays },
+  { label: "Nights Stayed", value: "38", icon: BedDouble },
+  { label: "Total Spent", value: "₹5.2L", icon: CreditCard },
   { label: "Loyalty Points", value: "4,820", icon: Star },
 ];
 
 const QUICK_ACTIONS = [
-  { label: "New Booking",       icon: BedDouble,     desc: "Explore & reserve suites" },
-  { label: "Modify Booking",    icon: CalendarDays,  desc: "Change dates or room type" },
-  { label: "Contact Concierge", icon: Phone,         desc: "24/7 personal assistance" },
-  { label: "Raise a Request",   icon: MessageSquare, desc: "Report issues or requests" },
+  { label: "New Booking", icon: BedDouble, desc: "Explore & reserve suites" },
+  { label: "Modify Booking", icon: CalendarDays, desc: "Change dates or room type" },
+  { label: "Contact Concierge", icon: Phone, desc: "24/7 personal assistance" },
+  { label: "Raise a Request", icon: MessageSquare, desc: "Report issues or requests" },
 ];
 
 /* ─── Wallet Data ────────────────────────────────────── */
 
 const PAYMENT_METHODS: PaymentMethod[] = [
-  { id: "PM-01", type: "visa",       label: "HDFC Credit Card",  last4: "4291", isDefault: true  },
-  { id: "PM-02", type: "mastercard", label: "ICICI Debit Card",  last4: "7832", isDefault: false },
-  { id: "PM-03", type: "upi",        label: "adithya@oksbi",                    isDefault: false },
-  { id: "PM-04", type: "bank",       label: "ICICI Bank",        last4: "7832", isDefault: false },
+  { id: "PM-01", type: "visa", label: "HDFC Credit Card", last4: "4291", isDefault: true },
+  { id: "PM-02", type: "mastercard", label: "ICICI Debit Card", last4: "7832", isDefault: false },
+  { id: "PM-03", type: "upi", label: "adithya@oksbi", isDefault: false },
+  { id: "PM-04", type: "bank", label: "ICICI Bank", last4: "7832", isDefault: false },
 ];
 
 /* ─── Status Config ──────────────────────────────────── */
 const STATUS_CONFIG = {
   confirmed: { label: "Confirmed", color: "text-emerald-400", bg: "bg-emerald-400/10 border-emerald-400/25", icon: CheckCircle2 },
-  pending:   { label: "Pending",   color: "text-amber-400",   bg: "bg-amber-400/10 border-amber-400/25",     icon: Hourglass },
-  completed: { label: "Completed", color: "text-sky-400",     bg: "bg-sky-400/10 border-sky-400/25",         icon: CheckCircle2 },
-  cancelled: { label: "Cancelled", color: "text-rose-400",    bg: "bg-rose-400/10 border-rose-400/25",       icon: XCircle },
+  pending: { label: "Pending", color: "text-amber-400", bg: "bg-amber-400/10 border-amber-400/25", icon: Hourglass },
+  completed: { label: "Completed", color: "text-sky-400", bg: "bg-sky-400/10 border-sky-400/25", icon: CheckCircle2 },
+  cancelled: { label: "Cancelled", color: "text-rose-400", bg: "bg-rose-400/10 border-rose-400/25", icon: XCircle },
 };
 
 function fmt(n: number) {
@@ -230,11 +230,11 @@ const BOOKING_EXTRAS: Record<string, {
     paymentMethod: "HDFC Credit Card •••• 4291",
     paymentBreakdown: [{ label: "Suite (4 nights)", amount: 113000 }, { label: "Add-ons", amount: 15000 }, { label: "Taxes & Fees (GST 12%)", amount: 15360 }],
     timeline: [
-      { date: "Jan 10, 2025", event: "Booking confirmed",        done: true  },
-      { date: "Jan 15, 2025", event: "Advance payment received", done: true  },
-      { date: "Jan 27, 2025", event: "Check-in reminder sent",   done: true  },
-      { date: "Jan 28, 2025", event: "Check-in",                 done: false },
-      { date: "Feb 01, 2025", event: "Check-out",                done: false },
+      { date: "Jan 10, 2025", event: "Booking confirmed", done: true },
+      { date: "Jan 15, 2025", event: "Advance payment received", done: true },
+      { date: "Jan 27, 2025", event: "Check-in reminder sent", done: true },
+      { date: "Jan 28, 2025", event: "Check-in", done: false },
+      { date: "Feb 01, 2025", event: "Check-out", done: false },
     ],
     cancellationPolicy: "Free cancellation until Jan 21, 2025. 50% refund between Jan 21–25. No refund after Jan 25.",
     refundInfo: "Refunds are processed within 5–7 business days to the original payment method.",
@@ -244,10 +244,10 @@ const BOOKING_EXTRAS: Record<string, {
     paymentMethod: "UPI – adithya@oksbi",
     paymentBreakdown: [{ label: "Suite (4 nights)", amount: 52000 }, { label: "Add-ons", amount: 12000 }],
     timeline: [
-      { date: "Feb 20, 2025", event: "Booking initiated", done: true  },
-      { date: "Feb 20, 2025", event: "Payment pending",   done: true  },
-      { date: "Mar 10, 2025", event: "Check-in",          done: false },
-      { date: "Mar 14, 2025", event: "Check-out",         done: false },
+      { date: "Feb 20, 2025", event: "Booking initiated", done: true },
+      { date: "Feb 20, 2025", event: "Payment pending", done: true },
+      { date: "Mar 10, 2025", event: "Check-in", done: false },
+      { date: "Mar 14, 2025", event: "Check-out", done: false },
     ],
     cancellationPolicy: "Free cancellation until Mar 03, 2025. 30% refund after that. No refund within 48 hrs.",
     refundInfo: "Pending bookings may be cancelled without charge before payment is fully confirmed.",
@@ -257,10 +257,10 @@ const BOOKING_EXTRAS: Record<string, {
     paymentMethod: "ICICI Debit Card •••• 7832",
     paymentBreakdown: [{ label: "Suite (4 nights)", amount: 86000 }, { label: "Add-ons", amount: 10000 }],
     timeline: [
-      { date: "Sep 25, 2024", event: "Booking confirmed",      done: true },
-      { date: "Oct 04, 2024", event: "Full payment received",  done: true },
-      { date: "Oct 05, 2024", event: "Check-in",               done: true },
-      { date: "Oct 09, 2024", event: "Check-out",              done: true },
+      { date: "Sep 25, 2024", event: "Booking confirmed", done: true },
+      { date: "Oct 04, 2024", event: "Full payment received", done: true },
+      { date: "Oct 05, 2024", event: "Check-in", done: true },
+      { date: "Oct 09, 2024", event: "Check-out", done: true },
     ],
     cancellationPolicy: "Booking completed – cancellation not applicable.",
     refundInfo: "This booking has been completed. No refund applicable.",
@@ -270,10 +270,10 @@ const BOOKING_EXTRAS: Record<string, {
     paymentMethod: "Paytm Wallet",
     paymentBreakdown: [{ label: "Suite (2 nights)", amount: 42000 }],
     timeline: [
-      { date: "Aug 10, 2024", event: "Booking confirmed",     done: true },
+      { date: "Aug 10, 2024", event: "Booking confirmed", done: true },
       { date: "Aug 14, 2024", event: "Full payment received", done: true },
-      { date: "Aug 15, 2024", event: "Check-in",              done: true },
-      { date: "Aug 17, 2024", event: "Check-out",             done: true },
+      { date: "Aug 15, 2024", event: "Check-in", done: true },
+      { date: "Aug 17, 2024", event: "Check-out", done: true },
     ],
     cancellationPolicy: "Booking completed – cancellation not applicable.",
     refundInfo: "This booking has been completed. No refund applicable.",
@@ -283,10 +283,10 @@ const BOOKING_EXTRAS: Record<string, {
     paymentMethod: "HDFC Credit Card •••• 4291",
     paymentBreakdown: [{ label: "Suite (3 nights)", amount: 72000 }, { label: "Add-ons", amount: 3000 }],
     timeline: [
-      { date: "Jun 10, 2024", event: "Booking confirmed",           done: true },
-      { date: "Jun 12, 2024", event: "Advance payment received",    done: true },
-      { date: "Jun 18, 2024", event: "Booking cancelled by guest",  done: true },
-      { date: "Jun 22, 2024", event: "Partial refund processed",    done: true },
+      { date: "Jun 10, 2024", event: "Booking confirmed", done: true },
+      { date: "Jun 12, 2024", event: "Advance payment received", done: true },
+      { date: "Jun 18, 2024", event: "Booking cancelled by guest", done: true },
+      { date: "Jun 22, 2024", event: "Partial refund processed", done: true },
     ],
     cancellationPolicy: "Cancelled 2 days before check-in. 25% refund applied per policy.",
     refundInfo: "₹18,750 refunded to HDFC Credit Card •••• 4291 on Jun 22, 2024.",
@@ -706,27 +706,27 @@ function DashboardView({ onNavigate }: { onNavigate: (id: string) => void }) {
           _raw: b,
         }));
       setDashboardBookings(mapped);
-    }).catch(() => {});
+    }).catch(() => { });
   }, []);
 
   const statsTranslated = [
-    { label: t("app.userDashboard.totalBookings", "Total Bookings"), value: "12",    icon: CalendarDays },
-    { label: t("app.userDashboard.nightsStayed", "Nights Stayed"),  value: "38",    icon: BedDouble },
-    { label: t("app.userDashboard.totalSpent", "Total Spent"),    value: "₹5.2L", icon: CreditCard },
+    { label: t("app.userDashboard.totalBookings", "Total Bookings"), value: "12", icon: CalendarDays },
+    { label: t("app.userDashboard.nightsStayed", "Nights Stayed"), value: "38", icon: BedDouble },
+    { label: t("app.userDashboard.totalSpent", "Total Spent"), value: "₹5.2L", icon: CreditCard },
     { label: t("app.userDashboard.loyaltyPoints", "Loyalty Points"), value: "4,820", icon: Star },
   ];
 
   const conciergeCards = [
-    { title: t("app.userDashboard.conciergeTitle", "Concierge"),     desc: t("app.userDashboard.conciergeDesc", "24/7 dedicated personal assistance for every need"), icon: Phone,        accent: "from-sky-500/10" },
-    { title: t("app.userDashboard.fineDiningTitle", "Fine Dining"),   desc: t("app.userDashboard.fineDiningDesc", "Reserve exclusive in-suite and restaurant dining"),  icon: Star,         accent: "from-amber-500/10" },
-    { title: t("app.userDashboard.spaWellnessTitle", "Spa & Wellness"),desc: t("app.userDashboard.spaWellnessDesc", "Book rejuvenating spa treatments and wellness"),     icon: ArrowUpRight, accent: "from-emerald-500/10" },
+    { title: t("app.userDashboard.conciergeTitle", "Concierge"), desc: t("app.userDashboard.conciergeDesc", "24/7 dedicated personal assistance for every need"), icon: Phone, accent: "from-sky-500/10" },
+    { title: t("app.userDashboard.fineDiningTitle", "Fine Dining"), desc: t("app.userDashboard.fineDiningDesc", "Reserve exclusive in-suite and restaurant dining"), icon: Star, accent: "from-amber-500/10" },
+    { title: t("app.userDashboard.spaWellnessTitle", "Spa & Wellness"), desc: t("app.userDashboard.spaWellnessDesc", "Book rejuvenating spa treatments and wellness"), icon: ArrowUpRight, accent: "from-emerald-500/10" },
   ];
 
   const quickActionsTranslated = [
-    { label: t("app.userDashboard.newBooking", "New Booking"),       icon: BedDouble,     desc: t("app.userDashboard.newBookingDesc", "Explore & reserve suites") },
-    { label: t("app.userDashboard.modifyBooking", "Modify Booking"),    icon: CalendarDays,  desc: t("app.userDashboard.modifyBookingDesc", "Change dates or room type") },
-    { label: t("app.userDashboard.contactConcierge", "Contact Concierge"), icon: Phone,         desc: t("app.userDashboard.contactConciergeDesc", "24/7 personal assistance") },
-    { label: t("app.userDashboard.raiseRequest", "Raise a Request"),   icon: MessageSquare, desc: t("app.userDashboard.raiseRequestDesc", "Report issues or requests") },
+    { label: t("app.userDashboard.newBooking", "New Booking"), icon: BedDouble, desc: t("app.userDashboard.newBookingDesc", "Explore & reserve suites") },
+    { label: t("app.userDashboard.modifyBooking", "Modify Booking"), icon: CalendarDays, desc: t("app.userDashboard.modifyBookingDesc", "Change dates or room type") },
+    { label: t("app.userDashboard.contactConcierge", "Contact Concierge"), icon: Phone, desc: t("app.userDashboard.contactConciergeDesc", "24/7 personal assistance") },
+    { label: t("app.userDashboard.raiseRequest", "Raise a Request"), icon: MessageSquare, desc: t("app.userDashboard.raiseRequestDesc", "Report issues or requests") },
   ];
 
   return (
@@ -942,7 +942,7 @@ function BookingListView({ bookings, title, fetchFromApi, statusFilter }: { book
           }));
         setApiBookings(mapped);
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoadingApi(false));
   };
 
@@ -997,9 +997,8 @@ function BookingListView({ bookings, title, fetchFromApi, statusFilter }: { book
           <div className="flex gap-1 glass rounded-xl p-1">
             {(["all", "confirmed", "pending", "completed", "cancelled"] as const).map((s) => (
               <button key={s} onClick={() => setStatusFilterLocal(s)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-colors ${
-                  statusFilterLocal === s ? "bg-gold/20 text-gold" : "text-muted-foreground hover:text-foreground"
-                }`}>
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-colors ${statusFilterLocal === s ? "bg-gold/20 text-gold" : "text-muted-foreground hover:text-foreground"
+                  }`}>
                 {s === "all" ? t("app.userDashboard.status_all", "All") : t(`app.userDashboard.status_${s}`, s.charAt(0).toUpperCase() + s.slice(1))}
               </button>
             ))}
@@ -1023,14 +1022,14 @@ function BookingListView({ bookings, title, fetchFromApi, statusFilter }: { book
 
 function WalletView() {
   const { t } = useTranslation();
-  const [searchTerm, setSearchTerm]   = useState("");
-  const [filterType, setFilterType]   = useState<"all" | "credit" | "debit">("all");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterType, setFilterType] = useState<"all" | "credit" | "debit">("all");
   const [txnFromDate, setTxnFromDate] = useState("");
-  const [txnToDate, setTxnToDate]     = useState("");
+  const [txnToDate, setTxnToDate] = useState("");
   const [selectedTxn, setSelectedTxn] = useState<Transaction | null>(null);
-  const [methods, setMethods]         = useState<PaymentMethod[]>(PAYMENT_METHODS);
-  const [payments, setPayments]       = useState<any[]>([]);
-  const [loading, setLoading]         = useState(true);
+  const [methods, setMethods] = useState<PaymentMethod[]>(PAYMENT_METHODS);
+  const [payments, setPayments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     paymentsApi.getMine()
@@ -1044,7 +1043,7 @@ function WalletView() {
     const amount = Number(p.amount || 0);
     return {
       id: `TXN-${p.id}`,
-      desc: isRefund 
+      desc: isRefund
         ? t("app.userDashboard.txnDescRefund", "Refund – Cancelled Booking {{id}}", { id: p.bookingId })
         : t("app.userDashboard.txnDescBookingPayment", "Booking Payment – {{suite}} {{id}}", { suite: p.booking?.suiteName || `Suite #${p.booking?.suiteId ?? ''}`, id: p.bookingId }),
       amount: isRefund ? amount : -amount,
@@ -1063,17 +1062,17 @@ function WalletView() {
 
   const filtered = transactions.filter((tVal) => {
     const matchSearch = tVal.desc.toLowerCase().includes(searchTerm.toLowerCase()) || tVal.id.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchType   = filterType === "all" || tVal.type === filterType;
+    const matchType = filterType === "all" || tVal.type === filterType;
     const d = parseTxnDate(tVal.date);
     const matchFrom = !txnFromDate || d >= new Date(txnFromDate);
-    const matchTo   = !txnToDate   || d <= new Date(txnToDate + "T23:59:59");
+    const matchTo = !txnToDate || d <= new Date(txnToDate + "T23:59:59");
     return matchSearch && matchType && matchFrom && matchTo;
   });
 
   const hasDateFilter = txnFromDate || txnToDate;
 
   const totalCredit = transactions.filter((tVal) => tVal.type === "credit").reduce((s, tVal) => s + tVal.amount, 0);
-  const totalDebit  = transactions.filter((tVal) => tVal.type === "debit").reduce((s, tVal) => s + Math.abs(tVal.amount), 0);
+  const totalDebit = transactions.filter((tVal) => tVal.type === "debit").reduce((s, tVal) => s + Math.abs(tVal.amount), 0);
 
   function setDefault(id: string) {
     setMethods((prev) => prev.map((m) => ({ ...m, isDefault: m.id === id })));
@@ -1083,11 +1082,11 @@ function WalletView() {
   }
 
   const walletActions = [
-    { label: t("app.userDashboard.addMoney", "Add Money"),        icon: Plus,       color: "emerald" },
-    { label: t("app.userDashboard.transactions", "Transactions"),     icon: Receipt,    color: "sky"     },
-    { label: t("app.userDashboard.importStatement", "Import Statement"), icon: Download,   color: "violet"  },
-    { label: t("app.userDashboard.paymentMethods", "Payment Methods"),  icon: CreditCard, color: "amber"   },
-    { label: t("app.userDashboard.refunds", "Refunds"),          icon: RefreshCw,  color: "rose"    },
+    { label: t("app.userDashboard.addMoney", "Add Money"), icon: Plus, color: "emerald" },
+    { label: t("app.userDashboard.transactions", "Transactions"), icon: Receipt, color: "sky" },
+    { label: t("app.userDashboard.importStatement", "Import Statement"), icon: Download, color: "violet" },
+    { label: t("app.userDashboard.paymentMethods", "Payment Methods"), icon: CreditCard, color: "amber" },
+    { label: t("app.userDashboard.refunds", "Refunds"), icon: RefreshCw, color: "rose" },
   ];
 
   return (
@@ -1394,7 +1393,7 @@ const AMENITY_ICON_MAP: Record<string, React.ElementType> = {
 };
 
 /* ─── Package Detail Modal ───────────────────────────── */
-function PackageDetailModal({ pkg, onClose }: { pkg: CelebrationPackage; onClose: () => void }) {
+function PackageDetailModal({ pkg, onClose, onBook }: { pkg: CelebrationPackage; onClose: () => void; onBook: (pkg: CelebrationPackage) => void }) {
   const { t } = useTranslation();
   return (
     <AnimatePresence>
@@ -1442,7 +1441,7 @@ function PackageDetailModal({ pkg, onClose }: { pkg: CelebrationPackage; onClose
               </div>
             </div>
             <div className="flex gap-3 pt-2">
-              <button className="flex-1 gold-btn rounded-xl py-3 text-sm font-semibold">{t("app.userDashboard.bookThisPackage", "Book This Package")}</button>
+              <button onClick={() => { onBook(pkg); onClose(); }} className="flex-1 gold-btn rounded-xl py-3 text-sm font-semibold">{t("app.userDashboard.bookThisPackage", "Book This Package")}</button>
               <button onClick={onClose} className="flex-1 glass rounded-xl py-3 text-sm text-muted-foreground border border-white/10 hover:text-foreground transition-colors">{t("app.userDashboard.close", "Close")}</button>
             </div>
           </div>
@@ -1455,17 +1454,18 @@ function PackageDetailModal({ pkg, onClose }: { pkg: CelebrationPackage; onClose
 /* ─── Celebration Packages View ──────────────────────── */
 function CelebrationPackagesView() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [selectedOccasion, setSelectedOccasion] = useState("All");
-  const [priceRange, setPriceRange]             = useState(40000);
-  const [sortBy, setSortBy]                     = useState("Popularity");
-  const [wishlist, setWishlist]                 = useState<Set<string>>(new Set());
-  const [compareList, setCompareList]           = useState<string[]>([]);
-  const [detailPkg, setDetailPkg]               = useState<CelebrationPackage | null>(null);
-  const [page, setPage]                         = useState(1);
+  const [priceRange, setPriceRange] = useState(40000);
+  const [sortBy, setSortBy] = useState("Popularity");
+  const [wishlist, setWishlist] = useState<Set<string>>(new Set());
+  const [compareList, setCompareList] = useState<string[]>([]);
+  const [detailPkg, setDetailPkg] = useState<CelebrationPackage | null>(null);
+  const [page, setPage] = useState(1);
   const PER_PAGE = 6;
 
-  const [packages, setPackages]               = useState<CelebrationPackage[]>([]);
-  const [loading, setLoading]                 = useState(true);
+  const [packages, setPackages] = useState<CelebrationPackage[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     celebrationPackagesApi.getPublic()
@@ -1529,11 +1529,10 @@ function CelebrationPackagesView() {
               <div className="space-y-1">
                 {ALL_OCCASIONS.map((o: string) => (
                   <button key={o} onClick={() => { setSelectedOccasion(o); setPage(1); }}
-                    className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-all ${
-                      selectedOccasion === o
+                    className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-all ${selectedOccasion === o
                         ? "bg-gold/15 border border-gold/30 text-gold font-medium"
                         : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
-                    }`}>
+                      }`}>
                     {t("app.userDashboard.occasion_" + o.toLowerCase().replace(/\s+/g, "_"), o)}
                   </button>
                 ))}
@@ -1559,11 +1558,10 @@ function CelebrationPackagesView() {
               <div className="space-y-1">
                 {SORT_OPTIONS.map((s) => (
                   <button key={s} onClick={() => setSortBy(s)}
-                    className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-all ${
-                      sortBy === s
+                    className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-all ${sortBy === s
                         ? "bg-gold/15 border border-gold/30 text-gold font-medium"
                         : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
-                    }`}>
+                      }`}>
                     {t("app.userDashboard.sort_" + s.toLowerCase().replace(/:/g, "").replace(/\s+/g, "_"), s)}
                   </button>
                 ))}
@@ -1605,7 +1603,7 @@ function CelebrationPackagesView() {
             <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
               {paginated.map((pkg, i) => {
                 const isWishlisted = wishlist.has(pkg.id);
-                const isCompared   = compareList.includes(pkg.id);
+                const isCompared = compareList.includes(pkg.id);
                 return (
                   <motion.div key={pkg.id}
                     initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
@@ -1661,18 +1659,23 @@ function CelebrationPackagesView() {
                         <div className="flex items-center justify-between mb-3">
                           <p className="font-display text-2xl text-gold">₹{pkg.price.toLocaleString()}</p>
                           <button onClick={() => toggleCompare(pkg.id)}
-                            className={`text-[10px] px-2 py-1 rounded-lg border transition-colors ${
-                              isCompared
+                            className={`text-[10px] px-2 py-1 rounded-lg border transition-colors ${isCompared
                                 ? "bg-gold/20 border-gold/40 text-gold"
                                 : "border-white/10 text-muted-foreground hover:border-gold/30 hover:text-gold"
-                            }`}>
+                              }`}>
                             {isCompared ? t("app.userDashboard.compared", "✓ Compare") : t("app.userDashboard.compare", "+ Compare")}
                           </button>
                         </div>
-                        <button onClick={() => setDetailPkg(pkg)}
-                          className="w-full gold-btn rounded-xl py-2.5 text-sm font-semibold flex items-center justify-center gap-2">
-                          <Eye className="h-4 w-4" /> {t("app.userDashboard.viewDetails", "View Details")}
-                        </button>
+                        <div className="flex gap-2">
+                          <button onClick={() => setDetailPkg(pkg)}
+                            className="flex-1 glass rounded-xl py-2.5 text-xs font-semibold flex items-center justify-center gap-1.5 border border-white/10 hover:bg-white/5 transition">
+                            <Eye className="h-3.5 w-3.5" /> {t("app.userDashboard.viewDetails", "Details")}
+                          </button>
+                          <button onClick={() => navigate("/user/suite-booking", { state: { package: pkg } })}
+                            className="flex-1 gold-btn rounded-xl py-2.5 text-xs font-semibold flex items-center justify-center gap-1.5 transition">
+                            <Sparkles className="h-3.5 w-3.5" /> {t("app.userDashboard.bookNow", "Book Now")}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </motion.div>
@@ -1690,9 +1693,8 @@ function CelebrationPackagesView() {
               </button>
               {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
                 <button key={n} onClick={() => setPage(n)}
-                  className={`h-8 w-8 rounded-xl text-xs font-medium transition-all ${
-                    n === page ? "bg-gold/20 border border-gold/35 text-gold" : "glass text-muted-foreground hover:text-foreground"
-                  }`}>{n}</button>
+                  className={`h-8 w-8 rounded-xl text-xs font-medium transition-all ${n === page ? "bg-gold/20 border border-gold/35 text-gold" : "glass text-muted-foreground hover:text-foreground"
+                    }`}>{n}</button>
               ))}
               <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}
                 className="h-8 w-8 rounded-xl glass flex items-center justify-center text-muted-foreground hover:text-gold disabled:opacity-30 transition-colors">
@@ -1703,7 +1705,13 @@ function CelebrationPackagesView() {
         </div>
       </div>
 
-      {detailPkg && <PackageDetailModal pkg={detailPkg} onClose={() => setDetailPkg(null)} />}
+      {detailPkg && (
+        <PackageDetailModal
+          pkg={detailPkg}
+          onClose={() => setDetailPkg(null)}
+          onBook={(pkg) => navigate("/user/suite-booking", { state: { package: pkg } })}
+        />
+      )}
     </div>
   );
 }
@@ -1780,9 +1788,8 @@ function OffersView() {
       <div className="flex gap-1 glass rounded-xl p-1 w-fit">
         {(["offers", "referrals", "coupons"] as const).map((tVal) => (
           <button key={tVal} onClick={() => setTab(tVal)}
-            className={`px-4 py-2 rounded-lg text-xs font-medium capitalize transition-colors ${
-              tab === tVal ? "bg-gold/20 text-gold" : "text-muted-foreground hover:text-foreground"
-            }`}>
+            className={`px-4 py-2 rounded-lg text-xs font-medium capitalize transition-colors ${tab === tVal ? "bg-gold/20 text-gold" : "text-muted-foreground hover:text-foreground"
+              }`}>
             {tVal === "offers" ? t("app.userDashboard.tabOffers", "Offers") : tVal === "referrals" ? t("app.userDashboard.tabReferrals", "Referrals") : t("app.userDashboard.tabCoupons", "Coupons")}
           </button>
         ))}
@@ -1841,9 +1848,9 @@ function OffersView() {
           {/* Stats */}
           <div className="grid grid-cols-3 gap-4">
             {[
-              { label: t("app.userDashboard.friendsReferred", "Friends Referred"), value: friendsCount,      icon: Users },
-              { label: t("app.userDashboard.successfulBookings", "Successful Bookings"), value: bookingsCount,   icon: CheckCircle2 },
-              { label: t("app.userDashboard.rewardsEarned", "Rewards Earned"), value: rewardsEarned,   icon: Star },
+              { label: t("app.userDashboard.friendsReferred", "Friends Referred"), value: friendsCount, icon: Users },
+              { label: t("app.userDashboard.successfulBookings", "Successful Bookings"), value: bookingsCount, icon: CheckCircle2 },
+              { label: t("app.userDashboard.rewardsEarned", "Rewards Earned"), value: rewardsEarned, icon: Star },
             ].map((s) => {
               const Icon = s.icon;
               return (
@@ -1980,9 +1987,9 @@ function ProfileView() {
     } else {
       setLoading(true);
       usersApi.me()
-        .then((u: any) => setForm({ 
-          fullName: u.fullName || '', 
-          email: u.email || '', 
+        .then((u: any) => setForm({
+          fullName: u.fullName || '',
+          email: u.email || '',
           phone: u.phone || '',
           dateOfBirth: u.dateOfBirth || ''
         }))
@@ -2180,17 +2187,17 @@ export default function UserDashboardPage() {
 
   function renderContent() {
     switch (activeNav) {
-      case "dashboard":   return <DashboardView onNavigate={setActiveNav} />;
-      case "suites":      return <SuitesView />;
+      case "dashboard": return <DashboardView onNavigate={setActiveNav} />;
+      case "suites": return <SuitesView />;
       case "my-bookings": return <BookingListView bookings={[]} title={t("app.userDashboard.myBookings", "My Bookings")} fetchFromApi />;
-      case "upcoming":    return <BookingListView bookings={[]} title={t("app.userDashboard.upcomingBookings", "Upcoming Bookings")} fetchFromApi statusFilter="upcoming" />;
-      case "past":        return <BookingListView bookings={[]} title={t("app.userDashboard.pastBookings", "Past Bookings")} fetchFromApi statusFilter="past" />;
-      case "wallet":      return <WalletView />;
-      case "packages":    return <CelebrationPackagesView />;
-      case "offers":      return <OffersView />;
-      case "profile":     return <ProfileView />;
-      case "help":        return <HelpView />;
-      default:            return <DashboardView onNavigate={setActiveNav} />;
+      case "upcoming": return <BookingListView bookings={[]} title={t("app.userDashboard.upcomingBookings", "Upcoming Bookings")} fetchFromApi statusFilter="upcoming" />;
+      case "past": return <BookingListView bookings={[]} title={t("app.userDashboard.pastBookings", "Past Bookings")} fetchFromApi statusFilter="past" />;
+      case "wallet": return <WalletView />;
+      case "packages": return <CelebrationPackagesView />;
+      case "offers": return <OffersView />;
+      case "profile": return <ProfileView />;
+      case "help": return <HelpView />;
+      default: return <DashboardView onNavigate={setActiveNav} />;
     }
   }
 
@@ -2304,17 +2311,17 @@ export default function UserDashboardPage() {
               const active = activeNav === id;
               const translatedLabel =
                 id === "dashboard" ? t("app.userDashboard.dashboard", "Dashboard") :
-                id === "suites" ? t("app.userDashboard.browseSuites", "Browse Suites") :
-                id === "my-bookings" ? t("app.userDashboard.myBookings", "My Bookings") :
-                id === "upcoming" ? t("app.userDashboard.upcomingBookings", "Upcoming Bookings") :
-                id === "past" ? t("app.userDashboard.pastBookings", "Past Bookings") :
-                id === "wallet" ? t("app.userDashboard.walletPayments", "Wallet & Payments") :
-                id === "packages" ? t("app.userDashboard.celebrationPackages", "Celebration Packages") :
-                id === "offers" ? t("app.userDashboard.specialOffersReferrals", "Special Offers & Referrals") :
-                id === "profile" ? t("app.userDashboard.profileSettings", "Profile Settings") :
-                id === "help" ? t("app.userDashboard.helpSupport", "Help & Support") :
-                id === "write-review" ? t("app.userDashboard.writeReview", "Write a Review") :
-                label;
+                  id === "suites" ? t("app.userDashboard.browseSuites", "Browse Suites") :
+                    id === "my-bookings" ? t("app.userDashboard.myBookings", "My Bookings") :
+                      id === "upcoming" ? t("app.userDashboard.upcomingBookings", "Upcoming Bookings") :
+                        id === "past" ? t("app.userDashboard.pastBookings", "Past Bookings") :
+                          id === "wallet" ? t("app.userDashboard.walletPayments", "Wallet & Payments") :
+                            id === "packages" ? t("app.userDashboard.celebrationPackages", "Celebration Packages") :
+                              id === "offers" ? t("app.userDashboard.specialOffersReferrals", "Special Offers & Referrals") :
+                                id === "profile" ? t("app.userDashboard.profileSettings", "Profile Settings") :
+                                  id === "help" ? t("app.userDashboard.helpSupport", "Help & Support") :
+                                    id === "write-review" ? t("app.userDashboard.writeReview", "Write a Review") :
+                                      label;
 
               return (
                 <button key={id}
