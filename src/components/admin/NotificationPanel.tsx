@@ -12,6 +12,7 @@ export interface Notification {
   message: string;
   time: string;       // ISO string — replace with Date from API
   read: boolean;
+  link?: string;
 }
 
 // ─── TODO: Replace with real API call ─────────────────────────────────────────

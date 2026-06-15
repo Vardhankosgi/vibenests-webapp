@@ -4,10 +4,10 @@ import {
   CalendarDays, ChevronLeft, ChevronRight, Clock, CreditCard,
   Gift, MessageSquare, Star, Sparkles, Users, User, Plus, Minus,
   LayoutDashboard, BedDouble, History, Wallet, Tag, UserCircle,
-  HelpCircle, LogOut, Package, Bell, ChevronDown,
+  HelpCircle, LogOut, Package, Bell, ChevronDown, Award,
 } from "lucide-react";
 import { useSuitesContext, type Suite } from "@/components/admin/SuitesContext";
-import { addonsApi, bookingsApi, paymentsApi, couponsApi } from "@/lib/api";
+import { addonsApi, bookingsApi, paymentsApi, couponsApi, membershipsApi } from "@/lib/api";
 import { LanguageSelector } from "@/components/shared/LanguageSelector";
 import { useTranslation } from "react-i18next";
 
@@ -34,7 +34,7 @@ const NAV_ITEMS = [
   { id: "upcoming", label: "Upcoming Bookings", icon: Clock, path: "/user/dashboard" },
   { id: "past", label: "Past Bookings", icon: History, path: "/user/dashboard" },
   { id: "wallet", label: "Payments", icon: Wallet, path: "/user/dashboard" },
-  { id: "packages", label: "Celebration Packages", icon: Package, path: "/user/dashboard" },
+  { id: "memberships", label: "Celebration Packages", icon: Award, path: "/user/dashboard" },
   { id: "offers", label: "Special Offers", icon: Tag, path: "/user/dashboard" },
   { id: "profile", label: "Profile Settings", icon: UserCircle, path: "/user/dashboard" },
   { id: "help", label: "Help & Support", icon: HelpCircle, path: "/user/dashboard" },
@@ -139,17 +139,21 @@ export default function SuiteBookingPage() {
     return "other";
   };
 
-  const [step, setStep] = useState(passedPackage ? 1 : 0);
+  const [step, setStep] = useState(passedPackage ? 4 : 0);
   const [selectedOccasion, setSelectedOccasion] = useState(
-    passedPackage ? mapOccasionToId(passedPackage.occasion) : ""
+    passedPackage ? `package:${passedPackage.id}` : ""
   );
-  const [bookingDate, setBookingDate] = useState("");
-  const [startTime, setStartTime] = useState("");
+  const [bookingDate, setBookingDate] = useState(
+    passedPackage ? new Date().toISOString().split('T')[0] : ""
+  );
+  const [startTime, setStartTime] = useState(
+    passedPackage ? "09:00 AM" : ""
+  );
   const [selectedSuite, setSelectedSuite] = useState(passedPackage ? "0" : "");
   const [addonQty, setAddonQty] = useState<Record<string, number>>({});
   const [persons, setPersons] = useState(1);
   const [specialRequests, setSpecialRequests] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<"pay-now" | "pay-venue">("pay-now");
+  const [paymentMethod, setPaymentMethod] = useState<"pay-now" | "pay-venue" | "package-credit">("pay-now");
   const [showValidation, setShowValidation] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
   const [bookingId, setBookingId] = useState<number | null>(null);
@@ -161,6 +165,8 @@ export default function SuiteBookingPage() {
   const [couponError, setCouponError] = useState("");
   const [couponApplying, setCouponApplying] = useState(false);
   const [liveCoupons, setLiveCoupons] = useState<any[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [myMembership, setMyMembership] = useState<any>(null);
 
   // Fetch real coupons from the public /coupons/active endpoint
   useEffect(() => {
@@ -169,8 +175,19 @@ export default function SuiteBookingPage() {
     }).catch(() => setLiveCoupons([]));
   }, []);
 
-  async function applyCoupon() {
-    const code = couponInput.trim().toUpperCase();
+  // Fetch active membership
+  useEffect(() => {
+    membershipsApi.getMyActive().then((membership) => {
+      if (membership && membership.status === 'active') {
+        setMyMembership(membership);
+      } else {
+        setMyMembership(null);
+      }
+    }).catch(() => setMyMembership(null));
+  }, []);
+
+  async function applyCoupon(codeToUse?: string) {
+    const code = (typeof codeToUse === "string" ? codeToUse : couponInput).trim().toUpperCase();
     if (!code) return;
     setCouponApplying(true);
     setCouponError("");
@@ -198,6 +215,7 @@ export default function SuiteBookingPage() {
           const isPercent = match.discountType === 'percentage';
           const pct = isPercent ? Number(match.discountValue ?? 0) : 0;
           const fixedAmt = !isPercent ? Number(match.discountValue ?? 0) : 0;
+          setCouponInput(code);
           setCouponCode(code);
           setCouponDiscount(pct || 0);
           // For fixed discounts store a negative to subtract directly
@@ -324,6 +342,12 @@ export default function SuiteBookingPage() {
     }
   }, [suites, location.state]);
   const subtotal = basePrice + addonsTotal;
+
+  const filteredCoupons = useMemo(() => {
+    return liveCoupons.filter((c: any) =>
+      (c.code ?? "").toUpperCase().includes(couponInput.toUpperCase())
+    );
+  }, [liveCoupons, couponInput]);
   // Requested: remove serviceFee & taxes from UI. Total is suite + persons + add-ons - discount.
   // couponDiscount > 0 means percentage off; couponDiscount < 0 means fixed ₹ amount off
   const couponSavings = couponDiscount > 0
@@ -331,7 +355,21 @@ export default function SuiteBookingPage() {
     : couponDiscount < 0
       ? Math.min(Math.abs(couponDiscount), subtotal)
       : 0;
-  const grandTotal = subtotal - couponSavings;
+
+  const membershipDiscount = 0;
+  const membershipSavings = 0;
+
+  const isEligibleForPackageCredit = useMemo(() => {
+    if (!myMembership || myMembership.status !== 'active') return false;
+    const remaining = Number(myMembership.maxFreeBookings ?? 0) - Number(myMembership.bookingsUsed ?? 0);
+    if (remaining <= 0) return false;
+    if (!suite || suite.id === "0") return false;
+    const suitesList = myMembership.eligibleSuites || [];
+    return suitesList.includes(String(suite.id));
+  }, [myMembership, suite]);
+
+  const isPackageCreditSelected = paymentMethod === "package-credit";
+  const grandTotal = isPackageCreditSelected ? 0 : Math.max(0, subtotal - couponSavings - membershipSavings);
 
   // Requested: dynamic payable amount (full vs 20% advance).
   const advanceAmount = Math.round(grandTotal * 0.2);
@@ -353,7 +391,7 @@ export default function SuiteBookingPage() {
   }
   function handleBack() {
     setShowValidation(false);
-    if (passedPackage && step === 1) {
+    if (passedPackage) {
       navigate("/user/dashboard");
       return;
     }
@@ -420,12 +458,28 @@ export default function SuiteBookingPage() {
             <div className="h-16 w-16 rounded-full bg-gold/15 border border-gold/30 flex items-center justify-center mx-auto">
               <Sparkles className="h-7 w-7 text-gold" />
             </div>
-            <h2 className="font-display text-3xl text-foreground">Booking Confirmed!</h2>
-            <p className="text-sm text-muted-foreground leading-relaxed">Your luxury suite has been reserved. A confirmation will be sent to you shortly.</p>
+            <h2 className="font-display text-3xl text-foreground">
+              {passedPackage ? "Package Activated!" : "Booking Confirmed!"}
+            </h2>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              {passedPackage
+                ? `Your VibeNests ${passedPackage.name} Package has been successfully activated. You can now use your booking credits to reserve suites.`
+                : "Your luxury suite has been reserved. A confirmation will be sent to you shortly."}
+            </p>
             <div className="glass rounded-2xl p-4 text-left space-y-2 border border-white/10">
-              <p className="text-xs text-muted-foreground">{OCCASIONS.find(o => o.id === selectedOccasion)?.label}</p>
-              <p className="text-sm text-foreground font-medium">{suite?.name}</p>
-              <p className="text-xs text-muted-foreground">{bookingDate} · {startTime}{startTime ? ` – ${getEndTime(startTime, slotDuration)}` : ""}</p>
+              {passedPackage ? (
+                <>
+                  <p className="text-xs text-muted-foreground">VibeNests Celebration Package</p>
+                  <p className="text-sm text-foreground font-medium">{passedPackage.name} Package</p>
+                  <p className="text-xs text-muted-foreground">Validity: {passedPackage.validityDays} Days · {passedPackage.maxFreeBookings ?? 10} Free Bookings</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-xs text-muted-foreground">{OCCASIONS.find(o => o.id === selectedOccasion)?.label}</p>
+                  <p className="text-sm text-foreground font-medium">{suite?.name}</p>
+                  <p className="text-xs text-muted-foreground">{bookingDate} · {startTime}{startTime ? ` – ${getEndTime(startTime, slotDuration)}` : ""}</p>
+                </>
+              )}
               <p className="text-gold font-semibold">₹{grandTotal.toLocaleString()}</p>
             </div>
             <button onClick={() => navigate("/user/dashboard")} className="gold-btn w-full rounded-2xl py-3 text-sm font-semibold">
@@ -521,9 +575,11 @@ export default function SuiteBookingPage() {
             <div className="glass-card rounded-2xl border border-gold/15 px-6 py-5">
               <p className="text-xs uppercase tracking-[0.35em] text-muted-foreground">{t("app.userDashboard.premiumExperience", "Premium experience")}</p>
               <h2 className="font-display text-2xl lg:text-3xl text-foreground font-semibold mt-1">
-                {suite ? suite.name : t("app.userDashboard.bookLuxurySuiteSteps", "Book a luxury suite in six effortless steps")}
+                {passedPackage ? `${passedPackage.name} Package Purchase` : (suite ? suite.name : t("app.userDashboard.bookLuxurySuiteSteps", "Book a luxury suite in six effortless steps"))}
               </h2>
-              {suite && (
+              {passedPackage ? (
+                <p className="text-xs text-muted-foreground mt-1">Activate your VibeNests {passedPackage.name} Package. Enjoy prepaid free suite bookings and premium benefits.</p>
+              ) : suite && (
                 <p className="text-xs text-muted-foreground mt-1">{t("app.userDashboard.guestsBaseRate", "{{minCap}}–{{maxCap}} guests · {{price}} base rate", { minCap: suiteMinCap, maxCap: suiteMaxCap, price: suite.price })}</p>
               )}
             </div>
@@ -543,8 +599,8 @@ export default function SuiteBookingPage() {
                       <button
                         key={label}
                         type="button"
-                        onClick={() => !active && index < step && setStep(index)}
-                        disabled={index > step}
+                        onClick={() => !active && index < step && !passedPackage && setStep(index)}
+                        disabled={index > step || !!passedPackage}
                         className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs transition-all ${active ? "bg-gold/15 border border-gold/30 text-gold font-semibold"
                           : done ? "bg-white/5 border border-white/8 text-foreground/70 hover:bg-gold/8 hover:text-gold"
                             : "text-muted-foreground/40 cursor-not-allowed"
@@ -823,54 +879,141 @@ export default function SuiteBookingPage() {
                         <h4 className="text-xs uppercase tracking-[0.25em] text-muted-foreground">Full Payment Breakdown</h4>
 
                         {/* ── Coupon section ── */}
-                        <div className="space-y-2">
-                          <label className="flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-muted-foreground font-semibold">
-                            <Tag className="h-3.5 w-3.5 text-gold" />
-                            {t("app.userDashboard.applyCoupon", "Apply a Coupon")}
-                          </label>
-                          {couponCode ? (
-                            <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-2xl border border-emerald-500/40 bg-emerald-500/10">
-                              <div className="flex items-center gap-2">
-                                <Tag className="h-4 w-4 text-emerald-400 shrink-0" />
-                                <span className="text-sm font-semibold text-emerald-400">{couponCode}</span>
-                                <span className="text-xs text-emerald-400/80">
-                                  {couponDiscount > 0 ? `${couponDiscount}% ` : `₹${Math.abs(couponDiscount)} `}{t("app.userDashboard.discount", "off")}
-                                </span>
+                        {!passedPackage && (
+                          <div className="space-y-2">
+                            <label className="flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-muted-foreground font-semibold">
+                              <Tag className="h-3.5 w-3.5 text-gold" />
+                              {t("app.userDashboard.applyCoupon", "Apply a Coupon")}
+                            </label>
+                            {couponCode ? (
+                              <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-2xl border border-emerald-500/40 bg-emerald-500/10">
+                                <div className="flex items-center gap-2">
+                                  <Tag className="h-4 w-4 text-emerald-400 shrink-0" />
+                                  <span className="text-sm font-semibold text-emerald-400">{couponCode}</span>
+                                  <span className="text-xs text-emerald-400/80">
+                                    {couponDiscount > 0 ? `${couponDiscount}% ` : `₹${Math.abs(couponDiscount)} `}{t("app.userDashboard.discount", "off")}
+                                  </span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={removeCoupon}
+                                  className="text-xs text-rose-400 hover:text-rose-300 transition-colors border border-rose-400/30 px-2.5 py-1 rounded-full"
+                                >
+                                  {t("app.userDashboard.remove", "Remove")}
+                                </button>
                               </div>
-                              <button
-                                type="button"
-                                onClick={removeCoupon}
-                                className="text-xs text-rose-400 hover:text-rose-300 transition-colors border border-rose-400/30 px-2.5 py-1 rounded-full"
-                              >
-                                {t("app.userDashboard.remove", "Remove")}
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="flex gap-2">
-                              <input
-                                type="text"
-                                value={couponInput}
-                                onChange={(e) => { setCouponInput(e.target.value.toUpperCase()); setCouponError(""); }}
-                                onKeyDown={(e) => e.key === "Enter" && applyCoupon()}
-                                placeholder={t("app.userDashboard.couponPlaceholder", "Enter coupon code...")}
-                                className="luxury-input flex-1 rounded-2xl px-4 py-2.5 text-sm bg-black/40 tracking-widest font-mono"
-                              />
-                              <button
-                                type="button"
-                                onClick={applyCoupon}
-                                disabled={!couponInput.trim() || couponApplying}
-                                className="gold-btn rounded-2xl px-5 py-2.5 text-sm font-semibold disabled:opacity-50 shrink-0"
-                              >
-                                {couponApplying ? "..." : t("app.userDashboard.apply", "Apply")}
-                              </button>
-                            </div>
-                          )}
-                          {couponError && (
-                            <p className="text-xs text-rose-400 flex items-center gap-1">
-                              <span>✕</span> {couponError}
-                            </p>
-                          )}
-                        </div>
+                            ) : (
+                              <div className="space-y-3 relative">
+                                <div className="flex gap-2">
+                                  <div className="relative flex-1">
+                                    <input
+                                      type="text"
+                                      value={couponInput}
+                                      onChange={(e) => {
+                                        setCouponInput(e.target.value.toUpperCase());
+                                        setCouponError("");
+                                        setShowSuggestions(true);
+                                      }}
+                                      onFocus={() => setShowSuggestions(true)}
+                                      onBlur={() => {
+                                        // Slight delay to allow clicked item in dropdown to register its event
+                                        setTimeout(() => setShowSuggestions(false), 200);
+                                      }}
+                                      onKeyDown={(e) => e.key === "Enter" && applyCoupon()}
+                                      placeholder={t("app.userDashboard.couponPlaceholder", "Enter coupon code...")}
+                                      className="luxury-input w-full rounded-2xl px-4 py-2.5 text-sm bg-black/40 tracking-widest font-mono"
+                                    />
+                                    {couponInput && (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setCouponInput("");
+                                          setCouponError("");
+                                        }}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs"
+                                      >
+                                        ✕
+                                      </button>
+                                    )}
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => applyCoupon()}
+                                    disabled={!couponInput.trim() || couponApplying}
+                                    className="gold-btn rounded-xl px-5 py-2.5 text-sm font-semibold disabled:opacity-50 shrink-0"
+                                  >
+                                    {couponApplying ? "..." : t("app.userDashboard.apply", "Apply")}
+                                  </button>
+                                </div>
+
+                                {showSuggestions && filteredCoupons.length > 0 && (
+                                  <div className="absolute left-0 right-0 mt-1.5 z-50 rounded-2xl border border-gold/25 bg-[oklch(0.12_0.02_260)] shadow-2xl p-3 max-h-60 overflow-y-auto space-y-1.5 backdrop-blur-xl">
+                                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold px-1 mb-1">
+                                      Suggested Coupons
+                                    </p>
+                                    {filteredCoupons.map((c) => {
+                                      const discountText = c.discountType === 'percentage' ? `${c.discountValue}% OFF` : `₹${Number(c.discountValue).toLocaleString()} OFF`;
+                                      const expires = c.expiresAt ? new Date(c.expiresAt).toLocaleDateString() : '';
+                                      const isApplicable = !c.minBookingAmount || subtotal >= Number(c.minBookingAmount);
+
+                                      return (
+                                        <div
+                                          key={c.id}
+                                          onMouseDown={(e) => {
+                                            e.preventDefault(); // Prevents loss of focus and allows selection
+                                            if (isApplicable) {
+                                              applyCoupon(c.code);
+                                              setShowSuggestions(false);
+                                            }
+                                          }}
+                                          className={`flex items-center justify-between gap-3 text-left border rounded-xl px-3 py-2 text-xs transition select-none
+                                            ${isApplicable 
+                                              ? "bg-gold/5 border-gold/20 hover:border-gold/50 hover:bg-gold/10 cursor-pointer" 
+                                              : "bg-white/5 border-white/5 opacity-55 cursor-not-allowed"
+                                            }`}
+                                        >
+                                          <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-1.5">
+                                              <span className="font-mono font-bold text-gold tracking-wider">{c.code}</span>
+                                              <span className="text-[9px] font-semibold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">
+                                                {discountText}
+                                              </span>
+                                            </div>
+                                            <p className="text-[10px] text-muted-foreground mt-0.5 truncate">
+                                              {c.description || `${discountText} coupon`}
+                                            </p>
+                                            <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-[9px] text-muted-foreground mt-1">
+                                              {c.minBookingAmount && (
+                                                <span>Min spend: ₹{Number(c.minBookingAmount).toLocaleString()}</span>
+                                              )}
+                                              {expires && (
+                                                <span>Expires: {expires}</span>
+                                              )}
+                                            </div>
+                                          </div>
+                                          {isApplicable ? (
+                                            <span className="text-[10px] font-semibold text-gold border border-gold/30 rounded-lg px-2.5 py-1 hover:bg-gold hover:text-[oklch(0.12_0.02_260)] transition shrink-0">
+                                              Apply
+                                            </span>
+                                          ) : (
+                                            <span className="text-[9px] font-medium text-rose-400 bg-rose-500/5 border border-rose-500/10 rounded-lg px-2 py-1 shrink-0">
+                                              Min ₹{Number(c.minBookingAmount).toLocaleString()}
+                                            </span>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            {couponError && (
+                              <p className="text-xs text-rose-400 flex items-center gap-1">
+                                <span>✕</span> {couponError}
+                              </p>
+                            )}
+                          </div>
+                        )}
 
                         <div className="overflow-x-auto">
                           <table className="w-full text-sm">
@@ -880,14 +1023,18 @@ export default function SuiteBookingPage() {
                                 <td className="py-2 text-muted-foreground">{passedPackage ? "Package" : "Suite"}</td>
                                 <td className="py-2 text-right text-foreground">₹{basePrice.toLocaleString()}</td>
                               </tr>
-                              <tr>
-                                <td className="py-2 text-muted-foreground">Persons</td>
-                                <td className="py-2 text-right text-foreground">₹{(personsTotal).toLocaleString()}</td>
-                              </tr>
-                              <tr>
-                                <td className="py-2 text-muted-foreground">Add-ons</td>
-                                <td className="py-2 text-right text-foreground">₹{(addonsTotal - personsTotal).toLocaleString()}</td>
-                              </tr>
+                              {!passedPackage && (
+                                <>
+                                  <tr>
+                                    <td className="py-2 text-muted-foreground">Persons</td>
+                                    <td className="py-2 text-right text-foreground">₹{(personsTotal).toLocaleString()}</td>
+                                  </tr>
+                                  <tr>
+                                    <td className="py-2 text-muted-foreground">Add-ons</td>
+                                    <td className="py-2 text-right text-foreground">₹{(addonsTotal - personsTotal).toLocaleString()}</td>
+                                  </tr>
+                                </>
+                              )}
                               {couponSavings > 0 && (
                                 <tr>
                                   <td className="py-2 text-emerald-400 flex items-center gap-1.5">
@@ -895,6 +1042,15 @@ export default function SuiteBookingPage() {
                                     {couponCode} ({couponDiscount > 0 ? `${couponDiscount}% off` : `₹${Math.abs(couponDiscount)} off`})
                                   </td>
                                   <td className="py-2 text-right text-emerald-400">− ₹{couponSavings.toLocaleString()}</td>
+                                </tr>
+                              )}
+                              {membershipSavings > 0 && (
+                                <tr>
+                                  <td className="py-2 text-emerald-400 flex items-center gap-1.5">
+                                    <Award className="h-3.5 w-3.5" />
+                                    {myMembership.planName} Membership ({membershipDiscount}% off)
+                                  </td>
+                                  <td className="py-2 text-right text-emerald-400">− ₹{membershipSavings.toLocaleString()}</td>
                                 </tr>
                               )}
                               <tr className="border-t border-white/10">
@@ -905,7 +1061,7 @@ export default function SuiteBookingPage() {
                           </table>
                         </div>
 
-                        <div className="grid gap-3 md:grid-cols-2">
+                        <div className={`grid gap-3 ${passedPackage ? "grid-cols-1" : (isEligibleForPackageCredit ? "md:grid-cols-3" : "md:grid-cols-2")}`}>
                           <button
                             type="button"
                             onClick={() => setPaymentMethod("pay-now")}
@@ -918,17 +1074,38 @@ export default function SuiteBookingPage() {
                             <p className="text-xs text-muted-foreground mt-1">Pay full amount now</p>
                           </button>
 
-                          <button
-                            type="button"
-                            onClick={() => setPaymentMethod("pay-venue")}
-                            className={`rounded-2xl border p-4 text-left transition ${paymentMethod === "pay-venue" ? "border-gold bg-gold/10" : "border-white/10 bg-black/40 hover:border-gold/20"}`}
-                          >
-                            <p className="font-display text-base text-foreground flex items-center justify-between gap-3">
-                              <span>Pay at Venue</span>
-                              <span className="text-gold text-sm font-semibold">₹{payableAtVenue.toLocaleString()}</span>
-                            </p>
-                            <p className="text-xs text-muted-foreground mt-1">Pay 20% advance now, balance at venue</p>
-                          </button>
+                          {!passedPackage && (
+                            <button
+                              type="button"
+                              onClick={() => setPaymentMethod("pay-venue")}
+                              className={`rounded-2xl border p-4 text-left transition ${paymentMethod === "pay-venue" ? "border-gold bg-gold/10" : "border-white/10 bg-black/40 hover:border-gold/20"}`}
+                            >
+                              <p className="font-display text-base text-foreground flex items-center justify-between gap-3">
+                                <span>Pay at Venue</span>
+                                <span className="text-gold text-sm font-semibold">₹{payableAtVenue.toLocaleString()}</span>
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-1">Pay 20% advance now, balance at venue</p>
+                            </button>
+                          )}
+
+                          {!passedPackage && isEligibleForPackageCredit && (
+                            <button
+                              type="button"
+                              onClick={() => setPaymentMethod("package-credit")}
+                              className={`rounded-2xl border p-4 text-left transition ${paymentMethod === "package-credit" ? "border-gold bg-gold/10" : "border-white/10 bg-black/40 hover:border-gold/20"}`}
+                            >
+                              <p className="font-display text-base text-foreground flex items-center justify-between gap-3">
+                                <span className="flex items-center gap-1">
+                                  <Award className="h-4 w-4 text-gold" />
+                                  <span>Package Credit</span>
+                                </span>
+                                <span className="text-emerald-400 text-sm font-semibold">Free</span>
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {Number(myMembership.maxFreeBookings) - Number(myMembership.bookingsUsed)} remaining
+                              </p>
+                            </button>
+                          )}
                         </div>
 
 
@@ -936,9 +1113,11 @@ export default function SuiteBookingPage() {
                         {payError && <p className="text-sm text-rose-400">{payError}</p>}
 
                         <div className="rounded-2xl bg-gradient-to-r from-gold/15 to-gold/5 p-4 border border-gold/15">
-                          <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground">You Pay</p>
+                          <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground">
+                            {paymentMethod === "package-credit" ? "Credits Used" : "You Pay"}
+                          </p>
                           <p className="mt-1 text-base text-foreground font-semibold">
-                            ₹{(paymentMethod === "pay-now" ? payableNow : payableAtVenue).toLocaleString()}
+                            {paymentMethod === "package-credit" ? "1 Booking Credit" : `₹${(paymentMethod === "pay-now" ? payableNow : payableAtVenue).toLocaleString()}`}
                           </p>
                         </div>
 
@@ -965,10 +1144,10 @@ export default function SuiteBookingPage() {
                                 persons,
                                 basePrice,
                                 addonsTotal,
-                                // savings,
+                                savings: couponSavings + membershipSavings,
                                 totalAmount: grandTotal,
-                                paymentMode: paymentMethod === "pay-now" ? "pay_now" : "pay_at_venue",
-                                advanceAmount: paymentMethod === "pay-now" ? payableNow : payableAtVenue,
+                                paymentMode: paymentMethod === "package-credit" ? "package_credit" : (paymentMethod === "pay-now" ? "pay_now" : "pay_at_venue"),
+                                advanceAmount: paymentMethod === "package-credit" ? 0 : (paymentMethod === "pay-now" ? payableNow : payableAtVenue),
                               };
 
                               const bookingRes = await bookingsApi.create(bookingPayload);
@@ -976,7 +1155,10 @@ export default function SuiteBookingPage() {
                               if (!createdBookingId) throw new Error("Booking creation failed: missing booking id");
                               setBookingId(Number(createdBookingId));
 
-                              if (paymentMethod === "pay-now") {
+                              if (paymentMethod === "package-credit") {
+                                setConfirmed(true);
+                                setPaying(false);
+                              } else if (paymentMethod === "pay-now") {
                                 const createOrderRes = await paymentsApi.createOrder(Number(createdBookingId), payableNow, "razorpay");
 
                                 const w = window as any;

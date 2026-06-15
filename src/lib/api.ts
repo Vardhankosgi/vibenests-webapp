@@ -76,9 +76,9 @@ export const authApi = {
     request<{ accessToken: string; refreshToken: string; user: { id: number; email: string; role: string; phone?: string } }>(
       '/auth/otp/verify', { method: 'POST', body: JSON.stringify({ phone, otp }) }
     ),
-  register: (fullName: string, email: string, password: string) =>
+  register: (body: any) =>
     request<{ id: number; email: string; role: string }>('/auth/register', {
-      method: 'POST', body: JSON.stringify({ fullName, email, password }),
+      method: 'POST', body: JSON.stringify(body),
     }),
   logout: (refreshToken: string) =>
     request<{ message: string }>('/auth/logout', { method: 'POST', body: JSON.stringify({ refreshToken }) }),
@@ -144,13 +144,16 @@ export const paymentsApi = {
     ),
 };
 
-// ── Celebration Packages ─────────────────────────────────────────────────────
-export const celebrationPackagesApi = {
-  getPublic: () => request<any[]>('/celebration-packages'),
-  getAll: () => request<any[]>('/celebration-packages/all'),
-  create: (body: any) => request<any>('/celebration-packages', { method: 'POST', body: JSON.stringify(body) }),
-  update: (id: number, body: any) => request<any>(`/celebration-packages/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
-  remove: (id: number) => request<any>(`/celebration-packages/${id}`, { method: 'DELETE' }),
+// ── Celebration Memberships ──────────────────────────────────────────────────
+export const membershipsApi = {
+  getPlans: () => request<any[]>('/memberships/plans'),
+  getPlan: (id: number) => request<any>(`/memberships/plans/${id}`),
+  createPlan: (body: any) => request<any>('/memberships/plans', { method: 'POST', body: JSON.stringify(body) }),
+  updatePlan: (id: number, body: any) => request<any>(`/memberships/plans/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  removePlan: (id: number) => request<any>(`/memberships/plans/${id}`, { method: 'DELETE' }),
+  subscribe: (planId: number) => request<any>('/memberships/subscribe', { method: 'POST', body: JSON.stringify({ planId }) }),
+  getMyActive: () => request<any>('/memberships/my-active'),
+  getPurchases: () => request<any[]>('/memberships/purchases'),
 };
 
 // ── Reports ──────────────────────────────────────────────────────────────────
@@ -208,4 +211,18 @@ export const liveCelebrationSettingsApi = {
   getMap: () => request<Record<string, string>>('/live-celebration-settings/map'),
   upsert: (body: { settingKey: string; settingValue: string; valueType?: string; label?: string; description?: string }) =>
     request<any>('/live-celebration-settings', { method: 'POST', body: JSON.stringify(body) }),
+};
+
+export const reviewsApi = {
+  getAll: () => request<any[]>('/reviews'),
+  create: (body: {
+    overall: number;
+    ambience?: number;
+    cleanliness?: number;
+    service?: number;
+    decoration?: number;
+    value?: number;
+    comment?: string;
+  }) => request<any>('/reviews', { method: 'POST', body: JSON.stringify(body) }),
+  remove: (id: number) => request<any>(`/reviews/${id}`, { method: 'DELETE' }),
 };
