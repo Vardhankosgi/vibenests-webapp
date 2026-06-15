@@ -85,6 +85,10 @@ type AppDataContextType = {
   stats: Stats;
   loading: boolean;
   refresh: () => void;
+  dateRange: { from: Date; to: Date };
+  setDateRange: React.Dispatch<React.SetStateAction<{ from: Date; to: Date }>>;
+  filteredBookings: Booking[];
+  filteredStats: Stats;
 };
 
 const AppDataContext = createContext<AppDataContextType | null>(null);
@@ -93,6 +97,12 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [users, setUsers] = useState<UserType[]>([]);
   const [loading, setLoading] = useState(false);
+
+  const today = new Date();
+  const [dateRange, setDateRange] = useState<{ from: Date; to: Date }>(() => ({
+    from: new Date(today.getFullYear(), today.getMonth(), 1),
+    to: today
+  }));
 
   const refresh = () => {
     setLoading(true);
@@ -125,10 +135,40 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
     };
   }, [bookings, users]);
 
+  const filteredBookings = useMemo<Booking[]>(() => {
+    const from = new Date(dateRange.from); from.setHours(0,0,0,0);
+    const to = new Date(dateRange.to); to.setHours(23,59,59,999);
+    return bookings.filter((b) => {
+      if (!b.date) return false;
+      const d = new Date(b.date);
+      return !isNaN(d.getTime()) && d >= from && d <= to;
+    });
+  }, [bookings, dateRange]);
+
+  const filteredStats = useMemo<Stats>(() => {
+    const confirmed = filteredBookings.filter((b) => b.status === "Confirmed");
+    const totalRevenue = confirmed.reduce((s, b) => s + parseAmount(b.amount), 0);
+    return {
+      totalRevenue,
+      totalBookings: filteredBookings.length,
+      confirmedBookings: confirmed.length,
+      pendingBookings: filteredBookings.filter((b) => b.status === "Pending").length,
+      cancelledBookings: filteredBookings.filter((b) => b.status === "Cancelled").length,
+      completedBookings: filteredBookings.filter((b) => b.status === "Completed").length,
+      totalCustomers: users.length,
+      activeCustomers: users.filter((u) => u.status === "Active").length,
+      blockedCustomers: users.filter((u) => u.status === "Blocked").length,
+      avgBookingValue: confirmed.length ? Math.round(totalRevenue / confirmed.length) : 0,
+    };
+  }, [filteredBookings, users]);
+
   const addBooking = (b: any) => setBookings((prev) => [mapApiBooking(b), ...prev]);
 
   return (
-    <AppDataContext.Provider value={{ bookings, setBookings, addBooking, users, setUsers, stats, loading, refresh }}>
+    <AppDataContext.Provider value={{
+      bookings, setBookings, addBooking, users, setUsers, stats, loading, refresh,
+      dateRange, setDateRange, filteredBookings, filteredStats
+    }}>
       {children}
     </AppDataContext.Provider>
   );

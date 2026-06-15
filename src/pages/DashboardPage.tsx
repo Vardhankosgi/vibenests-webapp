@@ -19,14 +19,14 @@ function fmtRevenue(n: number) {
 
 export default function DashboardPage() {
   const navigate = useNavigate();
-  const { stats } = useAppData();
+  const { filteredStats, dateRange, setDateRange } = useAppData();
   const { t } = useTranslation();
 
   const cards = [
-    { title: t("app.admin.totalRevenue", "Total Revenue"),      value: fmtRevenue(stats.totalRevenue),               change: "+18%", positive: true,  icon: IndianRupee,  onClick: () => navigate("/revenue") },
-    { title: t("app.admin.totalBookings", "Total Bookings"),     value: String(stats.totalBookings),                  change: "+12%", positive: true,  icon: CalendarDays, onClick: () => navigate("/bookings") },
-    { title: t("app.admin.totalCustomers", "Total Customers"),    value: String(stats.totalCustomers),                 change: "+9%",  positive: true,  icon: Users,        onClick: () => navigate("/customers-overview") },
-    { title: t("app.admin.avgBookingValue", "Avg. Booking Value"), value: `₹${stats.avgBookingValue.toLocaleString()}`, change: "+5%",  positive: true,  icon: TrendingUp,   onClick: () => navigate("/avg-booking-value") },
+    { title: t("app.admin.totalRevenue", "Total Revenue"),      value: fmtRevenue(filteredStats.totalRevenue),               change: "+18%", positive: true,  icon: IndianRupee,  onClick: () => navigate("/revenue") },
+    { title: t("app.admin.totalBookings", "Total Bookings"),     value: String(filteredStats.totalBookings),                  change: "+12%", positive: true,  icon: CalendarDays, onClick: () => navigate("/bookings") },
+    { title: t("app.admin.totalCustomers", "Total Customers"),    value: String(filteredStats.totalCustomers),                 change: "+9%",  positive: true,  icon: Users,        onClick: () => navigate("/customers-overview") },
+    { title: t("app.admin.avgBookingValue", "Avg. Booking Value"), value: `₹${filteredStats.avgBookingValue.toLocaleString()}`, change: "+5%",  positive: true,  icon: TrendingUp,   onClick: () => navigate("/avg-booking-value") },
   ];
 
   return (
@@ -35,7 +35,7 @@ export default function DashboardPage() {
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">{t("app.admin.overviewPeriod", "Overview for selected period")}</p>
-          <DateRangePicker />
+          <DateRangePicker value={dateRange} onChange={setDateRange} />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
           {cards.map((s) => <StatsCard key={s.title} {...s} />)}

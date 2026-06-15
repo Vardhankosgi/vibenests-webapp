@@ -1749,8 +1749,6 @@ function OffersView() {
   const { user } = useAuth();
   const [tab, setTab] = useState<"offers" | "coupons">("offers");
   const [copiedCode, setCopiedCode] = useState("");
-  const [couponInput, setCouponInput] = useState("");
-  const [appliedCoupon, setAppliedCoupon] = useState("");
 
   const [coupons, setCoupons] = useState<any[]>([]);
   const [offers, setOffers] = useState<any[]>([]);
@@ -1779,11 +1777,6 @@ function OffersView() {
     navigator.clipboard.writeText(code);
     setCopiedCode(code);
     setTimeout(() => setCopiedCode(""), 2000);
-  }
-
-  function applyCoupon() {
-    const valid = coupons.find((c) => c.code.toLowerCase() === couponInput.trim().toLowerCase());
-    setAppliedCoupon(valid ? valid.code : "invalid");
   }
 
   // Dynamically generated referral details per user
@@ -1918,35 +1911,6 @@ function OffersView() {
       {/* Coupons Tab */}
       {tab === "coupons" && (
         <div className="space-y-5">
-          {/* Apply coupon input */}
-          <div className="glass-card rounded-2xl p-5 space-y-3">
-            <h4 className="font-display text-lg text-foreground">{t("app.userDashboard.applyCoupon", "Apply a Coupon")}</h4>
-            <div className="flex gap-3">
-              <input
-                value={couponInput}
-                onChange={(e) => { setCouponInput(e.target.value.toUpperCase()); setAppliedCoupon(""); }}
-                placeholder={t("app.userDashboard.couponPlaceholder", "Enter coupon code...")}
-                className="luxury-input flex-1 rounded-xl px-4 py-2.5 text-sm text-foreground bg-transparent uppercase tracking-widest"
-              />
-              <button onClick={applyCoupon}
-                className="gold-btn rounded-xl px-5 py-2.5 text-sm font-semibold">
-                {t("app.userDashboard.apply", "Apply")}
-              </button>
-            </div>
-            {appliedCoupon && appliedCoupon !== "invalid" && (
-              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-400/10 border border-emerald-400/20">
-                <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-                <p className="text-xs text-emerald-400">{t("app.userDashboard.couponApplied", "Coupon {{code}} applied successfully!", { code: appliedCoupon })}</p>
-              </div>
-            )}
-            {appliedCoupon === "invalid" && (
-              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-rose-400/10 border border-rose-400/20">
-                <XCircle className="h-4 w-4 text-rose-400" />
-                <p className="text-xs text-rose-400">{t("app.userDashboard.couponInvalid", "Invalid or expired coupon code.")}</p>
-              </div>
-            )}
-          </div>
-
           {/* Available coupons */}
           <div>
             <p className="text-xs text-muted-foreground uppercase tracking-widest mb-3">{t("app.userDashboard.availableCoupons", "Available Coupons")}</p>

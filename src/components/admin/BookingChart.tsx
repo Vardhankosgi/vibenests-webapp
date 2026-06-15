@@ -4,14 +4,14 @@ import { useAppData } from "@/components/admin/AppDataContext";
 
 export function BookingChart() {
   const { t } = useTranslation();
-  const { bookings } = useAppData();
+  const { filteredBookings } = useAppData();
 
   const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   const dayIndices = [1, 2, 3, 4, 5, 6, 0]; // Monday (1) to Sunday (0)
 
   const data = DAYS.map((day, idx) => {
     const targetDayIndex = dayIndices[idx];
-    const count = bookings.filter((b) => {
+    const count = filteredBookings.filter((b) => {
       if (!b.date) return false;
       const d = new Date(b.date);
       return !isNaN(d.getTime()) && d.getDay() === targetDayIndex;

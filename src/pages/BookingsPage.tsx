@@ -475,7 +475,7 @@ export default function BookingsPage() {
             ))}
           </div>
           <div className="flex items-center gap-3">
-            <DateRangePicker />
+            <DateRangePicker value={dateRange} onChange={setDateRange} />
             <button onClick={() => setShowNewBooking(true)}
               className="flex items-center gap-2 gold-btn px-4 py-2 rounded-lg text-xs font-semibold">
               <Plus className="h-3.5 w-3.5" /> {t("app.admin.newBooking", "New Booking")}

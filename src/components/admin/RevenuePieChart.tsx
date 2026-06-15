@@ -9,9 +9,9 @@ const COLORS = [
 
 export function RevenuePieChart() {
   const { t } = useTranslation();
-  const { bookings } = useAppData();
+  const { filteredBookings } = useAppData();
 
-  const confirmedBookings = bookings.filter((b) => b.status === "Confirmed");
+  const confirmedBookings = filteredBookings.filter((b) => b.status === "Confirmed");
   const suiteRev = confirmedBookings.reduce((sum, b) => sum + (b.basePrice || 0), 0);
   const addonsRev = confirmedBookings.reduce((sum, b) => sum + (b.addonsTotal || 0), 0);
 
