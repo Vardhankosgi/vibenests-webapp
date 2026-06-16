@@ -316,23 +316,117 @@ function BookingDetailsDrawer({ booking, onClose }: { booking: Booking; onClose:
   const s = STATUS_CONFIG[booking.status];
   const SI = s.icon;
 
-  // TEMP fallback until we wire this drawer to live backend booking/payment data.
-  // Keeps the UI from crashing after removing demo-only BOOKING_EXTRAS.
+  const [details, setDetails] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [payingBalance, setPayingBalance] = useState(false);
+  const [payingCash, setPayingCash] = useState(false);
+  const [payError, setPayError] = useState("");
+
+  const rawId = booking._raw?.id ?? Number(String(booking.id).replace(/^(VN-|#VN|VN)/, ""));
+
+  useEffect(() => {
+    if (!rawId) return;
+    setLoading(true);
+    bookingsApi.getById(rawId)
+      .then((data) => {
+        setDetails(data);
+      })
+      .catch((e) => console.error(e))
+      .finally(() => setLoading(false));
+  }, [booking, rawId]);
+
   const extra = {
-    addOns: (booking as any)?._raw?.addOnsDetails || [],
-    paymentMethod: (booking as any)?._raw?.paymentMethodLabel || "—",
-    paymentBreakdown: [
-      { label: "Total", amount: booking.amount || 0 },
-    ],
+    addOns: details?.addOnsDetails || [],
+    paymentMethod: details?.paymentMode === 'package_credit' ? 'Package Credit' : (details?.paymentMode === 'pay_at_venue' ? 'Pay at Venue' : 'Pay Now'),
     timeline: [
-      { date: booking.checkIn || "", event: "Booking", done: true },
+      { date: booking.checkIn || "", event: "Booking confirmed & paid", done: true },
     ],
-    cancellationPolicy: "—",
-    refundInfo: "—",
+    cancellationPolicy: "Booking completed – cancellation not applicable.",
+    refundInfo: "Standard refund policy applied.",
   };
 
-  const total = (extra.paymentBreakdown || []).reduce((sum, r) => sum + (r?.amount || 0), 0);
+  async function handlePayBalanceOnline() {
+    if (!rawId || !details) return;
+    try {
+      setPayingBalance(true);
+      setPayError("");
+      const balanceAmount = Number(details.totalAmount) - Number(details.advanceAmount);
+      
+      const createOrderRes = await paymentsApi.createOrder(Number(rawId), balanceAmount, "razorpay");
+      
+      const w = window as any;
+      if (!createOrderRes?.keyId || !createOrderRes?.orderId) {
+        throw new Error("Unable to create Razorpay order");
+      }
 
+      if (!w.Razorpay) throw new Error("Razorpay SDK not loaded");
+
+      const razorpayOptions = {
+        key: createOrderRes.keyId,
+        amount: createOrderRes.amount,
+        currency: "INR",
+        name: "VibeNests",
+        order_id: createOrderRes.orderId,
+        handler: async (response: any) => {
+          try {
+            const paymentIdFromRazorpay = response?.razorpay_payment_id;
+            const signature = response?.razorpay_signature;
+            const razorpayOrderId = response?.razorpay_order_id;
+            const resp = await paymentsApi.verifyPayment(
+              createOrderRes.paymentId,
+              razorpayOrderId,
+              paymentIdFromRazorpay,
+              signature,
+            );
+            if (resp?.success) {
+              const updated = await bookingsApi.getById(rawId);
+              setDetails(updated);
+              alert("Payment successful! The balance amount has been paid.");
+            } else {
+              throw new Error("Payment verification failed");
+            }
+          } catch (e: any) {
+            setPayError(e?.message || "Payment verification failed");
+          } finally {
+            setPayingBalance(false);
+          }
+        },
+        prefill: {
+          name: "Guest",
+          email: details.guestEmail || booking._raw?.guestEmail || "",
+          contact: details.guestPhone || booking._raw?.guestPhone || "",
+        },
+        theme: { color: "#b8972a" },
+      };
+
+      const rzp = new w.Razorpay(razorpayOptions);
+      rzp.open();
+    } catch (e: any) {
+      setPayError(e?.message || "Unable to proceed with online payment");
+      setPayingBalance(false);
+    }
+  }
+
+  async function handlePayCash() {
+    if (!rawId) return;
+    if (!window.confirm("Are you sure you want to select Pay on Cash for the balance amount at the venue?")) return;
+    try {
+      setPayingCash(true);
+      setPayError("");
+      const resp = await bookingsApi.payCash(rawId);
+      if (resp?.success || resp?.booking) {
+        const updated = await bookingsApi.getById(rawId);
+        setDetails(updated);
+        alert("Balance recorded as cash payment. Booking is now confirmed!");
+      } else {
+        throw new Error("Failed to record cash payment");
+      }
+    } catch (e: any) {
+      setPayError(e?.message || "Failed to record cash payment");
+    } finally {
+      setPayingCash(false);
+    }
+  }
 
   return (
     <AnimatePresence>
@@ -358,134 +452,209 @@ function BookingDetailsDrawer({ booking, onClose }: { booking: Booking; onClose:
             </div>
           </div>
 
-          <div className="flex-1 p-6 space-y-6">
-            <div className="rounded-2xl overflow-hidden">
-              {booking.image ? (
-                <img src={booking.image} alt={booking.suite} className="w-full h-44 object-cover" />
-              ) : (
-                <div className="w-full h-44 bg-white/[0.03] flex items-center justify-center border-b border-white/5">
-                  <BedDouble className="h-12 w-12 text-gold/20" />
-                </div>
-              )}
-
-              <div className="glass rounded-b-2xl p-4 grid grid-cols-2 gap-3 border border-white/8 border-t-0">
-                <div>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{t("app.userDashboard.location", "Location")}</p>
-                  <p className="flex items-center gap-1 text-sm text-foreground mt-0.5"><MapPin className="h-3 w-3 text-gold/60" />{booking.location}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{t("app.userDashboard.duration", "Duration")}</p>
-                  <p className="text-sm text-foreground mt-0.5">{booking.nights} {t("app.userDashboard.nights", "Nights")}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{t("app.userDashboard.checkIn", "Check-in")}</p>
-                  <p className="text-sm text-foreground mt-0.5">{formatDateStr(booking.checkIn)}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{t("app.userDashboard.checkOut", "Check-out")}</p>
-                  <p className="text-sm text-foreground mt-0.5">{formatDateStr(booking.checkOut)}</p>
-                </div>
-              </div>
+          {loading ? (
+            <div className="flex-1 p-6 flex flex-col items-center justify-center text-muted-foreground space-y-2">
+              <RefreshCw className="h-6 w-6 animate-spin text-gold" />
+              <p className="text-sm">Loading booking details...</p>
             </div>
+          ) : (
+            <div className="flex-1 p-6 space-y-6">
+              <div className="rounded-2xl overflow-hidden">
+                {booking.image ? (
+                  <img src={booking.image} alt={booking.suite} className="w-full h-44 object-cover" />
+                ) : (
+                  <div className="w-full h-44 bg-white/[0.03] flex items-center justify-center border-b border-white/5">
+                    <BedDouble className="h-12 w-12 text-gold/20" />
+                  </div>
+                )}
 
-            <div className="glass-card rounded-2xl p-4 space-y-3">
-              <div className="flex items-center gap-2">
-                <Package className="h-4 w-4 text-gold" />
-                <h4 className="text-sm font-semibold text-foreground">{t("app.userDashboard.selectedAddons", "Selected Add-ons")}</h4>
+                <div className="glass rounded-b-2xl p-4 grid grid-cols-2 gap-3 border border-white/8 border-t-0">
+                  <div>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{t("app.userDashboard.location", "Location")}</p>
+                    <p className="flex items-center gap-1 text-sm text-foreground mt-0.5"><MapPin className="h-3 w-3 text-gold/60" />{booking.location}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{t("app.userDashboard.duration", "Duration")}</p>
+                    <p className="text-sm text-foreground mt-0.5">{booking.nights} {t("app.userDashboard.nights", "Nights")}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{t("app.userDashboard.checkIn", "Check-in")}</p>
+                    <p className="text-sm text-foreground mt-0.5">{formatDateStr(booking.checkIn)}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{t("app.userDashboard.checkOut", "Check-out")}</p>
+                    <p className="text-sm text-foreground mt-0.5">{formatDateStr(booking.checkOut)}</p>
+                  </div>
+                </div>
               </div>
-              {extra.addOns.length === 0 ? (
-                <p className="text-xs text-muted-foreground">{t("app.userDashboard.noAddons", "No add-ons selected.")}</p>
-              ) : (
-                <div className="space-y-2">
-                  {extra.addOns.map((a: any) => (
-                    <div key={a.name} className="flex items-center justify-between text-sm">
-                      <span className="flex items-center gap-2 text-muted-foreground">
-                        <Sparkles className="h-3 w-3 text-gold/60" />{a.name}
+
+              <div className="glass-card rounded-2xl p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Package className="h-4 w-4 text-gold" />
+                  <h4 className="text-sm font-semibold text-foreground">{t("app.userDashboard.selectedAddons", "Selected Add-ons")}</h4>
+                </div>
+                {extra.addOns.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">{t("app.userDashboard.noAddons", "No add-ons selected.")}</p>
+                ) : (
+                  <div className="space-y-2">
+                    {extra.addOns.map((a: any) => (
+                      <div key={a.id} className="flex items-center justify-between text-sm">
+                        <span className="flex items-center gap-2 text-muted-foreground">
+                          <Sparkles className="h-3 w-3 text-gold/60" />{a.name} {a.quantity > 1 ? `x${a.quantity}` : ""}
+                        </span>
+                        <span className="text-foreground font-medium">₹{(Number(a.price) * Number(a.quantity)).toLocaleString()}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="glass-card rounded-2xl p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <CreditCard className="h-4 w-4 text-gold" />
+                  <h4 className="text-sm font-semibold text-foreground">{t("app.userDashboard.paymentDetails", "Payment Details")}</h4>
+                </div>
+                
+                <div className="space-y-2 text-xs border-b border-white/5 pb-3">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Payment Mode</span>
+                    <span className="text-foreground font-medium capitalize">{extra.paymentMethod.replace(/_/g, " ")}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Base Price</span>
+                    <span className="text-foreground">₹{Number(details?.basePrice || 0).toLocaleString()}</span>
+                  </div>
+                  {Number(details?.addonsTotal || 0) > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Add-ons Total</span>
+                      <span className="text-foreground">₹{Number(details?.addonsTotal || 0).toLocaleString()}</span>
+                    </div>
+                  )}
+                  {Number(details?.savings || 0) > 0 && (
+                    <div className="flex justify-between text-emerald-400">
+                      <span>Discount / Savings</span>
+                      <span>-₹{Number(details?.savings || 0).toLocaleString()}</span>
+                    </div>
+                  )}
+                  {Number(details?.taxes || 0) > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Taxes & Fees</span>
+                      <span className="text-foreground">₹{Number(details?.taxes || 0).toLocaleString()}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between border-t border-white/5 pt-2 text-sm font-semibold">
+                    <span className="text-foreground">Grand Total</span>
+                    <span className="text-gold">₹{Number(details?.totalAmount || 0).toLocaleString()}</span>
+                  </div>
+                </div>
+
+                <div className="space-y-2 text-xs">
+                  {details?.paymentMode === 'pay_at_venue' ? (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Advance Paid (20%)</span>
+                        <span className="text-emerald-400 font-medium">₹{Number(details?.advanceAmount || 0).toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between text-sm font-semibold">
+                        <span className="text-foreground font-semibold">Balance Amount (80%)</span>
+                        <span className={details?.fullPaymentReceived ? "text-emerald-400 font-semibold" : "text-rose-400 font-semibold"}>
+                          ₹{details?.fullPaymentReceived ? "0" : Number(details?.totalAmount - details?.advanceAmount).toLocaleString()}
+                        </span>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex justify-between text-emerald-400 text-sm font-semibold">
+                      <span>Amount Paid</span>
+                      <span>₹{Number(details?.totalAmount || 0).toLocaleString()}</span>
+                    </div>
+                  )}
+                  
+                  <div className="flex justify-between pt-1">
+                    <span className="text-muted-foreground">Payment Status</span>
+                    <span className={`font-semibold uppercase ${details?.fullPaymentReceived || details?.paymentMode === 'package_credit' ? "text-emerald-400" : "text-amber-400"}`}>
+                      {(details?.fullPaymentReceived || details?.paymentMode === 'package_credit') ? "Fully Paid" : "Advance Paid / Pending Balance"}
+                    </span>
+                  </div>
+                </div>
+
+                {details?.paymentMode === 'pay_at_venue' && !details?.fullPaymentReceived && (
+                  <div className="pt-3 border-t border-white/5 space-y-2">
+                    {payError && <p className="text-xs text-rose-400">{payError}</p>}
+                    <div className="flex gap-2">
+                      <button
+                        disabled={payingBalance || payingCash}
+                        onClick={handlePayBalanceOnline}
+                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-gold/30 bg-gold/10 text-gold text-xs font-semibold hover:bg-gold/20 transition disabled:opacity-50"
+                      >
+                        {payingBalance ? "Processing..." : "Pay Balance Online"}
+                      </button>
+                      <button
+                        disabled={payingBalance || payingCash}
+                        onClick={handlePayCash}
+                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-xs font-semibold hover:bg-emerald-500/20 transition disabled:opacity-50"
+                      >
+                        {payingCash ? "Processing..." : "Pay on Cash"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="glass-card rounded-2xl p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-gold" />
+                  <h4 className="text-sm font-semibold text-foreground">{t("app.userDashboard.bookingTimeline", "Booking Timeline")}</h4>
+                </div>
+                <div className="relative pl-5 space-y-4">
+                  {extra.timeline.map((tVal, i) => (
+                    <div key={i} className="relative flex gap-3">
+                      <span className={`absolute -left-5 top-0.5 h-3.5 w-3.5 rounded-full border-2 flex items-center justify-center ${tVal.done ? "border-gold bg-gold/20" : "border-white/20 bg-white/5"}`}>
+                        {tVal.done && <span className="h-1.5 w-1.5 rounded-full bg-gold" />}
                       </span>
-                      <span className="text-foreground font-medium">₹{a.price.toLocaleString()}</span>
+                      {i < extra.timeline.length - 1 && (
+                        <span className="absolute -left-[14.5px] top-4 h-full w-px bg-white/10" />
+                      )}
+                      <div>
+                        <p className={`text-sm ${tVal.done ? "text-foreground" : "text-muted-foreground"}`}>{translateTimelineEvent(tVal.event, t)}</p>
+                        <p className="text-[11px] text-muted-foreground">{formatDateStr(tVal.date)}</p>
+                      </div>
                     </div>
                   ))}
                 </div>
-              )}
-            </div>
+              </div>
 
-            <div className="glass-card rounded-2xl p-4 space-y-3">
-              <div className="flex items-center gap-2">
-                <CreditCard className="h-4 w-4 text-gold" />
-                <h4 className="text-sm font-semibold text-foreground">{t("app.userDashboard.paymentDetails", "Payment Details")}</h4>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">{t("app.userDashboard.method", "Method")}</span>
-                <span className="text-foreground">{extra.paymentMethod}</span>
-              </div>
-              <div className="border-t border-white/8 pt-3 space-y-2">
-                {extra.paymentBreakdown.map((r) => (
-                  <div key={r.label} className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">{r.label}</span>
-                    <span className="text-foreground">₹{r.amount.toLocaleString()}</span>
-                  </div>
-                ))}
-                <div className="border-t border-white/8 pt-2 flex items-center justify-between">
-                  <span className="text-sm font-semibold text-foreground">{t("app.userDashboard.totalPaid", "Total Paid")}</span>
-                  <span className="font-display text-lg text-gold">₹{total.toLocaleString()}</span>
+              <div className="glass-card rounded-2xl p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Receipt className="h-4 w-4 text-gold" />
+                  <h4 className="text-sm font-semibold text-foreground">{t("app.userDashboard.invoice", "Invoice")}</h4>
                 </div>
-              </div>
-            </div>
-
-            <div className="glass-card rounded-2xl p-4 space-y-3">
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-gold" />
-                <h4 className="text-sm font-semibold text-foreground">{t("app.userDashboard.bookingTimeline", "Booking Timeline")}</h4>
-              </div>
-              <div className="relative pl-5 space-y-4">
-                {extra.timeline.map((tVal, i) => (
-                  <div key={i} className="relative flex gap-3">
-                    <span className={`absolute -left-5 top-0.5 h-3.5 w-3.5 rounded-full border-2 flex items-center justify-center ${tVal.done ? "border-gold bg-gold/20" : "border-white/20 bg-white/5"}`}>
-                      {tVal.done && <span className="h-1.5 w-1.5 rounded-full bg-gold" />}
-                    </span>
-                    {i < extra.timeline.length - 1 && (
-                      <span className="absolute -left-[14.5px] top-4 h-full w-px bg-white/10" />
-                    )}
-                    <div>
-                      <p className={`text-sm ${tVal.done ? "text-foreground" : "text-muted-foreground"}`}>{translateTimelineEvent(tVal.event, t)}</p>
-                      <p className="text-[11px] text-muted-foreground">{formatDateStr(tVal.date)}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="glass-card rounded-2xl p-4 space-y-3">
-              <div className="flex items-center gap-2">
-                <Receipt className="h-4 w-4 text-gold" />
-                <h4 className="text-sm font-semibold text-foreground">{t("app.userDashboard.invoice", "Invoice")}</h4>
-              </div>
-              <p className="text-xs text-muted-foreground">{t("app.userDashboard.invoiceDesc", "Invoice #{{id}}-INV · Generated on booking confirmation", { id: booking.id })}</p>
-              <button
-                onClick={() => alert(`Invoice for ${booking.id} would download here.`)}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl border border-gold/30 bg-gold/8 text-gold text-sm hover:bg-gold/15 transition-colors w-full justify-center">
-                <Download className="h-4 w-4" /> {t("app.userDashboard.downloadInvoicePdf", "Download Invoice PDF")}
-              </button>
-            </div>
-
-            <div className="glass-card rounded-2xl p-4 space-y-3 border-rose-500/20">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-rose-400" />
-                <h4 className="text-sm font-semibold text-foreground">{t("app.userDashboard.cancellationRefund", "Cancellation & Refund")}</h4>
-              </div>
-              <div className="space-y-2">
-                <div className="bg-rose-500/8 rounded-xl p-3">
-                  <p className="text-xs text-rose-300/90 leading-relaxed">{translateCancellationPolicy(extra.cancellationPolicy, i18n.language, t)}</p>
-                </div>
-                <p className="text-xs text-muted-foreground leading-relaxed">{extra.refundInfo}</p>
-              </div>
-              {(booking.status === "confirmed" || booking.status === "pending") && (
-                <button className="flex items-center gap-2 px-4 py-2 rounded-xl border border-rose-500/30 bg-rose-500/8 text-rose-400 text-sm hover:bg-rose-500/15 transition-colors w-full justify-center">
-                  <XCircle className="h-4 w-4" /> {t("app.userDashboard.requestCancellation", "Request Cancellation")}
+                <p className="text-xs text-muted-foreground">{t("app.userDashboard.invoiceDesc", "Invoice #{{id}}-INV · Generated on booking confirmation", { id: booking.id })}</p>
+                <button
+                  onClick={() => alert(`Invoice for ${booking.id} would download here.`)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl border border-gold/30 bg-gold/8 text-gold text-sm hover:bg-gold/15 transition-colors w-full justify-center">
+                  <Download className="h-4 w-4" /> {t("app.userDashboard.downloadInvoicePdf", "Download Invoice PDF")}
                 </button>
-              )}
+              </div>
+
+              <div className="glass-card rounded-2xl p-4 space-y-3 border-rose-500/20">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-rose-400" />
+                  <h4 className="text-sm font-semibold text-foreground">{t("app.userDashboard.cancellationRefund", "Cancellation & Refund")}</h4>
+                </div>
+                <div className="space-y-2">
+                  <div className="bg-rose-500/8 rounded-xl p-3">
+                    <p className="text-xs text-rose-300/90 leading-relaxed">{translateCancellationPolicy(extra.cancellationPolicy, i18n.language, t)}</p>
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{extra.refundInfo}</p>
+                </div>
+                {(booking.status === "confirmed" || booking.status === "pending") && (
+                  <button className="flex items-center gap-2 px-4 py-2 rounded-xl border border-rose-500/30 bg-rose-500/8 text-rose-400 text-sm hover:bg-rose-500/15 transition-colors w-full justify-center">
+                    <XCircle className="h-4 w-4" /> {t("app.userDashboard.requestCancellation", "Request Cancellation")}
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </motion.aside>
       </div>
     </AnimatePresence>

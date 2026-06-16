@@ -10,6 +10,8 @@ export type Booking = {
   basePrice?: number;
   addonsTotal?: number;
   totalAmount?: number;
+  fullPaymentReceived?: boolean;
+  paymentMode?: string;
 };
 
 export type UserType = {
@@ -48,6 +50,8 @@ function mapApiBooking(b: any): Booking {
     basePrice: Number(b.basePrice || 0),
     addonsTotal: Number(b.addonsTotal || 0),
     totalAmount: Number(b.totalAmount || 0),
+    fullPaymentReceived: !!b.fullPaymentReceived,
+    paymentMode: b.paymentMode || '',
   };
 }
 

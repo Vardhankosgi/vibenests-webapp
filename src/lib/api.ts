@@ -96,6 +96,7 @@ export const bookingsApi = {
     request<any>(`/bookings/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
   cancel: (id: number) => request<any>(`/bookings/${id}/cancel`, { method: 'PATCH' }),
   getMeetingLink: (id: number) => request<{ meeting_link: string }>(`/bookings/${id}/meeting-link`, { method: 'POST' }),
+  payCash: (id: number) => request<any>(`/bookings/${id}/pay-cash`, { method: 'POST' }),
 };
 
 // ── Suites ───────────────────────────────────────────────────────────────────

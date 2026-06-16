@@ -532,6 +532,7 @@ export default function BookingsPage() {
                   <th className="pb-3 pr-4">{t("app.admin.time", "Time")}</th>
                   <th className="pb-3 pr-4">{t("app.admin.amount", "Amount")}</th>
                   <th className="pb-3 pr-4">{t("app.admin.status", "Status")}</th>
+                  <th className="pb-3 pr-4">{t("app.admin.fullPaymentsReceived", "Full Payment Received")}</th>
                   <th className="pb-3">{t("app.admin.action", "Action")}</th>
                 </tr>
               </thead>
@@ -558,6 +559,15 @@ export default function BookingsPage() {
                     <td className="py-3 pr-4">
                       <span className={`px-2.5 py-1 rounded-full text-[11px] font-medium border ${statusStyle[b.status]}`}>
                         {b.status === "Confirmed" ? t("app.admin.confirmed", "Confirmed") : b.status === "Pending" ? t("app.admin.pending", "Pending") : b.status === "Completed" ? t("app.admin.completed", "Completed") : t("app.admin.cancelled", "Cancelled")}
+                      </span>
+                    </td>
+                    <td className="py-3 pr-4">
+                      <span className={`px-2.5 py-1 rounded-full text-[11px] font-medium border ${
+                        (b.fullPaymentReceived || b.paymentMode === 'package_credit')
+                          ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                          : "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                      }`}>
+                        {(b.fullPaymentReceived || b.paymentMode === 'package_credit') ? t("app.admin.yes", "Yes") : t("app.admin.no", "No")}
                       </span>
                     </td>
                     <td className="py-3">
