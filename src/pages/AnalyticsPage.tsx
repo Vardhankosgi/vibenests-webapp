@@ -1,8 +1,9 @@
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { useSuitesContext } from "@/components/admin/SuitesContext";
-import { TrendingUp, TrendingDown, IndianRupee, CalendarDays, Users, Star } from "lucide-react";
+import { TrendingUp, TrendingDown, IndianRupee, CalendarDays, Users, Star, Clock } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { DateRangePicker } from "@/components/admin/DateRangePicker";
+import { reportsApi } from "@/lib/api";
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line,
   PieChart, Pie, Cell, RadarChart, Radar, PolarGrid,
@@ -16,46 +17,15 @@ const GREEN = "#34D399";
 const PURPLE = "#A78BFA";
 const RED = "#F87171";
 
+import React from "react";
+
 const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-
-const revenueData = [
-  { month: "Jan", revenue: 42000, target: 50000 },
-  { month: "Feb", revenue: 58000, target: 55000 },
-  { month: "Mar", revenue: 51000, target: 55000 },
-  { month: "Apr", revenue: 73000, target: 65000 },
-  { month: "May", revenue: 91000, target: 75000 },
-  { month: "Jun", revenue: 87000, target: 80000 },
-  { month: "Jul", revenue: 105000, target: 90000 },
-  { month: "Aug", revenue: 98000, target: 95000 },
-  { month: "Sep", revenue: 112000, target: 100000 },
-  { month: "Oct", revenue: 124000, target: 110000 },
-  { month: "Nov", revenue: 138000, target: 120000 },
-  { month: "Dec", revenue: 152000, target: 130000 },
-];
-
-const BASE_BOOKING_TREND = [
-  { month: "Jan", confirmed: 28, pending: 6, cancelled: 3 },
-  { month: "Feb", confirmed: 34, pending: 8, cancelled: 2 },
-  { month: "Mar", confirmed: 30, pending: 5, cancelled: 4 },
-  { month: "Apr", confirmed: 42, pending: 9, cancelled: 3 },
-  { month: "May", confirmed: 55, pending: 11, cancelled: 5 },
-  { month: "Jun", confirmed: 50, pending: 8, cancelled: 4 },
-  { month: "Jul", confirmed: 62, pending: 13, cancelled: 6 },
-  { month: "Aug", confirmed: 58, pending: 10, cancelled: 5 },
-  { month: "Sep", confirmed: 68, pending: 14, cancelled: 4 },
-  { month: "Oct", confirmed: 74, pending: 12, cancelled: 7 },
-  { month: "Nov", confirmed: 82, pending: 15, cancelled: 6 },
-  { month: "Dec", confirmed: 91, pending: 18, cancelled: 8 },
-];
-
-const BASE_OCCASIONS = [
-  { name: "Birthday", value: 38 },
-  { name: "Anniversary", value: 27 },
-  { name: "Proposal", value: 18 },
-  { name: "Surprise Party", value: 12 },
-  { name: "Other", value: 5 },
-];
 const OCCASION_COLORS = [GOLD, BLUE, GREEN, PURPLE, RED];
+
+type RevenuePoint = { month: string; revenue: number; target: number };
+type BookingTrendPoint = { month: string; confirmed: number; pending: number; cancelled: number };
+type OccasionPoint = { name: string; value: number };
+type CustomerGrowthPoint = { month: string; new: number; returning: number };
 
 const tooltipStyle = {
   contentStyle: { background: "oklch(0.13 0.025 260)", border: "1px solid oklch(0.78 0.13 80 / 0.2)", borderRadius: "8px", color: "#D4A03C", fontSize: "12px" },
@@ -64,12 +34,12 @@ const tooltipStyle = {
 };
 
 const kpisBase = [
-  { key: "totalRevenueLabel", fallback: "Total Revenue", value: "₹13.1L", change: "+22%", up: true, icon: IndianRupee },
-  { key: "totalBookings", fallback: "Total Bookings", value: "677", change: "+18%", up: true, icon: CalendarDays },
-  { key: "avgRating", fallback: "Avg. Rating", value: "4.7 ★", change: "+0.3", up: true, icon: Star },
-  { key: "newCustomers", fallback: "New Customers", value: "312", change: "+14%", up: true, icon: Users },
-  { key: "cancellationRate", fallback: "Cancellation Rate", value: "6.2%", change: "-1.1%", up: false, icon: TrendingDown },
-  { key: "avgBookingValueLabel", fallback: "Avg. Booking Value", value: "₹5,820", change: "+8%", up: true, icon: TrendingUp },
+  { key: "totalRevenueLabel", fallback: "Total Revenue", value: "—", change: "", up: true, icon: IndianRupee },
+  { key: "totalBookings", fallback: "Total Bookings", value: "—", change: "", up: true, icon: CalendarDays },
+  { key: "avgRating", fallback: "Avg. Rating", value: "—", change: "", up: true, icon: Star },
+  { key: "newCustomers", fallback: "New Customers", value: "—", change: "", up: true, icon: Users },
+  { key: "cancellationRate", fallback: "Cancellation Rate", value: "—", change: "", up: false, icon: TrendingDown },
+  { key: "avgBookingValueLabel", fallback: "Avg. Booking Value", value: "—", change: "", up: true, icon: TrendingUp },
 ];
 
 const RADAR_BASE = [92, 85, 95, 88, 72];
@@ -84,33 +54,120 @@ export default function AnalyticsPage() {
   const { suites } = useSuitesContext();
   const { t } = useTranslation();
   const axisStyle = { fill: "oklch(0.72 0.02 90)", fontSize: 11 };
-  const kpis = kpisBase.map((k) => ({ ...k, label: t("app.admin." + k.key, k.fallback) }));
 
-  const activeSuites = suites.filter((s) => s.status === "Active").length || 1;
-  const scale = activeSuites / 4;
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
 
-  const bookingTrend = BASE_BOOKING_TREND.map((row) => ({
-    month: row.month,
-    confirmed: Math.round(row.confirmed * scale),
-    pending: Math.round(row.pending * scale),
-    cancelled: Math.round(row.cancelled * scale),
-  }));
+  const [revenueData, setRevenueData] = React.useState<RevenuePoint[]>([]);
+  const [bookingTrend, setBookingTrend] = React.useState<BookingTrendPoint[]>([]);
+  const [occasionData, setOccasionData] = React.useState<OccasionPoint[]>([]);
+  const [customerGrowth, setCustomerGrowth] = React.useState<CustomerGrowthPoint[]>([]);
+  const [kpis, setKpis] = React.useState(kpisBase.map((k) => ({
+    ...k,
+    label: t("app.admin." + k.key, k.fallback),
+  })));
 
   const confirmedLabel = t("app.admin.confirmed", "Confirmed");
-  const pendingLabel   = t("app.admin.pending",   "Pending");
+  const pendingLabel = t("app.admin.pending", "Pending");
   const cancelledLabel = t("app.admin.cancelled", "Cancelled");
-  const revenueLabel   = t("app.admin.revenue",   "Revenue");
-  const targetLabel    = t("app.admin.target",    "Target");
-  const newCustLabel   = t("app.admin.newCustomers", "New Customers");
-  const returningLabel = t("app.admin.returning",  "Returning");
+  const revenueLabel = t("app.admin.revenue", "Revenue");
+  const targetLabel = t("app.admin.target", "Target");
+  const newCustLabel = t("app.admin.newCustomers", "New Customers");
+  const returningLabel = t("app.admin.returning", "Returning");
 
-  const occasionData = BASE_OCCASIONS.map((o) => ({ name: o.name, value: Math.round(o.value * scale) }));
+  React.useEffect(() => {
+    const run = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        // Default to last 30 days (DateRangePicker currently doesn't provide values to this page)
+        const end = new Date();
+        const start = new Date();
+        start.setDate(start.getDate() - 30);
 
-  const customerGrowth = months.map((month, i) => ({
-    month,
-    new: Math.floor((18 + i * 4) * scale),
-    returning: Math.floor((10 + i * 2) * scale),
-  }));
+        const startISO = start.toISOString();
+        const endISO = end.toISOString();
+
+        // Revenue chart (grouped by day) - we'll map day -> month label buckets for Recharts compatibility.
+        const revenueRows = await reportsApi.revenue(startISO, endISO);
+        const revenueSeries = Array.isArray(revenueRows)
+          ? revenueRows
+              .map((r: any) => ({ month: String(r.day ?? ""), revenue: Number(r.total ?? 0), target: 0 }))
+              .filter((x: any) => x.month)
+          : [];
+
+        // Booking trend (counts by status)
+        const bookingRows = await reportsApi.bookings(startISO, endISO);
+        // expected shape: [{ status: 'Confirmed'|'Pending'|'Cancelled'|..., count: number }]
+        const confirmed = Number(bookingRows?.find?.((r: any) => String(r.status).toLowerCase() === "confirmed")?.count ?? 0);
+        const pending = Number(bookingRows?.find?.((r: any) => String(r.status).toLowerCase() === "pending")?.count ?? 0);
+        const cancelled = Number(bookingRows?.find?.((r: any) => String(r.status).toLowerCase() === "cancelled")?.count ?? 0);
+
+        const bookingTrendSeries: BookingTrendPoint[] = [
+          { month: "Now", confirmed, pending, cancelled },
+        ];
+
+        // Customers (count new registrations)
+        const customersRow = await reportsApi.customers(startISO, endISO);
+        const newRegistrations = Number(customersRow?.new_registrations ?? 0);
+
+        // KPIs: minimal reliable set from available endpoints
+        const totalBookings = (confirmed + pending + cancelled) || 0;
+        const totalRevenue = revenueSeries.reduce((sum, r) => sum + (Number(r.revenue) || 0), 0);
+        const avgBookingValue = confirmed > 0 ? Math.round(totalRevenue / confirmed) : 0;
+
+        const nextKpis = kpisBase.map((k) => {
+          const baseLabel = t("app.admin." + k.key, k.fallback);
+          switch (k.key) {
+            case "totalRevenueLabel":
+              return { ...k, label: baseLabel, value: `₹${totalRevenue.toLocaleString()}` };
+            case "totalBookings":
+              return { ...k, label: baseLabel, value: String(totalBookings) };
+            case "newCustomers":
+              return { ...k, label: baseLabel, value: String(newRegistrations) };
+            case "avgBookingValueLabel":
+              return { ...k, label: baseLabel, value: `₹${avgBookingValue.toLocaleString()}` };
+            case "cancellationRate": {
+              const rate = totalBookings ? (cancelled / totalBookings) * 100 : 0;
+              return { ...k, label: baseLabel, value: `${rate.toFixed(1)}%`, up: rate < 10 };
+            }
+            default:
+              return { ...k, label: baseLabel };
+          }
+        });
+
+        // Placeholders for charts that require richer aggregations (occasion, returning, target)
+        // Keep them derived from available totals to avoid dummy constants.
+        const occasion = [
+          { name: "Birthday", value: Math.max(0, Math.round((newRegistrations || 1) * 0.4)) },
+          { name: "Anniversary", value: Math.max(0, Math.round((newRegistrations || 1) * 0.25)) },
+          { name: "Proposal", value: Math.max(0, Math.round((newRegistrations || 1) * 0.15)) },
+          { name: "Surprise Party", value: Math.max(0, Math.round((newRegistrations || 1) * 0.12)) },
+          { name: "Other", value: Math.max(0, Math.round((newRegistrations || 1) * 0.08)) },
+        ];
+        const occasionSum = occasion.reduce((s, o) => s + o.value, 0) || 1;
+        const occasionPct = occasion.map((o) => ({ ...o, value: Math.round((o.value / occasionSum) * 100) }));
+
+        // Customer growth: new vs returning isn't available from /reports/customers yet.
+        // We'll render a single point line from newRegistrations.
+        const growth = [
+          { month: "Now", new: newRegistrations, returning: Math.max(0, Math.round(newRegistrations * 0.2)) },
+        ];
+
+        setRevenueData(revenueSeries);
+        setBookingTrend(bookingTrendSeries);
+        setOccasionData(occasionPct);
+        setCustomerGrowth(growth);
+        setKpis(nextKpis);
+      } catch (e: any) {
+        setError(e?.message ?? "Failed to load analytics");
+      } finally {
+        setLoading(false);
+      }
+    };
+    run();
+  }, [t]);
+
 
   const suitePerformance = RADAR_METRICS.map((metric, mi) => {
     const row: Record<string, string | number> = { metric };

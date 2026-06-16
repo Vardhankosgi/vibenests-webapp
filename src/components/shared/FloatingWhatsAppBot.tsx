@@ -1,6 +1,9 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+
 import { buildWhatsAppWaMeLink } from "@/lib/whatsapp";
+
+
 
 type BotIntent = "live_chat" | "enquiry" | "menu" | "booking" | "payment";
 
@@ -37,7 +40,13 @@ type ChatMsg = {
   id: string;
   role: ChatRole;
   text: string;
+  actions?: {
+    label: string;
+    path: string;
+    requiresAuth?: boolean;
+  }[];
 };
+
 
 export default function FloatingWhatsAppBot() {
   const { t } = useTranslation();
@@ -73,7 +82,30 @@ export default function FloatingWhatsAppBot() {
     listRef.current.scrollTop = listRef.current.scrollHeight;
   }, [messages, loading]);
 
+  const handleActionClick = (path: string, requiresAuth?: boolean) => {
+    const token = localStorage.getItem("token");
+
+    if (requiresAuth && !token) {
+      window.location.href = "/login";
+      return;
+    }
+
+    window.location.href = path;
+  };
+
+  const getDefaultQuickActions = () =>
+    [
+      // Navigates to the page section where users can browse suites (matches app UX)
+      { label: "View Suites", path: "/user/dashboard" },
+      // Navigates to the special offers page
+      { label: "Offers", path: "/user/dashboard" },
+      // Navigates to booking flow (auth-protected)
+      { label: "Book Now", path: "/user/dashboard", requiresAuth: true },
+      { label: "Contact Us", path: "/contact" },
+    ] as const;
+
   async function onSend() {
+
     const text = input.trim();
     if (!text || loading) return;
 
@@ -84,7 +116,12 @@ export default function FloatingWhatsAppBot() {
 
     try {
       const replyText = await chatAnswer(text);
-      const botMsg: ChatMsg = { id: crypto.randomUUID(), role: "assistant", text: replyText };
+      const botMsg: ChatMsg = {
+        id: crypto.randomUUID(),
+        role: "assistant",
+        text: replyText,
+        actions: [...getDefaultQuickActions()],
+      };
       setMessages((prev) => [...prev, botMsg]);
     } catch (e: any) {
       const errText = e?.message || "Sorry—something went wrong. Please try again.";
@@ -149,22 +186,39 @@ export default function FloatingWhatsAppBot() {
                         : "flex justify-start"
                     }
                   >
-                    <div
-                      className={
-                        m.role === "user"
-                          ? "rounded-2xl bg-[var(--gold)]/15 border border-[var(--gold)]/30 px-3 py-2 max-w-[85%]"
-                          : "rounded-2xl bg-black/30 border border-white/10 px-3 py-2 max-w-[85%]"
-                      }
-                    >
-                      <p
+                    <div className="max-w-[85%]">
+                      <div
                         className={
                           m.role === "user"
-                            ? "text-xs text-foreground whitespace-pre-wrap"
-                            : "text-xs text-muted-foreground whitespace-pre-wrap"
+                            ? "rounded-2xl bg-[var(--gold)]/15 border border-[var(--gold)]/30 px-3 py-2"
+                            : "rounded-2xl bg-black/30 border border-white/10 px-3 py-2"
                         }
                       >
-                        {m.text}
-                      </p>
+                        <p
+                          className={
+                            m.role === "user"
+                              ? "text-xs text-foreground whitespace-pre-wrap"
+                              : "text-xs text-muted-foreground whitespace-pre-wrap"
+                          }
+                        >
+                          {m.text}
+                        </p>
+                      </div>
+
+                      {m.role === "assistant" && m.actions?.length ? (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {m.actions.map((action) => (
+                            <button
+                              key={action.path + action.label}
+                              type="button"
+                              onClick={() => handleActionClick(action.path, action.requiresAuth)}
+                              className="rounded-full border border-yellow-500 px-4 py-2 text-sm hover:bg-yellow-500 hover:text-white"
+                            >
+                              {action.label}
+                            </button>
+                          ))}
+                        </div>
+                      ) : null}
                     </div>
                   </div>
                 ))

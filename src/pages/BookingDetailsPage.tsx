@@ -179,10 +179,7 @@ export default function BookingDetailsPage() {
                 </div>
 
                 <div className="pt-2 border-t border-white/10 space-y-2">
-                  <div className="flex items-center justify-between gap-4">
-                    <span className="text-muted-foreground">Total Paid</span>
-                    <span className="text-foreground">{formatMoney(totalPaid)}</span>
-                  </div>
+                  
                   <div className="flex items-center justify-between gap-4">
                     <span className="text-muted-foreground">Advance Paid</span>
                     <span className="text-foreground">{formatMoney(advancePaid)}</span>
@@ -202,13 +199,17 @@ export default function BookingDetailsPage() {
                   <span className="text-foreground">{formatMoney(booking.addonsTotal)}</span>
                 </div>
                 <div className="flex items-center justify-between gap-4">
+                  <span className="text-muted-foreground">Total Paid</span>
+                  <span className="text-foreground">{formatMoney(totalPaid)}</span>
+                </div>
+                {/* <div className="flex items-center justify-between gap-4">
                   <span className="text-muted-foreground">Service Fee</span>
                   <span className="text-foreground">{formatMoney(booking.serviceFee)}</span>
                 </div>
                 <div className="flex items-center justify-between gap-4">
                   <span className="text-muted-foreground">Taxes</span>
                   <span className="text-foreground">{formatMoney(booking.taxes)}</span>
-                </div>
+                </div> */}
               </div>
             </div>
 

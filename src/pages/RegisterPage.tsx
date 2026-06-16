@@ -276,7 +276,7 @@ export default function RegisterPage() {
                   <Field label={t("app.auth.fullName", "Full Name")} icon={User} error={errors.name}>
                     <input
                       type="text"
-                      placeholder={t("app.auth.fullNamePlaceholder", "Adithya Reddy")}
+                      placeholder={t("app.auth.fullNamePlaceholder", "Enter your full name")}
                       value={form.name}
                       onChange={(e) => set("name", e.target.value)}
                       className={`luxury-input w-full rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 ${errors.name ? "border-rose-500/50" : ""}`}
@@ -287,7 +287,7 @@ export default function RegisterPage() {
                   <Field label={t("app.auth.emailLabel", "Email Address")} icon={Mail} error={errors.email}>
                     <input
                       type="email"
-                      placeholder={t("app.auth.emailPlaceholder", "you@example.com")}
+                      placeholder={t("app.auth.emailPlaceholder", "Enter your email address")}
                       value={form.email}
                       onChange={(e) => set("email", e.target.value)}
                       className={`luxury-input w-full rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 ${errors.email ? "border-rose-500/50" : ""}`}
@@ -300,7 +300,7 @@ export default function RegisterPage() {
                       <span className="luxury-input rounded-xl px-3 py-2.5 text-sm text-muted-foreground shrink-0 flex items-center">🇮🇳 +91</span>
                       <input
                         type="tel"
-                        placeholder={t("app.auth.phonePlaceholder", "98765 43210")}
+                        placeholder={t("app.auth.phonePlaceholder", "enter your phone number")}
                         value={form.phone}
                         onChange={(e) => set("phone", e.target.value.replace(/\D/g, "").slice(0, 10))}
                         className={`luxury-input flex-1 rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 ${errors.phone ? "border-rose-500/50" : ""}`}

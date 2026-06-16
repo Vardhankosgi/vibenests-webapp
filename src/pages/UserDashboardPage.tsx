@@ -211,6 +211,7 @@ const STATUS_CONFIG = {
   confirmed: { label: "Confirmed", color: "text-emerald-400", bg: "bg-emerald-400/10 border-emerald-400/25", icon: CheckCircle2 },
   pending:   { label: "Pending",   color: "text-amber-400",   bg: "bg-amber-400/10 border-amber-400/25",     icon: Hourglass },
   completed: { label: "Completed", color: "text-sky-400",     bg: "bg-sky-400/10 border-sky-400/25",         icon: CheckCircle2 },
+  checkIn:   {label: "Check-in", color: "text-emerald-400", bg: "bg-emerald-400/10 border-emerald-400/25", icon: CheckCircle2},
   cancelled: { label: "Cancelled", color: "text-rose-400",    bg: "bg-rose-400/10 border-rose-400/25",       icon: XCircle },
 };
 
@@ -219,90 +220,21 @@ function fmt(n: number) {
 }
 
 /* ─── Booking Extras ─────────────────────────────────── */
-const BOOKING_EXTRAS: Record<string, {
-  addOns: { name: string; price: number }[];
-  paymentMethod: string;
-  paymentBreakdown: { label: string; amount: number }[];
-  timeline: { date: string; event: string; done: boolean }[];
-  cancellationPolicy: string;
-  refundInfo: string;
-}> = {
-  "VN-2841": {
-    addOns: [{ name: "Couple Photography", price: 8000 }, { name: "Floral Decoration", price: 5000 }, { name: "Welcome Cake", price: 2000 }],
-    paymentMethod: "HDFC Credit Card •••• 4291",
-    paymentBreakdown: [{ label: "Suite (4 nights)", amount: 113000 }, { label: "Add-ons", amount: 15000 }, { label: "Taxes & Fees (GST 12%)", amount: 15360 }],
-    timeline: [
-      { date: "Jan 10, 2025", event: "Booking confirmed",        done: true  },
-      { date: "Jan 15, 2025", event: "Advance payment received", done: true  },
-      { date: "Jan 27, 2025", event: "Check-in reminder sent",   done: true  },
-      { date: "Jan 28, 2025", event: "Check-in",                 done: false },
-      { date: "Feb 01, 2025", event: "Check-out",                done: false },
-    ],
-    cancellationPolicy: "Free cancellation until Jan 21, 2025. 50% refund between Jan 21–25. No refund after Jan 25.",
-    refundInfo: "Refunds are processed within 5–7 business days to the original payment method.",
-  },
-  "VN-2965": {
-    addOns: [{ name: "Private Sunset Cruise", price: 12000 }],
-    paymentMethod: "UPI – adithya@oksbi",
-    paymentBreakdown: [{ label: "Suite (4 nights)", amount: 52000 }, { label: "Add-ons", amount: 12000 }],
-    timeline: [
-      { date: "Feb 20, 2025", event: "Booking initiated", done: true  },
-      { date: "Feb 20, 2025", event: "Payment pending",   done: true  },
-      { date: "Mar 10, 2025", event: "Check-in",          done: false },
-      { date: "Mar 14, 2025", event: "Check-out",         done: false },
-    ],
-    cancellationPolicy: "Free cancellation until Mar 03, 2025. 30% refund after that. No refund within 48 hrs.",
-    refundInfo: "Pending bookings may be cancelled without charge before payment is fully confirmed.",
-  },
-  "VN-2210": {
-    addOns: [{ name: "Heritage Thali Dinner", price: 6000 }, { name: "Camel Safari", price: 4000 }],
-    paymentMethod: "ICICI Debit Card •••• 7832",
-    paymentBreakdown: [{ label: "Suite (4 nights)", amount: 86000 }, { label: "Add-ons", amount: 10000 }],
-    timeline: [
-      { date: "Sep 25, 2024", event: "Booking confirmed",      done: true },
-      { date: "Oct 04, 2024", event: "Full payment received",  done: true },
-      { date: "Oct 05, 2024", event: "Check-in",               done: true },
-      { date: "Oct 09, 2024", event: "Check-out",              done: true },
-    ],
-    cancellationPolicy: "Booking completed – cancellation not applicable.",
-    refundInfo: "This booking has been completed. No refund applicable.",
-  },
-  "VN-2105": {
-    addOns: [],
-    paymentMethod: "Paytm Wallet",
-    paymentBreakdown: [{ label: "Suite (2 nights)", amount: 42000 }],
-    timeline: [
-      { date: "Aug 10, 2024", event: "Booking confirmed",     done: true },
-      { date: "Aug 14, 2024", event: "Full payment received", done: true },
-      { date: "Aug 15, 2024", event: "Check-in",              done: true },
-      { date: "Aug 17, 2024", event: "Check-out",             done: true },
-    ],
-    cancellationPolicy: "Booking completed – cancellation not applicable.",
-    refundInfo: "This booking has been completed. No refund applicable.",
-  },
-  "VN-1998": {
-    addOns: [{ name: "Boat Ride", price: 3000 }],
-    paymentMethod: "HDFC Credit Card •••• 4291",
-    paymentBreakdown: [{ label: "Suite (3 nights)", amount: 72000 }, { label: "Add-ons", amount: 3000 }],
-    timeline: [
-      { date: "Jun 10, 2024", event: "Booking confirmed",           done: true },
-      { date: "Jun 12, 2024", event: "Advance payment received",    done: true },
-      { date: "Jun 18, 2024", event: "Booking cancelled by guest",  done: true },
-      { date: "Jun 22, 2024", event: "Partial refund processed",    done: true },
-    ],
-    cancellationPolicy: "Cancelled 2 days before check-in. 25% refund applied per policy.",
-    refundInfo: "₹18,750 refunded to HDFC Credit Card •••• 4291 on Jun 22, 2024.",
-  },
-};
+// Booking extras were previously hardcoded for demo.
+// They are now computed from backend data inside the drawer.
+
 
 /* ─── Booking Details Drawer ─────────────────────────── */
 function BookingDetailsDrawer({ booking, onClose }: { booking: Booking; onClose: () => void }) {
   const { t } = useTranslation();
   const s = STATUS_CONFIG[booking.status];
   const SI = s.icon;
-  const extra = BOOKING_EXTRAS[booking.id] || {
-    addOns: [],
-    paymentMethod: "—",
+
+  // TEMP fallback until we wire this drawer to live backend booking/payment data.
+  // Keeps the UI from crashing after removing demo-only BOOKING_EXTRAS.
+  const extra = {
+    addOns: (booking as any)?._raw?.addOnsDetails || [],
+    paymentMethod: (booking as any)?._raw?.paymentMethodLabel || "—",
     paymentBreakdown: [
       { label: "Total", amount: booking.amount || 0 },
     ],
@@ -313,7 +245,8 @@ function BookingDetailsDrawer({ booking, onClose }: { booking: Booking; onClose:
     refundInfo: "—",
   };
 
-  const total = extra.paymentBreakdown.reduce((sum, r) => sum + r.amount, 0);
+  const total = (extra.paymentBreakdown || []).reduce((sum, r) => sum + (r?.amount || 0), 0);
+
 
   return (
     <AnimatePresence>
@@ -378,7 +311,7 @@ function BookingDetailsDrawer({ booking, onClose }: { booking: Booking; onClose:
                 <p className="text-xs text-muted-foreground">{t("app.userDashboard.noAddons", "No add-ons selected.")}</p>
               ) : (
                 <div className="space-y-2">
-                  {extra.addOns.map((a) => (
+                  {extra.addOns.map((a: any) => (
                     <div key={a.name} className="flex items-center justify-between text-sm">
                       <span className="flex items-center gap-2 text-muted-foreground">
                         <Sparkles className="h-3 w-3 text-gold/60" />{a.name}

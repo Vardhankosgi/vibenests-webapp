@@ -154,7 +154,12 @@ export const celebrationPackagesApi = {
 };
 
 // ── Reports ──────────────────────────────────────────────────────────────────
+type ApiMonthlyGrowthRow = { month: string; customers: number; new: number };
+type ApiBookingFrequencyRow = { range: string; count: number };
+type ApiAcquisitionRow = { name: string; value: number };
+
 export const reportsApi = {
+
   revenue: (start?: string, end?: string) => {
     const q = new URLSearchParams();
     if (start) q.set('start', start);
@@ -175,7 +180,8 @@ export const reportsApi = {
   },
 };
 
-// ── Offers & Coupons ────────────────────────────────────────────────────────
+
+// ── Offers & Coupons
 export const offersApi = {
   getAll: () => request<{ data: any[]; total: number }>('/offers'),
   getActive: () => request<any[]>('/offers/active'),
