@@ -1,8 +1,41 @@
-import { useState, useRef } from "react";
-import { Plus, Search, Pencil, Trash2, X, BedDouble, ImagePlus, Check, ChevronLeft, ChevronRight } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Plus, Search, Pencil, Trash2, X, BedDouble, ImagePlus, Check, ChevronLeft, ChevronRight, Calendar, Clock } from "lucide-react";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { useSuitesContext, type Suite } from "@/components/admin/SuitesContext";
+import { suitesApi } from "@/lib/api";
 import { useTranslation } from "react-i18next";
+
+export function generateSlots(startTime: string, endTime: string, durationMins: number, gapMins: number = 30): string[] {
+  const slots: string[] = [];
+  const [sh, sm] = startTime.split(":").map(Number);
+  const [eh, em] = endTime.split(":").map(Number);
+  let cur = sh * 60 + sm;
+  let end = eh * 60 + em;
+  if (end < cur) {
+    end += 24 * 60;
+  }
+  const step = durationMins + gapMins;
+  while (cur + durationMins <= end) {
+    const hh = Math.floor(cur / 60) % 24;
+    const mm = cur % 60;
+    const period = hh >= 12 ? "PM" : "AM";
+    const dh = hh > 12 ? hh - 12 : hh === 0 ? 12 : hh;
+    slots.push(`${String(dh).padStart(2, "0")}:${String(mm).padStart(2, "0")} ${period}`);
+    cur += step;
+  }
+  return slots;
+}
+
+function getEndTime(start: string, durationMins: number): string {
+  const [time, period] = start.split(" ");
+  const [h, m] = time.split(":").map(Number);
+  let totalMin = ((period === "PM" && h !== 12 ? h + 12 : period === "AM" && h === 12 ? 0 : h) * 60) + m + durationMins;
+  const endH = Math.floor(totalMin / 60) % 24;
+  const endM = totalMin % 60;
+  const endPeriod = endH >= 12 ? "PM" : "AM";
+  const displayH = endH > 12 ? endH - 12 : endH === 0 ? 12 : endH;
+  return `${String(displayH).padStart(2, "0")}:${String(endM).padStart(2, "0")} ${endPeriod}`;
+}
 
 const emptyForm: Omit<Suite, "id"> = { name: "", minCapacity: 1, capacity: 2, price: "", ratePerExtraPerson: 199, baseDiscount: 0, slotStartTime: "09:00", slotEndTime: "21:00", slotDurationMins: 150, gapBetweenSlotsMins: 30, occasions: "", status: "Active", description: "", images: [], amenities: [] };
 
@@ -104,6 +137,231 @@ function ImageSlider({ images, name }: { images: string[]; name: string }) {
   );
 }
 
+function ManageSuiteAvailabilityModal({ suite, onClose }: { suite: Suite; onClose: () => void }) {
+  const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [data, setData] = useState<{ bookings: any[]; blocks: any[] } | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [blockingSlot, setBlockingSlot] = useState<string | null>(null);
+  const [note, setNote] = useState("");
+
+  const loadData = () => {
+    if (!date) return;
+    setLoading(true);
+    setError("");
+    suitesApi.getAvailabilityDetails(suite.id, date)
+      .then((res) => {
+        setData(res);
+      })
+      .catch((err: any) => {
+        setError(err.message || "Failed to load availability details.");
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  };
+
+  useEffect(() => {
+    loadData();
+  }, [date, suite.id]);
+
+  const handleAddBlock = async (slot: string) => {
+    try {
+      setError("");
+      await suitesApi.addBlock(suite.id, { date, timeSlot: slot, note: note.trim() || undefined });
+      setBlockingSlot(null);
+      setNote("");
+      loadData();
+    } catch (err: any) {
+      setError(err.message || "Failed to block slot.");
+    }
+  };
+
+  const handleRemoveBlock = async (blockId: number) => {
+    try {
+      setError("");
+      await suitesApi.removeBlock(suite.id, blockId);
+      loadData();
+    } catch (err: any) {
+      setError(err.message || "Failed to remove block.");
+    }
+  };
+
+  const slots = generateSlots(
+    suite.slotStartTime,
+    suite.slotEndTime,
+    suite.slotDurationMins,
+    suite.gapBetweenSlotsMins
+  );
+
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+      <div className="glass-card rounded-2xl p-5 w-full max-w-lg border border-[var(--gold)]/20 max-h-[90vh] overflow-y-auto space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="font-display text-base font-semibold text-foreground">Manage Slot Availability</h3>
+            <p className="text-xs text-gold mt-0.5">{suite.name}</p>
+          </div>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition"><X className="h-5 w-5" /></button>
+        </div>
+
+        <div className="flex items-center gap-3 bg-white/[0.02] p-3 rounded-xl border border-white/5">
+          <Calendar className="h-4 w-4 text-gold shrink-0" />
+          <div className="flex-1">
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Select Date</p>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => {
+                setDate(e.target.value);
+                setBlockingSlot(null);
+                setNote("");
+              }}
+              className="luxury-input w-full bg-transparent border-0 p-0 text-sm focus:ring-0 mt-0.5"
+              style={{ colorScheme: "dark" }}
+            />
+          </div>
+        </div>
+
+        {error && (
+          <div className="text-xs text-destructive bg-destructive/10 border border-destructive/30 rounded-lg px-3 py-2">
+            {error}
+          </div>
+        )}
+
+        {loading ? (
+          <div className="py-12 text-center text-xs text-muted-foreground">Loading slot details...</div>
+        ) : (
+          <div className="space-y-2.5">
+            <h4 className="text-xs uppercase tracking-wide text-muted-foreground">
+              {slots.length} Slots · {suite.slotDurationMins}m Duration · {suite.gapBetweenSlotsMins}m Gap
+            </h4>
+
+            {slots.length === 0 ? (
+              <p className="text-xs text-rose-400">No slots defined for this suite's settings.</p>
+            ) : (
+              <div className="space-y-2">
+                {slots.map((slot) => {
+                  const booking = data?.bookings.find((b: any) => b.timeSlot === slot);
+                  const block = data?.blocks.find((b: any) => b.timeSlot === slot);
+                  const isBooked = !!booking;
+                  const isBlocked = !!block;
+                  const end = getEndTime(slot, suite.slotDurationMins);
+
+                  return (
+                    <div
+                      key={slot}
+                      className={`flex flex-col p-3 rounded-xl border transition-all
+                        ${isBooked
+                          ? "border-blue-500/20 bg-blue-500/[0.02]"
+                          : isBlocked
+                          ? "border-amber-500/20 bg-amber-500/[0.02]"
+                          : "border-white/5 bg-white/[0.01]"
+                        }`}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-3.5 w-3.5 text-gold shrink-0" />
+                          <span className="text-xs font-semibold text-foreground">{slot} – {end}</span>
+                        </div>
+
+                        <span className={`text-[10px] font-medium px-2 py-0.5 rounded border
+                          ${isBooked
+                            ? "bg-blue-500/10 border-blue-500/20 text-blue-400"
+                            : isBlocked
+                            ? "bg-amber-500/10 border-amber-500/20 text-amber-400"
+                            : "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                          }`}
+                        >
+                          {isBooked ? "Booked" : isBlocked ? "Blocked" : "Available"}
+                        </span>
+                      </div>
+
+                      {/* Details or Actions */}
+                      {isBooked && (
+                        <div className="mt-2 text-[11px] text-muted-foreground space-y-0.5 border-t border-white/5 pt-2 pl-5">
+                          <p>
+                            <span className="text-foreground font-medium">Guest:</span> {booking.guestFirstName} {booking.guestLastName}
+                          </p>
+                          <p>
+                            <span className="text-foreground font-medium">Contact:</span> {booking.guestEmail} · {booking.guestPhone}
+                          </p>
+                          <p>
+                            <span className="text-foreground font-medium">Booking ID:</span> {booking.orderId ? `#${booking.orderId}` : `#VN${booking.id}`} · <span className="capitalize">{booking.status}</span>
+                          </p>
+                        </div>
+                      )}
+
+                      {isBlocked && (
+                        <div className="mt-2 text-[11px] text-muted-foreground flex items-center justify-between border-t border-white/5 pt-2 pl-5">
+                          <p className="italic">
+                            <span className="text-foreground font-medium not-italic">Note:</span> {block.note || "No block note"}
+                          </p>
+                          <button
+                            onClick={() => handleRemoveBlock(block.id)}
+                            className="text-[10px] text-rose-400 hover:text-rose-300 font-semibold border border-rose-500/30 rounded-lg px-2 py-0.5 hover:bg-rose-500/10 transition"
+                          >
+                            Unblock
+                          </button>
+                        </div>
+                      )}
+
+                      {!isBooked && !isBlocked && (
+                        <div className="mt-2 flex flex-col gap-2 border-t border-white/5 pt-2">
+                          {blockingSlot === slot ? (
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                placeholder="Optional block note..."
+                                value={note}
+                                onChange={(e) => setNote(e.target.value)}
+                                className="luxury-input flex-1 rounded-lg px-2.5 py-1 text-xs"
+                                onKeyDown={(e) => e.key === "Enter" && handleAddBlock(slot)}
+                              />
+                              <button
+                                onClick={() => handleAddBlock(slot)}
+                                className="gold-btn rounded-lg px-3 py-1 text-xs font-semibold"
+                              >
+                                Save
+                              </button>
+                              <button
+                                onClick={() => { setBlockingSlot(null); setNote(""); }}
+                                className="border border-white/15 hover:text-foreground text-muted-foreground rounded-lg px-2.5 py-1 text-xs transition"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => { setBlockingSlot(slot); setNote(""); }}
+                              className="text-[10px] text-gold hover:text-white font-semibold border border-gold/20 rounded-lg py-1 hover:bg-gold/10 transition text-center self-end px-3.5"
+                            >
+                              Block Slot
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="flex justify-end pt-2 border-t border-white/5">
+          <button
+            onClick={onClose}
+            className="border border-white/10 text-muted-foreground hover:text-foreground rounded-xl px-4 py-2 text-xs transition"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function SuitesPage() {
   const { suites, setSuites, saveSuite, deleteSuite: apiDelete, loading } = useSuitesContext();
   const { t } = useTranslation();
@@ -113,6 +371,7 @@ export default function SuitesPage() {
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [availabilitySuite, setAvailabilitySuite] = useState<Suite | null>(null);
 
   const filtered = suites.filter((s) => {
     const matchSearch = s.name.toLowerCase().includes(search.toLowerCase()) || s.id.toLowerCase().includes(search.toLowerCase());
@@ -221,6 +480,9 @@ export default function SuitesPage() {
                 <div className="flex gap-2">
                   <button onClick={() => openEdit(s)} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs border border-[var(--gold)]/20 text-gold hover:bg-[var(--gold)]/10 transition">
                     <Pencil className="h-3.5 w-3.5" /> {t("app.admin.edit", "Edit")}
+                  </button>
+                  <button onClick={() => setAvailabilitySuite(s)} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs border border-[var(--gold)]/20 text-gold hover:bg-[var(--gold)]/10 transition">
+                    <Calendar className="h-3.5 w-3.5" /> Slots
                   </button>
                   <button onClick={() => handleDelete(s.id)} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs border border-destructive/20 text-destructive hover:bg-destructive/10 transition">
                     <Trash2 className="h-3.5 w-3.5" /> {t("app.admin.delete", "Delete")}
@@ -355,6 +617,12 @@ export default function SuitesPage() {
             </div>
           </div>
         </div>
+      )}
+      {availabilitySuite && (
+        <ManageSuiteAvailabilityModal
+          suite={availabilitySuite}
+          onClose={() => setAvailabilitySuite(null)}
+        />
       )}
     </div>
   );

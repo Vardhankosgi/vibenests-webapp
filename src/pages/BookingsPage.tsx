@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Search, Filter, Download, Plus, X, Check, ChevronRight, ChevronLeft, Eye } from "lucide-react";
+import { Search, Filter, Download, Plus, X, Check, ChevronRight, ChevronLeft, Eye, Clock } from "lucide-react";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { DateRangePicker } from "@/components/admin/DateRangePicker";
 import { useAppData } from "@/components/admin/AppDataContext";
@@ -17,13 +17,49 @@ const statusStyle: Record<string, string> = {
 const statuses  = ["All", "Confirmed", "Pending", "Cancelled", "Completed"];
 const occasions = ["All", "Birthday", "Anniversary", "Proposal", "Surprise Party", "Corporate", "Other"];
 
-const TIME_SLOTS = [
-  "08:00", "09:00", "10:00", "11:00", "12:00", "13:00",
-  "14:00", "15:00", "16:00", "17:00", "18:00", "19:00",
-  "20:00", "21:00", "22:00",
-];
+export function generateSlots(startTime: string, endTime: string, durationMins: number, gapMins: number = 30): string[] {
+  const slots: string[] = [];
+  const [sh, sm] = startTime.split(":").map(Number);
+  const [eh, em] = endTime.split(":").map(Number);
+  let cur = sh * 60 + sm;
+  let end = eh * 60 + em;
+  if (end < cur) {
+    end += 24 * 60;
+  }
+  const step = durationMins + gapMins;
+  while (cur + durationMins <= end) {
+    const hh = Math.floor(cur / 60) % 24;
+    const mm = cur % 60;
+    const period = hh >= 12 ? "PM" : "AM";
+    const dh = hh > 12 ? hh - 12 : hh === 0 ? 12 : hh;
+    slots.push(`${String(dh).padStart(2, "0")}:${String(mm).padStart(2, "0")} ${period}`);
+    cur += step;
+  }
+  return slots;
+}
 
-type ApiSuite = { id: number; name: string; price: number; capacity: number; themeType: string };
+function getEndTime(start: string, durationMins: number): string {
+  const [time, period] = start.split(" ");
+  const [h, m] = time.split(":").map(Number);
+  let totalMin = ((period === "PM" && h !== 12 ? h + 12 : period === "AM" && h === 12 ? 0 : h) * 60) + m + durationMins;
+  const endH = Math.floor(totalMin / 60) % 24;
+  const endM = totalMin % 60;
+  const endPeriod = endH >= 12 ? "PM" : "AM";
+  const displayH = endH > 12 ? endH - 12 : endH === 0 ? 12 : endH;
+  return `${String(displayH).padStart(2, "0")}:${String(endM).padStart(2, "0")} ${endPeriod}`;
+}
+
+type ApiSuite = {
+  id: number;
+  name: string;
+  price: number;
+  capacity: number;
+  themeType: string;
+  slotStartTime?: string;
+  slotEndTime?: string;
+  slotDurationMins?: number;
+  gapBetweenSlotsMins?: number;
+};
 type ApiAddon = { id: number; name: string; price: number; category: string };
 
 const emptyGuest = { firstName: "", lastName: "", email: "", phone: "" };
@@ -68,8 +104,30 @@ function NewBookingModal({ onClose, onCreated }: { onClose: () => void; onCreate
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [selectedSuite, setSelectedSuite] = useState<ApiSuite | null>(null);
+  const [blockedSlots, setBlockedSlots] = useState<string[]>([]);
   const [selectedAddons, setSelectedAddons] = useState<ApiAddon[]>([]);
   const [occasion, setOccasion] = useState("Birthday");
+
+  useEffect(() => {
+    if (selectedSuite && date) {
+      suitesApi.getBlockedSlots(selectedSuite.id, date)
+        .then((slots) => {
+          setBlockedSlots(Array.isArray(slots) ? slots : []);
+        })
+        .catch(() => {
+          setBlockedSlots([]);
+        });
+    } else {
+      setBlockedSlots([]);
+    }
+  }, [selectedSuite, date]);
+
+  useEffect(() => {
+    if (startTime && blockedSlots.includes(startTime)) {
+      setStartTime("");
+      setEndTime("");
+    }
+  }, [blockedSlots, startTime]);
 
   // Step 1 state
   const [guest, setGuest] = useState(emptyGuest);
@@ -85,6 +143,13 @@ function NewBookingModal({ onClose, onCreated }: { onClose: () => void; onCreate
     );
   }
 
+  function handleSelectSlot(slot: string) {
+    if (!selectedSuite) return;
+    const duration = selectedSuite.slotDurationMins ?? 150;
+    setStartTime(slot);
+    setEndTime(getEndTime(slot, duration));
+  }
+
   const suitePrice = selectedSuite ? Number(selectedSuite.price) : 0;
   const addonsTotal = selectedAddons.reduce((s, a) => s + Number(a.price), 0);
   const totalAmount = suitePrice + addonsTotal;
@@ -93,7 +158,6 @@ function NewBookingModal({ onClose, onCreated }: { onClose: () => void; onCreate
     if (!date) return t("app.admin.selectDate", "Please select a date.");
     if (!startTime) return t("app.admin.startTime", "Please select a start time.");
     if (!endTime) return t("app.admin.endTime", "Please select an end time.");
-    if (startTime >= endTime) return t("app.admin.endAfterStart", "End time must be after start time.");
     if (!selectedSuite) return t("app.admin.selectSuite", "Please select a suite.");
     return "";
   }
@@ -156,30 +220,12 @@ function NewBookingModal({ onClose, onCreated }: { onClose: () => void; onCreate
         {/* ── Step 0: Schedule & Suite ── */}
         {step === 0 && (
           <div className="space-y-4">
-            <div className="grid grid-cols-3 gap-3">
-              <div className="col-span-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
                 <label className="text-xs text-muted-foreground uppercase tracking-wide">{t("app.admin.selectDate", "Date")}</label>
                 <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
                   min={new Date().toISOString().split("T")[0]}
                   className="luxury-input w-full rounded-lg px-3 py-1.5 text-sm mt-0.5" />
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground uppercase tracking-wide">{t("app.admin.startTime", "Start Time")}</label>
-                <select value={startTime} onChange={(e) => setStartTime(e.target.value)}
-                  className="luxury-input w-full rounded-lg px-3 py-1.5 text-sm mt-0.5 bg-transparent cursor-pointer">
-                  <option value="" className="bg-[oklch(0.13_0.025_260)]">--</option>
-                  {TIME_SLOTS.map((ts) => <option key={ts} value={ts} className="bg-[oklch(0.13_0.025_260)]">{ts}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground uppercase tracking-wide">{t("app.admin.endTime", "End Time")}</label>
-                <select value={endTime} onChange={(e) => setEndTime(e.target.value)}
-                  className="luxury-input w-full rounded-lg px-3 py-1.5 text-sm mt-0.5 bg-transparent cursor-pointer">
-                  <option value="" className="bg-[oklch(0.13_0.025_260)]">--</option>
-                  {TIME_SLOTS.filter((ts) => !startTime || ts > startTime).map((ts) => (
-                    <option key={ts} value={ts} className="bg-[oklch(0.13_0.025_260)]">{ts}</option>
-                  ))}
-                </select>
               </div>
               <div>
                 <label className="text-xs text-muted-foreground uppercase tracking-wide">{t("app.admin.occasion", "Occasion")}</label>
@@ -214,6 +260,63 @@ function NewBookingModal({ onClose, onCreated }: { onClose: () => void; onCreate
                 ))}
               </div>
             </div>
+
+            {selectedSuite && date ? (
+              <div className="space-y-2">
+                <label className="text-xs text-muted-foreground uppercase tracking-wide">{t("app.admin.selectTimeSlot", "Select Time Slot")}</label>
+                {(() => {
+                  const slots = generateSlots(
+                    selectedSuite.slotStartTime ?? "09:00",
+                    selectedSuite.slotEndTime ?? "21:00",
+                    selectedSuite.slotDurationMins ?? 150,
+                    selectedSuite.gapBetweenSlotsMins ?? 30
+                  );
+                  return slots.length === 0 ? (
+                    <p className="text-xs text-rose-400">No slots defined for this suite's settings.</p>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2 mt-1">
+                      {slots.map((slot) => {
+                        const isBlocked = blockedSlots.includes(slot);
+                        const isSelected = startTime === slot;
+                        return (
+                          <button
+                            key={slot}
+                            type="button"
+                            disabled={isBlocked}
+                            onClick={() => handleSelectSlot(slot)}
+                            className={`flex items-center justify-between px-3 py-2 rounded-xl border text-xs font-medium transition
+                              ${isSelected
+                                ? "border-[var(--gold)] bg-[var(--gold)]/10 text-gold font-semibold shadow-[0_0_12px_rgba(212,160,60,0.15)]"
+                                : isBlocked
+                                ? "border-red-500/20 bg-red-500/5 text-rose-400/60 opacity-60 cursor-not-allowed"
+                                : "border-white/10 hover:border-[var(--gold)]/40 hover:bg-white/[0.04] text-muted-foreground hover:text-foreground"
+                              }`}
+                          >
+                            <div className="flex items-center gap-1.5">
+                              <Clock className={`h-3.5 w-3.5 ${isSelected ? "text-gold" : isBlocked ? "text-rose-400/40" : "text-muted-foreground"}`} />
+                              <span>{slot}</span>
+                            </div>
+                            <span className={`text-[9px] px-1.5 py-0.5 rounded border ${
+                              isSelected
+                                ? "border-gold/30 bg-gold/10 text-gold"
+                                : isBlocked
+                                ? "border-red-500/20 bg-red-500/10 text-rose-400"
+                                : "border-white/10 bg-white/5 text-muted-foreground"
+                            }`}>
+                              {isBlocked ? "Blocked" : "Available"}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+              </div>
+            ) : (
+              <div className="py-4 text-center border border-dashed border-white/10 rounded-xl">
+                <p className="text-xs text-muted-foreground">Select date and suite to view available slots</p>
+              </div>
+            )}
 
             {addons.length > 0 && (
               <div>

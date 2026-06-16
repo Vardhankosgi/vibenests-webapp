@@ -105,6 +105,14 @@ export const suitesApi = {
   create: (body: any) => request<any>('/suites', { method: 'POST', body: JSON.stringify(body) }),
   update: (id: number, body: any) => request<any>(`/suites/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   remove: (id: number) => request<any>(`/suites/${id}`, { method: 'DELETE' }),
+  getBlockedSlots: (id: number | string, date: string) =>
+    request<string[]>(`/suites/${id}/blocked-slots?date=${date}`),
+  getAvailabilityDetails: (id: number | string, date: string) =>
+    request<{ bookings: any[]; blocks: any[] }>(`/suites/${id}/availability-details?date=${date}`),
+  addBlock: (id: number | string, body: { date: string; timeSlot: string; note?: string }) =>
+    request<any>(`/suites/${id}/availability`, { method: 'POST', body: JSON.stringify(body) }),
+  removeBlock: (id: number | string, availabilityId: number) =>
+    request<any>(`/suites/${id}/availability/${availabilityId}`, { method: 'DELETE' }),
 };
 
 // ── Add-ons ──────────────────────────────────────────────────────────────────

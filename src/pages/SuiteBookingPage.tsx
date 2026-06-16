@@ -7,7 +7,7 @@ import {
   HelpCircle, LogOut, Package, Bell, ChevronDown, Award,
 } from "lucide-react";
 import { useSuitesContext, type Suite } from "@/components/admin/SuitesContext";
-import { addonsApi, bookingsApi, paymentsApi, couponsApi, membershipsApi } from "@/lib/api";
+import { suitesApi, addonsApi, bookingsApi, paymentsApi, couponsApi, membershipsApi } from "@/lib/api";
 import { LanguageSelector } from "@/components/shared/LanguageSelector";
 import { useTranslation } from "react-i18next";
 
@@ -150,6 +150,28 @@ export default function SuiteBookingPage() {
     passedPackage ? "09:00 AM" : ""
   );
   const [selectedSuite, setSelectedSuite] = useState(passedPackage ? "0" : "");
+  const [blockedSlots, setBlockedSlots] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (selectedSuite && selectedSuite !== "0" && bookingDate) {
+      suitesApi.getBlockedSlots(selectedSuite, bookingDate)
+        .then((slots) => {
+          setBlockedSlots(Array.isArray(slots) ? slots : []);
+        })
+        .catch(() => {
+          setBlockedSlots([]);
+        });
+    } else {
+      setBlockedSlots([]);
+    }
+  }, [selectedSuite, bookingDate]);
+
+  useEffect(() => {
+    if (startTime && blockedSlots.includes(startTime)) {
+      setStartTime("");
+    }
+  }, [blockedSlots, startTime]);
+
   const [addonQty, setAddonQty] = useState<Record<string, number>>({});
   const [persons, setPersons] = useState(1);
   const [specialRequests, setSpecialRequests] = useState("");
@@ -709,28 +731,46 @@ export default function SuiteBookingPage() {
                           <span className="px-2 py-0.5 rounded-full bg-gold/10 border border-gold/25 text-[10px] text-gold font-semibold">{slotDuration} min per slot · {slotGap} min gap</span>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          {timeSlots.map((slot) => {
-                            const end = getEndTime(slot, slotDuration);
-                            const active = startTime === slot;
-                            return (
-                              <button
-                                key={slot}
-                                type="button"
-                                onClick={() => setStartTime(slot)}
-                                className={`flex items-center justify-between gap-3 px-4 py-3.5 rounded-2xl border text-sm font-medium transition-all ${active
-                                  ? "border-gold bg-gold/15 text-gold shadow-[0_0_16px_rgba(212,160,60,0.2)]"
-                                  : "border-white/10 bg-white/5 text-muted-foreground hover:border-gold/40 hover:text-foreground hover:bg-white/10"
+                          {timeSlots.length === 0 ? (
+                            <div className="col-span-2 py-8 text-center text-xs text-muted-foreground border border-dashed border-white/10 rounded-2xl">
+                              No slots defined for this suite.
+                            </div>
+                          ) : (
+                            timeSlots.map((slot) => {
+                              const isBlocked = blockedSlots.includes(slot);
+                              const end = getEndTime(slot, slotDuration);
+                              const active = startTime === slot;
+                              return (
+                                <button
+                                  key={slot}
+                                  type="button"
+                                  disabled={isBlocked}
+                                  onClick={() => setStartTime(slot)}
+                                  className={`flex items-center justify-between gap-3 px-4 py-3.5 rounded-2xl border text-sm font-medium transition-all ${
+                                    isBlocked
+                                      ? "border-white/5 bg-white/[0.01] text-muted-foreground/45 opacity-45 cursor-not-allowed"
+                                      : active
+                                      ? "border-gold bg-gold/15 text-gold shadow-[0_0_16px_rgba(212,160,60,0.2)]"
+                                      : "border-white/10 bg-white/5 text-muted-foreground hover:border-gold/40 hover:text-foreground hover:bg-white/10"
                                   }`}
-                              >
-                                <div className="flex items-center gap-2.5">
-                                  <Clock className={`h-4 w-4 shrink-0 ${active ? "text-gold" : "text-gold/40"}`} />
-                                  <span>{slot} – {end}</span>
-                                </div>
-                                <span className={`text-[10px] px-2 py-0.5 rounded-full border ${active ? "border-gold/40 bg-gold/10 text-gold" : "border-white/10 bg-white/5 text-muted-foreground"
-                                  }`}>{slotDuration} min</span>
-                              </button>
-                            );
-                          })}
+                                >
+                                  <div className="flex items-center gap-2.5">
+                                    <Clock className={`h-4 w-4 shrink-0 ${active ? "text-gold" : isBlocked ? "text-muted-foreground/35" : "text-gold/40"}`} />
+                                    <span>{slot} – {end}</span>
+                                  </div>
+                                  <span className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors ${
+                                    isBlocked
+                                      ? "border-rose-500/20 bg-rose-500/10 text-rose-400 font-semibold"
+                                      : active
+                                      ? "border-gold/40 bg-gold/10 text-gold"
+                                      : "border-white/10 bg-white/5 text-muted-foreground"
+                                  }`}>
+                                    {isBlocked ? "Already Booked" : `${slotDuration} min`}
+                                  </span>
+                                </button>
+                              );
+                            })
+                          )}
                         </div>
                       </div>
 
