@@ -15,7 +15,7 @@ import AddonsPage from "@/pages/AddonsPage";
 import AnalyticsPage from "@/pages/AnalyticsPage";
 import OffersPage from "@/pages/OffersPage";
 import PackagesPage from "@/pages/PackagesPage";
-import CelebrationPackagesPage from "@/pages/CelebrationPackagesPage";
+import CelebrationMembershipsPage from "@/pages/CelebrationMembershipsPage";
 import SuiteBookingPage from "@/pages/SuiteBookingPage";
 import RevenuePage from "@/pages/RevenuePage";
 import CustomersPage from "@/pages/CustomersPage";
@@ -23,6 +23,7 @@ import AvgBookingValuePage from "@/pages/AvgBookingValuePage";
 import UserDashboardPage from "@/pages/UserDashboardPage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import WriteReviewPage from "@/pages/WriteReviewPage";
+import ReviewsPage from "@/pages/ReviewsPage";
 import PrivacyPolicyPage from "@/pages/PrivacyPolicyPage";
 import TermsOfUsePage from "@/pages/TermsOfUsePage";
 import ContactUsPage from "@/pages/ContactUsPage";
@@ -61,12 +62,13 @@ export default function App() {
               <Route path="/rooms" element={<SuitesPage />} />
               <Route path="/addons" element={<AddonsPage />} />
               <Route path="/packages" element={<PackagesPage />} />
-              <Route path="/celebration-packages" element={<CelebrationPackagesPage />} />
+              <Route path="/celebration-memberships" element={<CelebrationMembershipsPage />} />
               <Route path="/suite-booking" element={<SuiteBookingPage />} />
               <Route path="/customers" element={<UsersPage />} />
               <Route path="/analytics" element={<AnalyticsPage />} />
               <Route path="/offers" element={<OffersPage />} />
               <Route path="/transactions" element={<TransactionsPage />} />
+              <Route path="/reviews" element={<ReviewsPage />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Route>
           </Route>

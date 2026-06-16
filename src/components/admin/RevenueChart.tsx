@@ -20,10 +20,10 @@ function getMonthIndex(dateStr: string): number {
 
 export function RevenueChart() {
   const { t } = useTranslation();
-  const { bookings } = useAppData();
+  const { filteredBookings } = useAppData();
 
   const data = MONTHS.map((month, index) => {
-    const revenue = bookings
+    const revenue = filteredBookings
       .filter((b) => b.status === "Confirmed" && getMonthIndex(b.date) === index)
       .reduce((s, b) => s + parseAmount(b.amount), 0);
     return { month, revenue };

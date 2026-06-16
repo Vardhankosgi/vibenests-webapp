@@ -20,7 +20,7 @@ interface RecentBookingsProps {
 export function RecentBookings({ filterDate, onClear }: RecentBookingsProps) {
   const ref = useRef<HTMLDivElement>(null);
   const { t } = useTranslation();
-  const { bookings } = useAppData();
+  const { filteredBookings } = useAppData();
 
   useEffect(() => {
     if (filterDate) {
@@ -29,8 +29,8 @@ export function RecentBookings({ filterDate, onClear }: RecentBookingsProps) {
   }, [filterDate]);
 
   const filtered = filterDate
-    ? bookings.filter((b) => b.date === fmtDate(filterDate))
-    : bookings;
+    ? filteredBookings.filter((b) => b.date === fmtDate(filterDate))
+    : filteredBookings;
 
   return (
     <div ref={ref} className="glass-card rounded-2xl p-5">

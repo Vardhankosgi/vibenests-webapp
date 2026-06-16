@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  LayoutDashboard, CalendarDays, Clock, History, Wallet,
+  LayoutDashboard, CalendarDays, Clock, History, Wallet, Award,
   Tag, UserCircle, HelpCircle, LogOut, BedDouble,
   MapPin, ChevronRight, Star, CreditCard, Phone, MessageSquare,
   ArrowUpRight, CheckCircle2, XCircle, Hourglass, Bell,
@@ -13,7 +13,8 @@ import {
   Heart, ChevronLeft, Menu,
 } from "lucide-react";
 import { useSuitesContext } from "@/components/admin/SuitesContext";
-import { bookingsApi, celebrationPackagesApi, usersApi, paymentsApi, offersApi, couponsApi } from "@/lib/api";
+import { bookingsApi, membershipsApi, usersApi, paymentsApi, offersApi, couponsApi } from "@/lib/api";
+import { NotificationPanel, type Notification } from "@/components/admin/NotificationPanel";
 import { LanguageSelector } from "@/components/shared/LanguageSelector";
 import { useAuth } from "@/components/auth/AuthContext";
 import { useTranslation } from "react-i18next";
@@ -134,6 +135,91 @@ function translatePaymentMethod(method: string, t: any): string {
   return method;
 }
 
+function generateNotifications(bookingsList: any[], readIds: string[]): Notification[] {
+  const list: Notification[] = [];
+  
+  bookingsList.forEach((b: any) => {
+    const bookingId = b.orderId ? `#${b.orderId}` : `#VN${b.id}`;
+    const suiteName = b.suite?.name ?? b.suiteName ?? `Suite #${b.suiteId}`;
+    const dateStr = b.date ?? '';
+    const status = b.status?.toLowerCase();
+    const time = b.updatedAt || b.createdAt || new Date().toISOString();
+
+    if (status === 'confirmed') {
+      const id = `booking_${b.id}_confirmed`;
+      list.push({
+        id,
+        type: 'booking',
+        title: 'Booking Confirmed',
+        message: `Your reservation for ${suiteName} (${bookingId}) on ${dateStr} has been confirmed.`,
+        time,
+        read: readIds.includes(id),
+      });
+
+      const payId = `payment_${b.id}_paid`;
+      const amt = Number(b.totalAmount) || 0;
+      list.push({
+        id: payId,
+        type: 'payment',
+        title: 'Payment Received',
+        message: `Initial payment of ₹${amt.toLocaleString()} for booking ${bookingId} was processed.`,
+        time,
+        read: readIds.includes(payId),
+      });
+    } else if (status === 'pending') {
+      const id = `booking_${b.id}_pending`;
+      list.push({
+        id,
+        type: 'booking',
+        title: 'Booking Pending',
+        message: `Your reservation for ${suiteName} (${bookingId}) is pending payment/confirmation.`,
+        time,
+        read: readIds.includes(id),
+      });
+    } else if (status === 'cancelled' || status === 'refunded') {
+      const id = `booking_${b.id}_cancelled`;
+      list.push({
+        id,
+        type: 'cancellation',
+        title: 'Booking Cancelled',
+        message: `Your reservation for ${suiteName} (${bookingId}) was cancelled.`,
+        time,
+        read: readIds.includes(id),
+      });
+    } else if (status === 'completed') {
+      const id = `booking_${b.id}_completed`;
+      list.push({
+        id,
+        type: 'system',
+        title: 'Booking Completed',
+        message: `Thank you for staying at VibeNests! Your stay at ${suiteName} is completed. Click here to leave a review!`,
+        time,
+        read: readIds.includes(id),
+        link: '/user/write-review',
+      });
+    }
+
+    if (dateStr && (status === 'confirmed' || status === 'pending')) {
+      const bDate = new Date(dateStr);
+      const today = new Date();
+      const diffDays = Math.ceil((bDate.getTime() - today.getTime()) / (1000 * 3600 * 24));
+      if (diffDays >= 0 && diffDays <= 3) {
+        const id = `alert_${b.id}_checkin`;
+        list.push({
+          id,
+          type: 'alert',
+          title: 'Check-in Guidelines',
+          message: `Your check-in guidelines for ${suiteName} on ${dateStr} are now available.`,
+          time,
+          read: readIds.includes(id),
+        });
+      }
+    }
+  });
+
+  return list.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+}
+
 /* ─── Types ─────────────────────────────────────────── */
 type NavItem = { id: string; label: string; icon: React.ElementType };
 type Booking = {
@@ -158,28 +244,28 @@ type PaymentMethod = {
 
 /* ─── Nav ────────────────────────────────────────────── */
 const NAV_ITEMS: NavItem[] = [
-  { id: "dashboard",   label: "Dashboard",        icon: LayoutDashboard },
-  { id: "suites",      label: "Browse Suites",     icon: BedDouble },
-  { id: "my-bookings", label: "My Bookings",       icon: CalendarDays },
-  { id: "upcoming",    label: "Upcoming Bookings", icon: Clock },
-  { id: "past",        label: "Past Bookings",     icon: History },
-  { id: "wallet",      label: "Payments",     icon: Wallet },
-  { id: "packages",    label: "Celebration Packages",  icon: Package },
-  { id: "offers",      label: "Special Offers", icon: Tag },
-  { id: "profile",     label: "Profile Settings",  icon: UserCircle },
-  { id: "help",        label: "Help & Support",    icon: HelpCircle },
-  { id: "write-review", label: "Write a Review",   icon: Star },
+  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { id: "suites", label: "Browse Suites", icon: BedDouble },
+  { id: "my-bookings", label: "My Bookings", icon: CalendarDays },
+  { id: "upcoming", label: "Upcoming Bookings", icon: Clock },
+  { id: "past", label: "Past Bookings", icon: History },
+  { id: "wallet", label: "Payments", icon: Wallet },
+  { id: "memberships", label: "Celebration Packages", icon: Award },
+  { id: "offers", label: "Special Offers", icon: Tag },
+  { id: "profile", label: "Profile Settings", icon: UserCircle },
+  { id: "help", label: "Help & Support", icon: HelpCircle },
+  { id: "write-review", label: "Write a Review", icon: Star },
 ];
 
 /* ─── Bookings Data ──────────────────────────────────── */
 const UPCOMING_BOOKINGS: Booking[] = [
-  { id: "VN-2841", suite: "Royal Penthouse Suite", location: "Mumbai, India",  checkIn: "Jan 28, 2025", checkOut: "Feb 01, 2025", checkInTime: "2:00 PM", checkOutTime: "11:00 AM", nights: 4, amount: 128000, status: "confirmed" },
-  { id: "VN-2965", suite: "Oceanic Deluxe Suite",  location: "Goa, India",     checkIn: "Mar 10, 2025", checkOut: "Mar 14, 2025", checkInTime: "1:00 PM", checkOutTime: "10:00 AM", nights: 4, amount: 64000,  status: "pending" },
+  { id: "VN-2841", suite: "Royal Penthouse Suite", location: "Mumbai, India", checkIn: "Jan 28, 2025", checkOut: "Feb 01, 2025", checkInTime: "2:00 PM", checkOutTime: "11:00 AM", nights: 4, amount: 128000, status: "confirmed" },
+  { id: "VN-2965", suite: "Oceanic Deluxe Suite", location: "Goa, India", checkIn: "Mar 10, 2025", checkOut: "Mar 14, 2025", checkInTime: "1:00 PM", checkOutTime: "10:00 AM", nights: 4, amount: 64000, status: "pending" },
 ];
 const PAST_BOOKINGS: Booking[] = [
-  { id: "VN-2210", suite: "Heritage Garden Villa", location: "Jaipur, India",  checkIn: "Oct 05, 2024", checkOut: "Oct 09, 2024", checkInTime: "2:00 PM", checkOutTime: "11:00 AM", nights: 4, amount: 96000, status: "completed" },
-  { id: "VN-2105", suite: "Sky Loft Suite",         location: "Delhi, India",   checkIn: "Aug 15, 2024", checkOut: "Aug 17, 2024", checkInTime: "3:00 PM", checkOutTime: "12:00 PM", nights: 2, amount: 42000, status: "completed" },
-  { id: "VN-1998", suite: "Lakefront Pool Suite",   location: "Udaipur, India", checkIn: "Jun 20, 2024", checkOut: "Jun 23, 2024", checkInTime: "2:00 PM", checkOutTime: "11:00 AM", nights: 3, amount: 75000, status: "cancelled" },
+  { id: "VN-2210", suite: "Heritage Garden Villa", location: "Jaipur, India", checkIn: "Oct 05, 2024", checkOut: "Oct 09, 2024", checkInTime: "2:00 PM", checkOutTime: "11:00 AM", nights: 4, amount: 96000, status: "completed" },
+  { id: "VN-2105", suite: "Sky Loft Suite", location: "Delhi, India", checkIn: "Aug 15, 2024", checkOut: "Aug 17, 2024", checkInTime: "3:00 PM", checkOutTime: "12:00 PM", nights: 2, amount: 42000, status: "completed" },
+  { id: "VN-1998", suite: "Lakefront Pool Suite", location: "Udaipur, India", checkIn: "Jun 20, 2024", checkOut: "Jun 23, 2024", checkInTime: "2:00 PM", checkOutTime: "11:00 AM", nights: 3, amount: 75000, status: "cancelled" },
 ];
 
 
@@ -191,19 +277,19 @@ const STATS = [
 ];
 
 const QUICK_ACTIONS = [
-  { label: "New Booking",       icon: BedDouble,     desc: "Explore & reserve suites" },
-  { label: "Modify Booking",    icon: CalendarDays,  desc: "Change dates or room type" },
-  { label: "Contact", icon: Phone,         desc: "24/7 personal assistance" },
-  { label: "Raise a Request",   icon: MessageSquare, desc: "Report issues or requests" },
+  { label: "New Booking", icon: BedDouble, desc: "Explore & reserve suites" },
+  { label: "Modify Booking", icon: CalendarDays, desc: "Change dates or room type" },
+  { label: "Contact", icon: Phone, desc: "24/7 personal assistance" },
+  { label: "Raise a Request", icon: MessageSquare, desc: "Report issues or requests" },
 ];
 
 /* ─── Wallet Data ────────────────────────────────────── */
 
 const PAYMENT_METHODS: PaymentMethod[] = [
-  { id: "PM-01", type: "visa",       label: "HDFC Credit Card",  last4: "4291", isDefault: true  },
-  { id: "PM-02", type: "mastercard", label: "ICICI Debit Card",  last4: "7832", isDefault: false },
-  { id: "PM-03", type: "upi",        label: "adithya@oksbi",                    isDefault: false },
-  { id: "PM-04", type: "bank",       label: "ICICI Bank",        last4: "7832", isDefault: false },
+  { id: "PM-01", type: "visa", label: "HDFC Credit Card", last4: "4291", isDefault: true },
+  { id: "PM-02", type: "mastercard", label: "ICICI Debit Card", last4: "7832", isDefault: false },
+  { id: "PM-03", type: "upi", label: "adithya@oksbi", isDefault: false },
+  { id: "PM-04", type: "bank", label: "ICICI Bank", last4: "7832", isDefault: false },
 ];
 
 /* ─── Status Config ──────────────────────────────────── */
@@ -643,19 +729,19 @@ function DashboardView({ onNavigate }: { onNavigate: (id: string) => void }) {
     bookingsApi.getAll().then((list) => {
       const mapped: Booking[] = list
         .filter((b: any) => b.status === 'confirmed' || b.status === 'pending')
-          .map((b: any) => ({
-            id: `VN-${b.id}`,
-            suite: b.suiteName || `Suite #${b.suiteId}`,
-            location: 'VibeNests, India',
-            checkIn: b.date, checkOut: b.date,
-            checkInTime: b.timeSlot || '', checkOutTime: b.endTimeSlot || '',
-            nights: 1, amount: Number(b.totalAmount) || 0,
-            status: b.status as Booking['status'],
-            image: b.image || b.suiteImages?.[0],
-            _raw: b,
-          }));
+        .map((b: any) => ({
+          id: `VN-${b.id}`,
+          suite: b.suiteName || `Suite #${b.suiteId}`,
+          location: 'VibeNests, India',
+          checkIn: b.date, checkOut: b.date,
+          checkInTime: b.timeSlot || '', checkOutTime: b.endTimeSlot || '',
+          nights: 1, amount: Number(b.totalAmount) || 0,
+          status: b.status as Booking['status'],
+          image: b.image || b.suiteImages?.[0],
+          _raw: b,
+        }));
       setDashboardBookings(mapped);
-    }).catch(() => {});
+    }).catch(() => { });
   }, []);
 
   const statsTranslated = [
@@ -666,16 +752,16 @@ function DashboardView({ onNavigate }: { onNavigate: (id: string) => void }) {
   ];
 
   const conciergeCards = [
-    { title: t("app.userDashboard.conciergeTitle", "Concierge"),     desc: t("app.userDashboard.conciergeDesc", "24/7 dedicated personal assistance for every need"), icon: Phone,        accent: "from-sky-500/10" },
-    { title: t("app.userDashboard.fineDiningTitle", "Fine Dining"),   desc: t("app.userDashboard.fineDiningDesc", "Reserve exclusive in-suite and restaurant dining"),  icon: Star,         accent: "from-amber-500/10" },
-    { title: t("app.userDashboard.spaWellnessTitle", "Spa & Wellness"),desc: t("app.userDashboard.spaWellnessDesc", "Book rejuvenating spa treatments and wellness"),     icon: ArrowUpRight, accent: "from-emerald-500/10" },
+    { title: t("app.userDashboard.conciergeTitle", "Concierge"), desc: t("app.userDashboard.conciergeDesc", "24/7 dedicated personal assistance for every need"), icon: Phone, accent: "from-sky-500/10" },
+    { title: t("app.userDashboard.fineDiningTitle", "Fine Dining"), desc: t("app.userDashboard.fineDiningDesc", "Reserve exclusive in-suite and restaurant dining"), icon: Star, accent: "from-amber-500/10" },
+    { title: t("app.userDashboard.spaWellnessTitle", "Spa & Wellness"), desc: t("app.userDashboard.spaWellnessDesc", "Book rejuvenating spa treatments and wellness"), icon: ArrowUpRight, accent: "from-emerald-500/10" },
   ];
 
   const quickActionsTranslated = [
-    { label: t("app.userDashboard.newBooking", "New Booking"),       icon: BedDouble,     desc: t("app.userDashboard.newBookingDesc", "Explore & reserve suites") },
+    { label: t("app.userDashboard.newBooking", "New Booking"), icon: BedDouble, desc: t("app.userDashboard.newBookingDesc", "Explore & reserve suites") },
     // { label: t("app.userDashboard.modifyBooking", "Modify Booking"),    icon: CalendarDays,  desc: t("app.userDashboard.modifyBookingDesc", "Change dates or room type") },
-    { label: t("app.userDashboard.contactConcierge", "Contact us"), icon: Phone,         desc: t("app.userDashboard.contactConciergeDesc", "24/7 personal assistance") },
-    { label: t("app.userDashboard.raiseRequest", "Raise a Request"),   icon: MessageSquare, desc: t("app.userDashboard.raiseRequestDesc", "Report issues or requests") },
+    { label: t("app.userDashboard.contactConcierge", "Contact us"), icon: Phone, desc: t("app.userDashboard.contactConciergeDesc", "24/7 personal assistance") },
+    { label: t("app.userDashboard.raiseRequest", "Raise a Request"), icon: MessageSquare, desc: t("app.userDashboard.raiseRequestDesc", "Report issues or requests") },
   ];
 
   return (
@@ -708,10 +794,10 @@ function DashboardView({ onNavigate }: { onNavigate: (id: string) => void }) {
         </div>
         {/* Loyalty points badge */}
         {/* <div className="absolute right-8 bottom-6 hidden md:block z-10"> */}
-          {/* <div className="glass-gold rounded-2xl p-4 text-center min-w-[120px]"> */}
-            {/* <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">{t("app.userDashboard.loyaltyPoints", "Loyalty Points")}</p> */}
-            {/* <p className="font-display text-3xl text-gold">4,820</p> */}
-          {/* </div> */}
+        {/* <div className="glass-gold rounded-2xl p-4 text-center min-w-[120px]"> */}
+        {/* <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">{t("app.userDashboard.loyaltyPoints", "Loyalty Points")}</p> */}
+        {/* <p className="font-display text-3xl text-gold">4,820</p> */}
+        {/* </div> */}
         {/* </div> */}
       </motion.div>
 
@@ -890,20 +976,20 @@ function BookingListView({ bookings, title, fetchFromApi, statusFilter }: { book
             if (statusFilter === 'past') return b.status === 'completed' || b.status === 'cancelled' || b.status === 'refunded';
             return true;
           })
-            .map((b: any) => ({
-              id: `VN-${b.id}`,
-              suite: b.suiteName || `Suite #${b.suiteId}`,
-              location: "VibeNests, India",
-              checkIn: b.date, checkOut: b.date,
-              checkInTime: b.timeSlot || "", checkOutTime: b.endTimeSlot || "",
-              nights: 1, amount: Number(b.totalAmount) || 0,
-              status: b.status as Booking["status"],
-              image: b.image || b.suiteImages?.[0],
-              _raw: b,
-            }));
+          .map((b: any) => ({
+            id: `VN-${b.id}`,
+            suite: b.suiteName || `Suite #${b.suiteId}`,
+            location: "VibeNests, India",
+            checkIn: b.date, checkOut: b.date,
+            checkInTime: b.timeSlot || "", checkOutTime: b.endTimeSlot || "",
+            nights: 1, amount: Number(b.totalAmount) || 0,
+            status: b.status as Booking["status"],
+            image: b.image || b.suiteImages?.[0],
+            _raw: b,
+          }));
         setApiBookings(mapped);
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoadingApi(false));
   };
 
@@ -958,9 +1044,8 @@ function BookingListView({ bookings, title, fetchFromApi, statusFilter }: { book
           <div className="flex gap-1 glass rounded-xl p-1">
             {(["all", "confirmed", "pending", "completed", "cancelled"] as const).map((s) => (
               <button key={s} onClick={() => setStatusFilterLocal(s)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-colors ${
-                  statusFilterLocal === s ? "bg-gold/20 text-gold" : "text-muted-foreground hover:text-foreground"
-                }`}>
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-colors ${statusFilterLocal === s ? "bg-gold/20 text-gold" : "text-muted-foreground hover:text-foreground"
+                  }`}>
                 {s === "all" ? t("app.userDashboard.status_all", "All") : t(`app.userDashboard.status_${s}`, s.charAt(0).toUpperCase() + s.slice(1))}
               </button>
             ))}
@@ -984,14 +1069,14 @@ function BookingListView({ bookings, title, fetchFromApi, statusFilter }: { book
 
 function WalletView() {
   const { t } = useTranslation();
-  const [searchTerm, setSearchTerm]   = useState("");
-  const [filterType, setFilterType]   = useState<"all" | "credit" | "debit">("all");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterType, setFilterType] = useState<"all" | "credit" | "debit">("all");
   const [txnFromDate, setTxnFromDate] = useState("");
-  const [txnToDate, setTxnToDate]     = useState("");
+  const [txnToDate, setTxnToDate] = useState("");
   const [selectedTxn, setSelectedTxn] = useState<Transaction | null>(null);
-  const [methods, setMethods]         = useState<PaymentMethod[]>(PAYMENT_METHODS);
-  const [payments, setPayments]       = useState<any[]>([]);
-  const [loading, setLoading]         = useState(true);
+  const [methods, setMethods] = useState<PaymentMethod[]>(PAYMENT_METHODS);
+  const [payments, setPayments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     paymentsApi.getMine()
@@ -1005,7 +1090,7 @@ function WalletView() {
     const amount = Number(p.amount || 0);
     return {
       id: `TXN-${p.id}`,
-      desc: isRefund 
+      desc: isRefund
         ? t("app.userDashboard.txnDescRefund", "Refund – Cancelled Booking {{id}}", { id: p.bookingId })
         : t("app.userDashboard.txnDescBookingPayment", "Booking Payment – {{suite}} {{id}}", { suite: p.booking?.suiteName || `Suite #${p.booking?.suiteId ?? ''}`, id: p.bookingId }),
       amount: isRefund ? amount : -amount,
@@ -1024,17 +1109,17 @@ function WalletView() {
 
   const filtered = transactions.filter((tVal) => {
     const matchSearch = tVal.desc.toLowerCase().includes(searchTerm.toLowerCase()) || tVal.id.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchType   = filterType === "all" || tVal.type === filterType;
+    const matchType = filterType === "all" || tVal.type === filterType;
     const d = parseTxnDate(tVal.date);
     const matchFrom = !txnFromDate || d >= new Date(txnFromDate);
-    const matchTo   = !txnToDate   || d <= new Date(txnToDate + "T23:59:59");
+    const matchTo = !txnToDate || d <= new Date(txnToDate + "T23:59:59");
     return matchSearch && matchType && matchFrom && matchTo;
   });
 
   const hasDateFilter = txnFromDate || txnToDate;
 
   const totalCredit = transactions.filter((tVal) => tVal.type === "credit").reduce((s, tVal) => s + tVal.amount, 0);
-  const totalDebit  = transactions.filter((tVal) => tVal.type === "debit").reduce((s, tVal) => s + Math.abs(tVal.amount), 0);
+  const totalDebit = transactions.filter((tVal) => tVal.type === "debit").reduce((s, tVal) => s + Math.abs(tVal.amount), 0);
 
   function setDefault(id: string) {
     setMethods((prev) => prev.map((m) => ({ ...m, isDefault: m.id === id })));
@@ -1044,11 +1129,11 @@ function WalletView() {
   }
 
   const walletActions = [
-    { label: t("app.userDashboard.addMoney", "Add Money"),        icon: Plus,       color: "emerald" },
-    { label: t("app.userDashboard.transactions", "Transactions"),     icon: Receipt,    color: "sky"     },
-    { label: t("app.userDashboard.importStatement", "Import Statement"), icon: Download,   color: "violet"  },
-    { label: t("app.userDashboard.paymentMethods", "Payment Methods"),  icon: CreditCard, color: "amber"   },
-    { label: t("app.userDashboard.refunds", "Refunds"),          icon: RefreshCw,  color: "rose"    },
+    { label: t("app.userDashboard.addMoney", "Add Money"), icon: Plus, color: "emerald" },
+    { label: t("app.userDashboard.transactions", "Transactions"), icon: Receipt, color: "sky" },
+    { label: t("app.userDashboard.importStatement", "Import Statement"), icon: Download, color: "violet" },
+    { label: t("app.userDashboard.paymentMethods", "Payment Methods"), icon: CreditCard, color: "amber" },
+    { label: t("app.userDashboard.refunds", "Refunds"), icon: RefreshCw, color: "rose" },
   ];
 
   return (
@@ -1288,383 +1373,312 @@ function WalletView() {
   );
 }
 
-/* ─── Celebration Packages Data ─────────────────────── */
-type CelebrationPackage = {
-  id: string; name: string; occasion: string; badge: string; badgeColor: string;
-  image: string; capacity: string; price: number; description: string;
-  amenities: string[]; bookings: number; wishlist?: boolean;
-};
+/* ─── Celebration Memberships View ─────────────────────── */
+function CelebrationMembershipsView() {
+  const { t } = useTranslation();
+  const { suites } = useSuitesContext();
+  const navigate = useNavigate();
+  const [plans, setPlans] = useState<any[]>([]);
+  const [myActive, setMyActive] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [successMsg, setSuccessMsg] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
 
-const BADGE_COLORS: Record<string, string> = {
-  "Most Popular": "bg-amber-400/20 border-amber-400/40 text-amber-300",
-  "Best for Couples": "bg-rose-400/20 border-rose-400/40 text-rose-300",
-  "Great for Parties": "bg-sky-400/20 border-sky-400/40 text-sky-300",
-  "Perfect Surprise": "bg-purple-400/20 border-purple-400/40 text-purple-300",
-};
-
-function apiToPackage(p: any): CelebrationPackage {
-  return {
-    id: String(p.id),
-    name: p.name,
-    occasion: p.occasion,
-    badge: p.badge || "Most Popular",
-    badgeColor: BADGE_COLORS[p.badge] || BADGE_COLORS["Most Popular"],
-    image: p.image || "",
-    capacity: `Up to ${p.capacity} guests`,
-    price: Number(p.price),
-    description: p.description,
-    amenities: Array.isArray(p.amenities) ? p.amenities : [],
-    bookings: Number(p.booked) || 0,
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      setErrorMsg("");
+      const pData = await membershipsApi.getPlans();
+      // Only display Silver and Gold active membership plans
+      setPlans(Array.isArray(pData) ? pData.filter(p => p.status === 'active' && (p.name === 'Silver' || p.name === 'Gold')) : []);
+      const activeData = await membershipsApi.getMyActive();
+      setMyActive(activeData || null);
+    } catch (err: any) {
+      setErrorMsg(err.message || "Failed to load package data.");
+    } finally {
+      setLoading(false);
+    }
   };
-}
-
-const ALL_OCCASIONS = ["All", "Birthday", "Anniversary", "Proposal", "Baby Shower", "Corporate Events", "Other Celebrations"];
-const SORT_OPTIONS = ["Popularity", "Price: Low to High", "Price: High to Low", "Most Booked"];
-const AMENITY_ICON_MAP: Record<string, React.ElementType> = {
-  "Floral Decor": Sparkles,
-  "Custom Cake": Cake,
-  "LED Lights": Star,
-  "Balloons": Star,
-  "Photography": Camera,
-  "Rose Petals": Star,
-  "Champagne": Coffee,
-  "Candles": Star,
-  "Music System": Music,
-  "Flower Arch": Sparkles,
-  "Ring Reveal Box": Star,
-  "DJ Setup": Music,
-  "Multi-tier Cake": Cake,
-  "Welcome Drinks": Coffee,
-  "Streamers": Sparkles,
-  "Pastel Decor": Sparkles,
-  "Themed Cake": Cake,
-  "Welcome Hamper": Package,
-  "AV Equipment": Tv,
-  "Catering": Coffee,
-  "Branded Decor": Sparkles,
-  "Concierge": Phone,
-  "Wi-Fi": Wifi,
-  "Fine Dining": Coffee,
-  "Spa Access": Star,
-  "Butler Service": Star,
-  "Custom Decor": Sparkles,
-  "Custom Menu": Coffee,
-  "Surprise Element": Sparkles,
-  "Music": Music,
-  "Pastel Balloons": Star,
-};
-
-/* ─── Package Detail Modal ───────────────────────────── */
-function PackageDetailModal({ pkg, onClose }: { pkg: CelebrationPackage; onClose: () => void }) {
-  const { t } = useTranslation();
-  return (
-    <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-          className="absolute inset-0 bg-black/75 backdrop-blur-sm" onClick={onClose} />
-        <motion.div initial={{ scale: 0.95, opacity: 0, y: 16 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0 }}
-          transition={{ type: "spring", damping: 28, stiffness: 260 }}
-          className="relative z-10 w-full max-w-2xl glass-card rounded-2xl overflow-hidden">
-          <div className="relative h-56">
-            <img src={pkg.image} alt={pkg.name} className="w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-            <button onClick={onClose} className="absolute top-4 right-4 h-8 w-8 rounded-xl bg-black/50 backdrop-blur flex items-center justify-center text-white hover:bg-black/70 transition-colors">
-              <X className="h-4 w-4" />
-            </button>
-            <span className={`absolute top-4 left-4 px-2.5 py-1 rounded-full border text-[10px] font-bold tracking-widest ${pkg.badgeColor}`}>
-              {t("app.userDashboard.badge_" + pkg.badge.toLowerCase().replace(/\s+/g, "_"), pkg.badge)}
-            </span>
-            <div className="absolute bottom-4 left-5">
-              <p className="text-[10px] text-gold/80 uppercase tracking-widest">
-                {t("app.userDashboard.occasion_" + pkg.occasion.toLowerCase().replace(/\s+/g, "_"), pkg.occasion)}
-              </p>
-              <h3 className="font-display text-2xl text-white">{pkg.name}</h3>
-            </div>
-          </div>
-          <div className="p-6 space-y-5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Users className="h-4 w-4 text-gold" />{pkg.capacity}
-              </div>
-              <p className="font-display text-3xl text-gold">₹{pkg.price.toLocaleString()}</p>
-            </div>
-            <p className="text-sm text-muted-foreground leading-relaxed">{pkg.description}</p>
-            <div>
-              <p className="text-[11px] text-muted-foreground uppercase tracking-widest mb-2">{t("app.userDashboard.whatsIncluded", "What's Included")}</p>
-              <div className="flex flex-wrap gap-2">
-                {pkg.amenities.map((a) => {
-                  const Icon = AMENITY_ICON_MAP[a] ?? Sparkles;
-                  return (
-                    <span key={a} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gold/10 border border-gold/20 text-gold text-xs">
-                      <Icon className="h-3 w-3" />{a}
-                    </span>
-                  );
-                })}
-              </div>
-            </div>
-            <div className="flex gap-3 pt-2">
-              <button className="flex-1 gold-btn rounded-xl py-3 text-sm font-semibold">{t("app.userDashboard.bookThisPackage", "Book This Package")}</button>
-              <button onClick={onClose} className="flex-1 glass rounded-xl py-3 text-sm text-muted-foreground border border-white/10 hover:text-foreground transition-colors">{t("app.userDashboard.close", "Close")}</button>
-            </div>
-          </div>
-        </motion.div>
-      </div>
-    </AnimatePresence>
-  );
-}
-
-/* ─── Celebration Packages View ──────────────────────── */
-function CelebrationPackagesView() {
-  const { t } = useTranslation();
-  const [selectedOccasion, setSelectedOccasion] = useState("All");
-  const [priceRange, setPriceRange]             = useState(40000);
-  const [sortBy, setSortBy]                     = useState("Popularity");
-  const [wishlist, setWishlist]                 = useState<Set<string>>(new Set());
-  const [compareList, setCompareList]           = useState<string[]>([]);
-  const [detailPkg, setDetailPkg]               = useState<CelebrationPackage | null>(null);
-  const [page, setPage]                         = useState(1);
-  const PER_PAGE = 6;
-
-  const [packages, setPackages]               = useState<CelebrationPackage[]>([]);
-  const [loading, setLoading]                 = useState(true);
 
   useEffect(() => {
-    celebrationPackagesApi.getPublic()
-      .then((data) => setPackages(data.map(apiToPackage)))
-      .catch(console.error)
-      .finally(() => setLoading(false));
+    loadData();
   }, []);
 
-  const filtered = packages
-    .filter((p) => (selectedOccasion === "All" || p.occasion === selectedOccasion) && p.price <= priceRange)
-    .sort((a, b) => {
-      if (sortBy === "Price: Low to High") return a.price - b.price;
-      if (sortBy === "Price: High to Low") return b.price - a.price;
-      if (sortBy === "Most Booked") return b.bookings - a.bookings;
-      return b.bookings - a.bookings;
-    });
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
-  const paginated = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
-
-  function toggleWishlist(id: string) {
-    setWishlist((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20">
+        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-gold" />
+        <p className="mt-3 text-xs text-muted-foreground uppercase tracking-widest animate-pulse">Loading Packages...</p>
+      </div>
+    );
   }
 
-  function toggleCompare(id: string) {
-    setCompareList((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : prev.length < 3 ? [...prev, id] : prev);
-  }
+  // Parse active membership benefits
+  const activeBenefits = myActive
+    ? (Array.isArray(myActive.plan?.benefits)
+      ? myActive.plan.benefits
+      : typeof myActive.plan?.benefits === 'string'
+        ? myActive.plan.benefits.split(',')
+        : myActive.planName === 'Gold'
+          ? [
+              '15 free bookings on eligible suites',
+              '24/7 dedicated support desk',
+              '1 complimentary add-on per booking',
+              'Free late check-out (up to 2 hours)'
+            ]
+          : [
+              '5 free bookings on eligible suites',
+              'Priority customer support',
+              'Complimentary soft drinks during stays'
+            ])
+    : [];
 
-  function clearFilters() {
-    setSelectedOccasion("All"); setPriceRange(40000); setSortBy("Popularity"); setPage(1);
-  }
+  const isActive = myActive && myActive.status === 'active';
+  const isGoldActive = isActive && myActive.planName === 'Gold';
+  const isExpired = myActive && myActive.status === 'expired';
+  const activeSuiteNames = myActive
+    ? (myActive.eligibleSuites || [])
+        .map((id: any) => suites.find((s: any) => String(s.id) === String(id))?.name || `Suite #${id}`)
+        .join(", ")
+    : "";
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="font-display text-2xl text-foreground">{t("app.userDashboard.celebrationPackages", "Celebration Packages")}</h3>
-          <p className="text-xs text-muted-foreground mt-1">{t("app.userDashboard.celebrationPackagesDesc", "Curated luxury experiences for every special occasion")}</p>
-        </div>
-        <span className="px-3 py-1 rounded-full bg-gold/10 border border-gold/25 text-gold text-xs font-semibold">
-          {t("app.userDashboard.packagesCount", "{{count}} Packages", { count: filtered.length })}
-        </span>
-      </div>
-
-      <div className="flex gap-6">
-        {/* ── Sidebar Filter ── */}
-        <aside className="w-56 shrink-0 space-y-5">
-          <div className="glass-card rounded-2xl p-5 space-y-5">
-            {/* Occasion filter */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-xs font-semibold text-foreground uppercase tracking-widest">{t("app.userDashboard.occasion", "Occasion")}</p>
-                <button onClick={clearFilters} className="text-[10px] text-gold hover:text-gold/70 transition-colors">{t("app.userDashboard.clearAll", "Clear All")}</button>
-              </div>
-              <div className="space-y-1">
-                {ALL_OCCASIONS.map((o: string) => (
-                  <button key={o} onClick={() => { setSelectedOccasion(o); setPage(1); }}
-                    className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-all ${
-                      selectedOccasion === o
-                        ? "bg-gold/15 border border-gold/30 text-gold font-medium"
-                        : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
-                    }`}>
-                    {t("app.userDashboard.occasion_" + o.toLowerCase().replace(/\s+/g, "_"), o)}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Price Range */}
-            <div>
-              <p className="text-xs font-semibold text-foreground uppercase tracking-widest mb-3">{t("app.userDashboard.maxPrice", "Max Price")}</p>
-              <input type="range" min={5000} max={40000} step={1000} value={priceRange}
-                onChange={(e) => { setPriceRange(Number(e.target.value)); setPage(1); }}
-                className="w-full accent-[var(--gold)] cursor-pointer" />
-              <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
-                <span>₹5K</span>
-                <span className="text-gold font-semibold">₹{(priceRange / 1000).toFixed(0)}K</span>
-                <span>₹40K</span>
-              </div>
-            </div>
-
-            {/* Sort */}
-            <div>
-              <p className="text-xs font-semibold text-foreground uppercase tracking-widest mb-3">{t("app.userDashboard.sortBy", "Sort By")}</p>
-              <div className="space-y-1">
-                {SORT_OPTIONS.map((s) => (
-                  <button key={s} onClick={() => setSortBy(s)}
-                    className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-all ${
-                      sortBy === s
-                        ? "bg-gold/15 border border-gold/30 text-gold font-medium"
-                        : "text-muted-foreground hover:bg-white/5 hover:text-foreground"
-                    }`}>
-                    {t("app.userDashboard.sort_" + s.toLowerCase().replace(/:/g, "").replace(/\s+/g, "_"), s)}
-                  </button>
-                ))}
-              </div>
-            </div>
+    <div className="space-y-6 animate-in fade-in duration-300">
+      {/* Success banner */}
+      {successMsg && (
+        <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 p-4 rounded-2xl flex justify-between items-center text-xs">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+            <span>{successMsg}</span>
           </div>
+          <button onClick={() => setSuccessMsg("")} className="text-emerald-400 hover:text-emerald-300 font-bold ml-2">✕</button>
+        </div>
+      )}
 
-          {/* Compare bar */}
-          {compareList.length > 0 && (
-            <div className="glass-card rounded-2xl p-4 border-gold/25">
-              <p className="text-xs font-semibold text-gold uppercase tracking-widest mb-2">
-                {t("app.userDashboard.comparingCount", "Comparing ({{count}}/3)", { count: compareList.length })}
-              </p>
-              <div className="space-y-1">
-                {compareList.map((id) => {
-                  const pkg = packages.find((p) => p.id === id)!;
-                  return (
-                    <div key={id} className="flex items-center justify-between">
-                      <p className="text-xs text-foreground truncate flex-1">{pkg.name}</p>
-                      <button onClick={() => toggleCompare(id)} className="text-muted-foreground hover:text-rose-400 ml-2"><X className="h-3 w-3" /></button>
-                    </div>
-                  );
-                })}
+      {/* Error banner */}
+      {errorMsg && (
+        <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 p-4 rounded-2xl flex justify-between items-center text-xs">
+          <span>✕ {errorMsg}</span>
+          <button onClick={() => setErrorMsg("")} className="text-rose-400 hover:text-rose-300 font-bold ml-2">✕</button>
+        </div>
+      )}
+
+      {/* Active Membership Dashboard Block */}
+      {myActive ? (
+        <div className={`glass-card rounded-3xl border p-6 relative overflow-hidden transition-all duration-300 ${
+          isExpired
+            ? "border-rose-500/20 bg-gradient-to-br from-rose-500/10 via-rose-500/5 to-transparent"
+            : isGoldActive
+              ? "border-gold/30 bg-gradient-to-br from-gold/20 via-gold/5 to-transparent"
+              : "border-slate-400/30 bg-gradient-to-br from-slate-400/20 via-slate-400/5 to-transparent"
+        }`}>
+          <div className={`absolute right-0 top-0 translate-x-1/3 -translate-y-1/3 h-52 w-52 rounded-full blur-3xl pointer-events-none ${
+            isExpired ? "bg-rose-500/5" : (isGoldActive ? "bg-gold/10" : "bg-slate-400/10")
+          }`} />
+          <div className="flex flex-col gap-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div className="space-y-2">
+                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] uppercase font-bold tracking-widest border ${
+                  isExpired
+                    ? "bg-rose-500/25 text-rose-400 border-rose-500/30"
+                    : isGoldActive
+                      ? "bg-gold/25 text-gold border-gold/30"
+                      : "bg-slate-400/25 text-slate-200 border-slate-400/30"
+                }`}>
+                  {isExpired ? "⚠ Expired" : `★ ${myActive.planName} Member`}
+                </span>
+                <h3 className="font-display text-2xl font-bold tracking-wide text-foreground">
+                  {isExpired
+                    ? `Your VibeNests ${myActive.planName} Membership has Expired`
+                    : `You are a VibeNests ${myActive.planName} Member`}
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  {isExpired
+                    ? "Your luxury celebration journey has paused. Please renew your package to restore booking credits."
+                    : "Book eligible luxury suites for free using your package credits."}
+                </p>
               </div>
-              <button className="mt-3 w-full gold-btn rounded-lg py-1.5 text-xs font-semibold">{t("app.userDashboard.compareNow", "Compare Now")}</button>
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="flex flex-wrap gap-4 text-xs font-mono text-muted-foreground bg-black/30 border border-white/5 p-4 rounded-2xl shrink-0">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-0.5">Activation Date</p>
+                    <p className="text-foreground font-semibold">{new Date(myActive.activationDate).toLocaleDateString()}</p>
+                  </div>
+                  <div className="border-l border-white/10 pl-4">
+                    <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-0.5">Expiry Date</p>
+                    <p className={`font-semibold ${isExpired ? "text-rose-400 font-bold" : "text-foreground"}`}>{new Date(myActive.expiryDate).toLocaleDateString()}</p>
+                  </div>
+                  <div className="border-l border-white/10 pl-4">
+                    <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-0.5">Total Bookings Allowed</p>
+                    <p className="text-foreground font-semibold font-mono">{myActive.maxFreeBookings ?? 10}</p>
+                  </div>
+                  <div className="border-l border-white/10 pl-4">
+                    <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-0.5">Bookings Used</p>
+                    <p className="text-foreground font-semibold font-mono">{myActive.bookingsUsed ?? 0}</p>
+                  </div>
+                  <div className="border-l border-white/10 pl-4">
+                    <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-0.5">Remaining Bookings</p>
+                    <p className={`${isExpired ? "text-rose-400/70" : "text-emerald-400"} font-bold font-mono`}>
+                      {Math.max(0, (myActive.maxFreeBookings ?? 10) - (myActive.bookingsUsed ?? 0))}
+                    </p>
+                  </div>
+                </div>
+                {isExpired && myActive.plan && (
+                  <button
+                    onClick={() => navigate("/user/suite-booking", { state: { package: myActive.plan, isMembershipPurchase: true } })}
+                    className="gold-btn rounded-2xl px-6 py-3.5 text-xs font-bold uppercase tracking-wider shrink-0"
+                  >
+                    Renew Now
+                  </button>
+                )}
+              </div>
             </div>
-          )}
-        </aside>
 
-        {/* ── Cards Grid ── */}
-        <div className="flex-1 min-w-0 space-y-5">
-          {paginated.length === 0 ? (
-            <div className="glass-card rounded-2xl p-16 text-center">
-              <Sparkles className="h-10 w-10 text-gold/30 mx-auto mb-3" />
-              <p className="text-muted-foreground text-sm">{t("app.userDashboard.noPackagesMatch", "No packages match your filters.")}</p>
-              <button onClick={clearFilters} className="mt-4 text-gold text-xs hover:underline">{t("app.userDashboard.clearFilters", "Clear filters")}</button>
-            </div>
-          ) : (
-            <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
-              {paginated.map((pkg, i) => {
-                const isWishlisted = wishlist.has(pkg.id);
-                const isCompared   = compareList.includes(pkg.id);
-                return (
-                  <motion.div key={pkg.id}
-                    initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
-                    className="glass-card rounded-2xl overflow-hidden flex flex-col group hover:border-gold/35 hover:-translate-y-1 transition-all duration-300">
+            {/* Eligible Suites */}
+            {activeSuiteNames && (
+              <div className="border-t border-white/5 pt-4">
+                <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold mb-1">Eligible Suites</p>
+                <p className="text-xs text-foreground/80 leading-relaxed font-semibold">{activeSuiteNames}</p>
+              </div>
+            )}
 
-                    {/* Image */}
-                    <div className="relative h-44 overflow-hidden">
-                      <img src={pkg.image} alt={pkg.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-                      {/* Badge */}
-                      <span className={`absolute top-3 left-3 px-2.5 py-1 rounded-full border text-[10px] font-bold tracking-widest ${pkg.badgeColor}`}>
-                        {t("app.userDashboard.badge_" + pkg.badge.toLowerCase().replace(/\s+/g, "_"), pkg.badge)}
+          </div>
+        </div>
+      ) : (
+        <div className="glass-card rounded-3xl border border-white/5 p-6 bg-gradient-to-br from-white/5 to-transparent">
+          <h3 className="font-display text-xl text-foreground font-semibold">Unlock Exclusive Private Luxury Packages</h3>
+          <p className="text-xs text-muted-foreground mt-1">Purchase a Silver or Gold Package to enjoy prepaid free bookings on eligible suites and priority support.</p>
+        </div>
+      )}
+
+      {/* Available Plans Grid */}
+      <div>
+        <p className="text-xs text-muted-foreground uppercase tracking-widest mb-4">Available Package Options</p>
+        <div className="grid md:grid-cols-2 gap-6">
+          {plans.map((plan) => {
+            const isGold = plan.name === "Gold";
+            const isCurrent = myActive && myActive.planName === plan.name;
+            const benefitsArray = Array.isArray(plan.benefits) 
+              ? plan.benefits 
+              : typeof plan.benefits === "string" 
+                ? (plan.benefits as string).split(",") 
+                : [];
+            const planSuiteNames = (plan.eligibleSuites || [])
+              .map((id: any) => suites.find((s: any) => String(s.id) === String(id))?.name || `Suite #${id}`)
+              .join(", ");
+
+            return (
+              <div
+                key={plan.id}
+                className={`relative rounded-3xl border p-6 flex flex-col justify-between overflow-hidden transition-all duration-300 hover:shadow-2xl hover:border-gold/30 ${
+                  isGold
+                    ? "border-gold/25 bg-gradient-to-b from-gold/10 via-transparent to-transparent shadow-[0_20px_50px_rgba(212,160,60,0.03)]"
+                    : "border-slate-500/20 bg-gradient-to-b from-slate-500/10 via-transparent to-transparent"
+                }`}
+              >
+                <div>
+                  {/* Plan Badge */}
+                  <div className="flex justify-between items-start mb-6">
+                    <div>
+                      <h4 className="font-display text-2xl font-bold tracking-wide text-foreground">
+                        {plan.name} Package
+                      </h4>
+                      <p className="text-xs text-muted-foreground mt-1">Validity: {plan.validityDays} Days ({plan.validityType || "yearly"})</p>
+                    </div>
+                    {isCurrent && (
+                      <span className="px-3 py-1 rounded-full bg-gold/20 text-gold border border-gold/30 text-[10px] font-bold uppercase tracking-wider">
+                        Active Package
                       </span>
-                      {/* Wishlist */}
-                      <button onClick={() => toggleWishlist(pkg.id)}
-                        className="absolute top-3 right-3 h-8 w-8 rounded-xl bg-black/40 backdrop-blur flex items-center justify-center hover:bg-black/60 transition-colors">
-                        <Heart className={`h-4 w-4 transition-colors ${isWishlisted ? "fill-rose-400 text-rose-400" : "text-white"}`} />
+                    )}
+                  </div>
+
+                  {/* Pricing / Offer */}
+                  <div className="flex items-baseline gap-2 mb-6">
+                    <span className="font-display text-4xl font-bold text-gold">₹{Number(plan.price).toLocaleString()}</span>
+                    <span className="text-xs text-muted-foreground">/ {plan.validityDays} Days</span>
+                  </div>
+
+                  {/* Highlighted free bookings offer */}
+                  <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-3 mb-6 flex items-center justify-between text-xs text-emerald-400">
+                    <span className="font-semibold">Free Bookings Limit:</span>
+                    <span className="font-display text-lg font-bold">{plan.maxFreeBookings ?? 10} Bookings</span>
+                  </div>
+
+                  {/* Eligible suites */}
+                  <div className="border-t border-white/5 pt-4 mb-6">
+                    <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1">Eligible Suites</p>
+                    <p className="text-xs text-foreground/95 font-semibold leading-relaxed">{planSuiteNames || "None"}</p>
+                  </div>
+
+
+                  {/* Terms */}
+                  {plan.terms && (
+                    <div className="border-t border-white/5 pt-4 mb-6">
+                      <p className="text-[9px] uppercase tracking-widest text-muted-foreground mb-1">Terms & Conditions</p>
+                      <p className="text-[10px] text-muted-foreground leading-relaxed">{plan.terms}</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Dynamic Subscribe / Renew / Upgrade Actions */}
+                {(() => {
+                  if (!myActive) {
+                    return (
+                      <button
+                        onClick={() => navigate("/user/suite-booking", { state: { package: plan, isMembershipPurchase: true } })}
+                        className="gold-btn w-full rounded-2xl py-3 text-xs font-bold uppercase tracking-wider"
+                      >
+                        Buy Now
                       </button>
-                      {/* Occasion */}
-                      <p className="absolute bottom-3 left-3 text-[10px] text-gold/90 uppercase tracking-widest font-semibold">
-                        {t("app.userDashboard.occasion_" + pkg.occasion.toLowerCase().replace(/\s+/g, "_"), pkg.occasion)}
-                      </p>
-                    </div>
+                    );
+                  }
 
-                    {/* Body */}
-                    <div className="p-4 flex flex-col flex-1 gap-3">
-                      <div>
-                        <h4 className="font-display text-lg text-foreground leading-tight">{pkg.name}</h4>
-                        <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground">
-                          <Users className="h-3 w-3 text-gold/60" />{pkg.capacity}
-                        </div>
-                      </div>
-                      <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{pkg.description}</p>
-
-                      {/* Amenities */}
-                      <div className="flex flex-wrap gap-1">
-                        {pkg.amenities.slice(0, 4).map((a) => {
-                          const Icon = AMENITY_ICON_MAP[a] ?? Sparkles;
-                          return (
-                            <span key={a} className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-gold/8 border border-gold/15 text-[10px] text-gold/80">
-                              <Icon className="h-2.5 w-2.5" />{a}
-                            </span>
-                          );
-                        })}
-                        {pkg.amenities.length > 4 && (
-                          <span className="px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-[10px] text-muted-foreground">+{pkg.amenities.length - 4}</span>
-                        )}
-                      </div>
-
-                      {/* Price + actions */}
-                      <div className="mt-auto pt-2 border-t border-white/5">
-                        <div className="flex items-center justify-between mb-3">
-                          <p className="font-display text-2xl text-gold">₹{pkg.price.toLocaleString()}</p>
-                          <button onClick={() => toggleCompare(pkg.id)}
-                            className={`text-[10px] px-2 py-1 rounded-lg border transition-colors ${
-                              isCompared
-                                ? "bg-gold/20 border-gold/40 text-gold"
-                                : "border-white/10 text-muted-foreground hover:border-gold/30 hover:text-gold"
-                            }`}>
-                            {isCompared ? t("app.userDashboard.compared", "✓ Compare") : t("app.userDashboard.compare", "+ Compare")}
-                          </button>
-                        </div>
-                        <button onClick={() => setDetailPkg(pkg)}
-                          className="w-full gold-btn rounded-xl py-2.5 text-sm font-semibold flex items-center justify-center gap-2">
-                          <Eye className="h-4 w-4" /> {t("app.userDashboard.viewDetails", "View Details")}
+                  if (plan.name === myActive.planName) {
+                    if (isExpired) {
+                      return (
+                        <button
+                          onClick={() => navigate("/user/suite-booking", { state: { package: plan, isMembershipPurchase: true } })}
+                          className="gold-btn w-full rounded-2xl py-3 text-xs font-bold uppercase tracking-wider"
+                        >
+                          Renew Now
                         </button>
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-          )}
+                      );
+                    }
+                    return (
+                      <button
+                        disabled
+                        className="w-full rounded-2xl py-3 text-xs font-bold uppercase tracking-wider border border-gold/25 text-gold bg-gold/5 cursor-not-allowed"
+                      >
+                        You are already a {plan.name.toLowerCase()} member
+                      </button>
+                    );
+                  }
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 pt-2">
-              <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}
-                className="h-8 w-8 rounded-xl glass flex items-center justify-center text-muted-foreground hover:text-gold disabled:opacity-30 transition-colors">
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
-                <button key={n} onClick={() => setPage(n)}
-                  className={`h-8 w-8 rounded-xl text-xs font-medium transition-all ${
-                    n === page ? "bg-gold/20 border border-gold/35 text-gold" : "glass text-muted-foreground hover:text-foreground"
-                  }`}>{n}</button>
-              ))}
-              <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-                className="h-8 w-8 rounded-xl glass flex items-center justify-center text-muted-foreground hover:text-gold disabled:opacity-30 transition-colors">
-                <ChevronRight className="h-4 w-4" />
-              </button>
-            </div>
-          )}
+                  if (plan.name === "Gold" && myActive.planName === "Silver") {
+                    return (
+                      <button
+                        onClick={() => navigate("/user/suite-booking", { state: { package: plan, isMembershipPurchase: true } })}
+                        className="gold-btn w-full rounded-2xl py-3 text-xs font-extrabold uppercase tracking-wider bg-gradient-to-r from-amber-500 to-gold text-black hover:from-amber-600 hover:to-gold/90 shadow-lg border border-gold"
+                      >
+                        Upgrade Now
+                      </button>
+                    );
+                  }
+
+                  return (
+                    <button
+                      disabled
+                      className="w-full rounded-2xl py-3 text-xs font-bold uppercase tracking-wider border border-white/10 text-muted-foreground bg-white/5 cursor-not-allowed"
+                    >
+                      Gold Package Active
+                    </button>
+                  );
+                })()}
+              </div>
+            );
+          })}
         </div>
       </div>
-
-      {detailPkg && <PackageDetailModal pkg={detailPkg} onClose={() => setDetailPkg(null)} />}
     </div>
   );
 }
@@ -1674,8 +1688,6 @@ function OffersView() {
   const { user } = useAuth();
   const [tab, setTab] = useState<"offers" | "coupons">("offers");
   const [copiedCode, setCopiedCode] = useState("");
-  const [couponInput, setCouponInput] = useState("");
-  const [appliedCoupon, setAppliedCoupon] = useState("");
 
   const [coupons, setCoupons] = useState<any[]>([]);
   const [offers, setOffers] = useState<any[]>([]);
@@ -1704,11 +1716,6 @@ function OffersView() {
     navigator.clipboard.writeText(code);
     setCopiedCode(code);
     setTimeout(() => setCopiedCode(""), 2000);
-  }
-
-  function applyCoupon() {
-    const valid = coupons.find((c) => c.code.toLowerCase() === couponInput.trim().toLowerCase());
-    setAppliedCoupon(valid ? valid.code : "invalid");
   }
 
   // Dynamically generated referral details per user
@@ -1741,9 +1748,8 @@ function OffersView() {
       <div className="flex gap-1 glass rounded-xl p-1 w-fit">
         {(["offers", "coupons"] as const).map((tVal) => (
           <button key={tVal} onClick={() => setTab(tVal)}
-            className={`px-4 py-2 rounded-lg text-xs font-medium capitalize transition-colors ${
-              tab === tVal ? "bg-gold/20 text-gold" : "text-muted-foreground hover:text-foreground"
-            }`}>
+            className={`px-4 py-2 rounded-lg text-xs font-medium capitalize transition-colors ${tab === tVal ? "bg-gold/20 text-gold" : "text-muted-foreground hover:text-foreground"
+              }`}>
             {tVal === "offers" ? t("app.userDashboard.tabOffers", "Offers") : t("app.userDashboard.tabCoupons", "Coupons")}
           </button>
         ))}
@@ -1776,9 +1782,9 @@ function OffersView() {
 
       {/* Referrals Tab */}
       {/* {tab === "referrals" && ( */}
-        {/* <div className="space-y-5"> */}
-          {/* Referral Code Card */}
-          {/* <div className="glass-card rounded-2xl p-6 bg-gradient-to-br from-gold/10 to-transparent border-gold/25">
+      {/* <div className="space-y-5"> */}
+      {/* Referral Code Card */}
+      {/* <div className="glass-card rounded-2xl p-6 bg-gradient-to-br from-gold/10 to-transparent border-gold/25">
             <div className="flex items-start justify-between mb-4">
               <div>
                 <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">{t("app.userDashboard.yourReferralCode", "Your Referral Code")}</p>
@@ -1800,11 +1806,11 @@ function OffersView() {
           </div>
 
           {/* Stats */}
-          {/* <div className="grid grid-cols-3 gap-4">
+      {/* <div className="grid grid-cols-3 gap-4">
             {[
-              { label: t("app.userDashboard.friendsReferred", "Friends Referred"), value: friendsCount,      icon: Users },
-              { label: t("app.userDashboard.successfulBookings", "Successful Bookings"), value: bookingsCount,   icon: CheckCircle2 },
-              { label: t("app.userDashboard.rewardsEarned", "Rewards Earned"), value: rewardsEarned,   icon: Star },
+              { label: t("app.userDashboard.friendsReferred", "Friends Referred"), value: friendsCount, icon: Users },
+              { label: t("app.userDashboard.successfulBookings", "Successful Bookings"), value: bookingsCount, icon: CheckCircle2 },
+              { label: t("app.userDashboard.rewardsEarned", "Rewards Earned"), value: rewardsEarned, icon: Star },
             ].map((s) => {
               const Icon = s.icon;
               return (
@@ -1821,8 +1827,8 @@ function OffersView() {
             })}
           </div> */}
 
-          {/* How it works */}
-          {/* <div className="glass-card rounded-2xl p-5 space-y-4">
+      {/* How it works */}
+      {/* <div className="glass-card rounded-2xl p-5 space-y-4">
             <h4 className="font-display text-lg text-foreground">{t("app.userDashboard.howItWorks", "How It Works")}</h4>
             <div className="space-y-3">
               {[
@@ -1844,35 +1850,6 @@ function OffersView() {
       {/* Coupons Tab */}
       {tab === "coupons" && (
         <div className="space-y-5">
-          {/* Apply coupon input */}
-          <div className="glass-card rounded-2xl p-5 space-y-3">
-            <h4 className="font-display text-lg text-foreground">{t("app.userDashboard.applyCoupon", "Apply a Coupon")}</h4>
-            <div className="flex gap-3">
-              <input
-                value={couponInput}
-                onChange={(e) => { setCouponInput(e.target.value.toUpperCase()); setAppliedCoupon(""); }}
-                placeholder={t("app.userDashboard.couponPlaceholder", "Enter coupon code...")}
-                className="luxury-input flex-1 rounded-xl px-4 py-2.5 text-sm text-foreground bg-transparent uppercase tracking-widest"
-              />
-              <button onClick={applyCoupon}
-                className="gold-btn rounded-xl px-5 py-2.5 text-sm font-semibold">
-                {t("app.userDashboard.apply", "Apply")}
-              </button>
-            </div>
-            {appliedCoupon && appliedCoupon !== "invalid" && (
-              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-400/10 border border-emerald-400/20">
-                <CheckCircle2 className="h-4 w-4 text-emerald-400" />
-                <p className="text-xs text-emerald-400">{t("app.userDashboard.couponApplied", "Coupon {{code}} applied successfully!", { code: appliedCoupon })}</p>
-              </div>
-            )}
-            {appliedCoupon === "invalid" && (
-              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-rose-400/10 border border-rose-400/20">
-                <XCircle className="h-4 w-4 text-rose-400" />
-                <p className="text-xs text-rose-400">{t("app.userDashboard.couponInvalid", "Invalid or expired coupon code.")}</p>
-              </div>
-            )}
-          </div>
-
           {/* Available coupons */}
           <div>
             <p className="text-xs text-muted-foreground uppercase tracking-widest mb-3">{t("app.userDashboard.availableCoupons", "Available Coupons")}</p>
@@ -1941,9 +1918,9 @@ function ProfileView() {
     } else {
       setLoading(true);
       usersApi.me()
-        .then((u: any) => setForm({ 
-          fullName: u.fullName || '', 
-          email: u.email || '', 
+        .then((u: any) => setForm({
+          fullName: u.fullName || '',
+          email: u.email || '',
           phone: u.phone || '',
           dateOfBirth: u.dateOfBirth || ''
         }))
@@ -2124,6 +2101,69 @@ export default function UserDashboardPage() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [reviewPromptBooking, setReviewPromptBooking] = useState<any | null>(null);
+
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [readNotifIds, setReadNotifIds] = useState<string[]>(() => {
+    try {
+      const stored = localStorage.getItem(`vibenests_read_notifs_${user?.id}`);
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    if (!user?.id) return;
+    bookingsApi.getAll()
+      .then((rawList) => {
+        const generated = generateNotifications(rawList, readNotifIds);
+        setNotifications(generated);
+
+        // Find completed booking for review prompt
+        const completedBooking = rawList.find((b: any) => 
+          b.status === 'completed' && 
+          localStorage.getItem(`vibenests_review_prompt_dismissed_${b.id}`) !== 'true'
+        );
+        if (completedBooking) {
+          setReviewPromptBooking(completedBooking);
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to generate notifications from bookings", err);
+      });
+  }, [user?.id, readNotifIds]);
+
+  function handleMarkAllRead() {
+    const allIds = notifications.map((n) => n.id);
+    setReadNotifIds(allIds);
+    try {
+      localStorage.setItem(`vibenests_read_notifs_${user?.id}`, JSON.stringify(allIds));
+    } catch (e) {
+      console.warn(e);
+    }
+  }
+
+  function handleMarkRead(id: string) {
+    setReadNotifIds((prev) => {
+      const next = prev.includes(id) ? prev : [...prev, id];
+      try {
+        localStorage.setItem(`vibenests_read_notifs_${user?.id}`, JSON.stringify(next));
+      } catch (e) {
+        console.warn(e);
+      }
+      return next;
+    });
+
+    const notif = notifications.find((n) => n.id === id);
+    if (notif?.link) {
+      navigate(notif.link);
+      setNotifOpen(false);
+    }
+  }
+
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
   // Auto-collapse sidebar on smaller screens, but keep it visible
   useEffect(() => {
@@ -2141,17 +2181,17 @@ export default function UserDashboardPage() {
 
   function renderContent() {
     switch (activeNav) {
-      case "dashboard":   return <DashboardView onNavigate={setActiveNav} />;
-      case "suites":      return <SuitesView />;
+      case "dashboard": return <DashboardView onNavigate={setActiveNav} />;
+      case "suites": return <SuitesView />;
       case "my-bookings": return <BookingListView bookings={[]} title={t("app.userDashboard.myBookings", "My Bookings")} fetchFromApi />;
-      case "upcoming":    return <BookingListView bookings={[]} title={t("app.userDashboard.upcomingBookings", "Upcoming Bookings")} fetchFromApi statusFilter="upcoming" />;
-      case "past":        return <BookingListView bookings={[]} title={t("app.userDashboard.pastBookings", "Past Bookings")} fetchFromApi statusFilter="past" />;
-      case "wallet":      return <WalletView />;
-      case "packages":    return <CelebrationPackagesView />;
-      case "offers":      return <OffersView />;
-      case "profile":     return <ProfileView />;
-      case "help":        return <HelpView />;
-      default:            return <DashboardView onNavigate={setActiveNav} />;
+      case "upcoming": return <BookingListView bookings={[]} title={t("app.userDashboard.upcomingBookings", "Upcoming Bookings")} fetchFromApi statusFilter="upcoming" />;
+      case "past": return <BookingListView bookings={[]} title={t("app.userDashboard.pastBookings", "Past Bookings")} fetchFromApi statusFilter="past" />;
+      case "wallet": return <WalletView />;
+      case "memberships": return <CelebrationMembershipsView />;
+      case "offers": return <OffersView />;
+      case "profile": return <ProfileView />;
+      case "help": return <HelpView />;
+      default: return <DashboardView onNavigate={setActiveNav} />;
     }
   }
 
@@ -2186,10 +2226,25 @@ export default function UserDashboardPage() {
         </div>
         <div className="flex items-center gap-3">
           <LanguageSelector />
-          <button className="relative h-9 w-9 rounded-xl glass flex items-center justify-center text-muted-foreground hover:text-gold transition-colors">
-            <Bell className="h-4 w-4" />
-            <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-gold" />
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => setNotifOpen((o) => !o)}
+              className="relative h-9 w-9 rounded-xl glass flex items-center justify-center text-muted-foreground hover:text-gold transition-colors cursor-pointer"
+              aria-label="Notifications"
+            >
+              <Bell className="h-4 w-4" />
+              {unreadCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-gold" />
+              )}
+            </button>
+            <NotificationPanel
+              open={notifOpen}
+              onClose={() => setNotifOpen(false)}
+              notifications={notifications}
+              onMarkAllRead={handleMarkAllRead}
+              onMarkRead={handleMarkRead}
+            />
+          </div>
           <div className="relative">
             <button
               onClick={() => setProfileOpen((o) => !o)}
@@ -2265,17 +2320,17 @@ export default function UserDashboardPage() {
               const active = activeNav === id;
               const translatedLabel =
                 id === "dashboard" ? t("app.userDashboard.dashboard", "Dashboard") :
-                id === "suites" ? t("app.userDashboard.browseSuites", "Browse Suites") :
-                id === "my-bookings" ? t("app.userDashboard.myBookings", "My Bookings") :
-                id === "upcoming" ? t("app.userDashboard.upcomingBookings", "Upcoming Bookings") :
-                id === "past" ? t("app.userDashboard.pastBookings", "Past Bookings") :
-                id === "wallet" ? t("app.userDashboard.walletPayments", "Payments") :
-                id === "packages" ? t("app.userDashboard.celebrationPackages", "Celebration Packages") :
-                id === "offers" ? t("app.userDashboard.specialOffersReferrals", "Special Offers") :
-                id === "profile" ? t("app.userDashboard.profileSettings", "Profile Settings") :
-                id === "help" ? t("app.userDashboard.helpSupport", "Help & Support") :
-                id === "write-review" ? t("app.userDashboard.writeReview", "Write a Review") :
-                label;
+                  id === "suites" ? t("app.userDashboard.browseSuites", "Browse Suites") :
+                    id === "my-bookings" ? t("app.userDashboard.myBookings", "My Bookings") :
+                      id === "upcoming" ? t("app.userDashboard.upcomingBookings", "Upcoming Bookings") :
+                        id === "past" ? t("app.userDashboard.pastBookings", "Past Bookings") :
+                          id === "wallet" ? t("app.userDashboard.walletPayments", "Payments") :
+                            id === "memberships" ? t("app.userDashboard.celebrationMembership", "Celebration Packages") :
+                              id === "offers" ? t("app.userDashboard.specialOffersReferrals", "Special Offers") :
+                                id === "profile" ? t("app.userDashboard.profileSettings", "Profile Settings") :
+                                  id === "help" ? t("app.userDashboard.helpSupport", "Help & Support") :
+                                    id === "write-review" ? t("app.userDashboard.writeReview", "Write a Review") :
+                                      label;
 
               return (
                 <button key={id}
@@ -2313,6 +2368,44 @@ export default function UserDashboardPage() {
           </AnimatePresence>
         </main>
       </div>
+
+      {reviewPromptBooking && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+          <div className="glass-card rounded-2xl p-6 w-full max-w-sm border border-[var(--gold)]/20 text-center space-y-4 animate-in fade-in zoom-in-95 duration-200">
+            <div className="h-12 w-12 rounded-full bg-gold/10 border border-gold/20 flex items-center justify-center mx-auto text-gold">
+              <Star className="h-6 w-6 fill-gold text-gold" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="font-display text-xl text-foreground">Share Your Experience</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                We hope you had a luxurious stay at <span className="text-gold font-medium">{reviewPromptBooking.suite?.name || reviewPromptBooking.suiteName || `Suite #${reviewPromptBooking.suiteId}`}</span>. 
+                Would you take a moment to write a review?
+              </p>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <button 
+                onClick={() => {
+                  localStorage.setItem(`vibenests_review_prompt_dismissed_${reviewPromptBooking.id}`, 'true');
+                  setReviewPromptBooking(null);
+                  navigate("/user/write-review");
+                }}
+                className="flex-1 gold-btn rounded-xl py-2.5 text-xs font-semibold cursor-pointer"
+              >
+                Write Review
+              </button>
+              <button 
+                onClick={() => {
+                  localStorage.setItem(`vibenests_review_prompt_dismissed_${reviewPromptBooking.id}`, 'true');
+                  setReviewPromptBooking(null);
+                }}
+                className="flex-1 rounded-xl py-2.5 text-xs border border-white/10 text-muted-foreground hover:text-foreground hover:border-white/20 transition-all cursor-pointer"
+              >
+                Maybe Later
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

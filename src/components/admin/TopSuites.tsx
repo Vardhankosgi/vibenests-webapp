@@ -7,11 +7,11 @@ const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "
 export function TopSuites() {
   const currentMonth = months[new Date().getMonth()];
   const [selected, setSelected] = useState(currentMonth);
-  const { bookings } = useAppData();
+  const { filteredBookings } = useAppData();
   const { t } = useTranslation();
 
   // Filter confirmed bookings that match the selected month
-  const monthBookings = bookings.filter((b) => b.status === "Confirmed" && b.date.includes(selected));
+  const monthBookings = filteredBookings.filter((b) => b.status === "Confirmed" && b.date.includes(selected));
 
   // Group bookings and sum revenue by suite name
   const suiteStats: Record<string, { bookingsCount: number; revenue: number }> = {};

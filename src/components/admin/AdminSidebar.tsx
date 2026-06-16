@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/auth/AuthContext";
 import { authApi } from "@/lib/api";
-import { LayoutDashboard, CalendarDays, BedDouble, BarChart2, Settings, LogOut, Menu, Tag, Package, Users, Gift,CreditCard } from "lucide-react";
+import { LayoutDashboard, CalendarDays, BedDouble, BarChart2, Settings, LogOut, Menu, Tag, Package, Users, Gift, CreditCard, Star } from "lucide-react";
 import { LogoPopover } from "@/components/shared/LogoPopover";
 import { useTranslation } from "react-i18next";
 
@@ -14,10 +14,11 @@ const navItemKeys: { [key: string]: string } = {
   "Suite Booking": "suiteBooking",
   "Suites": "suites",
   "Add-on Management": "addonManagement",
-  "Celebration Packages": "celebrationPackages",
+  "Celebration Packages": "celebrationMembership",
   "User Management": "userManagement",
   "Analytics": "analytics",
   "Offers & Refund Configurations": "offersRefund",
+  "Ratings & Reviews": "ratingsReviews",
   "Settings": "settings",
 };
 
@@ -27,10 +28,11 @@ const navItems = [
   { icon: BedDouble,       label: "Suites",                       to: "/rooms" },
   { icon: CreditCard,      label: "Transactions",                 to: "/transactions" },
   { icon: Package,         label: "Add-on Management",            to: "/addons" },
-  { icon: Gift, label: "Celebration Packages", to: "/celebration-packages" },
+  { icon: Gift, label: "Celebration Packages", to: "/celebration-memberships" },
   { icon: Users, label: "User Management", to: "/customers" },
   { icon: BarChart2, label: "Analytics", to: "/analytics" },
   { icon: Tag, label: "Offers & Refund Configurations", to: "/offers" },
+  { icon: Star, label: "Ratings & Reviews", to: "/reviews" },
   { icon: Settings, label: "Settings", to: "/settings" },
 ];
 

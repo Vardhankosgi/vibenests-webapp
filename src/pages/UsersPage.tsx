@@ -162,8 +162,25 @@ export default function UsersPage() {
                           <span className="text-gold font-semibold text-sm">{u.name.charAt(0).toUpperCase()}</span>
                         </div>
                         <div>
-                          <p className="text-foreground font-medium text-sm leading-tight">{u.name}</p>
-                          <p className="text-[11px] text-muted-foreground">ID #{u.id}</p>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="text-foreground font-medium text-sm leading-tight">{u.name}</p>
+                            {u.membership === "Gold" && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-gold/15 text-gold border border-gold/25">
+                                Gold Member
+                              </span>
+                            )}
+                            {u.membership === "Silver" && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-slate-400/15 text-slate-300 border border-slate-500/20">
+                                Silver Member
+                              </span>
+                            )}
+                            {!u.membership && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-medium bg-white/5 text-muted-foreground border border-white/10">
+                                Not a Member
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-muted-foreground mt-1">ID #{u.id}</p>
                         </div>
                       </div>
                     </td>
@@ -214,12 +231,21 @@ export default function UsersPage() {
               </div>
               <div>
                 <p className="text-lg font-semibold text-foreground leading-tight">{viewUser.name}</p>
-                <div className="flex items-center gap-2 mt-0.5">
+                <div className="flex flex-wrap items-center gap-2 mt-1">
                   <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium border ${statusStyle[viewUser.status]}`}>{viewUser.status}</span>
                   {viewUser.isVerified
                     ? <span className="flex items-center gap-1 text-[10px] text-emerald-400"><CheckCircle2 className="h-3 w-3" />Verified</span>
                     : <span className="flex items-center gap-1 text-[10px] text-amber-400"><XCircle className="h-3 w-3" />Unverified</span>
                   }
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+                    viewUser.membership === "Gold" 
+                      ? "bg-gold/15 text-gold border-gold/25" 
+                      : viewUser.membership === "Silver"
+                        ? "bg-slate-400/15 text-slate-300 border-slate-500/20"
+                        : "bg-white/5 text-muted-foreground border-white/10"
+                  }`}>
+                    {viewUser.membership ? `${viewUser.membership} Member` : "Not a Member"}
+                  </span>
                 </div>
               </div>
             </div>

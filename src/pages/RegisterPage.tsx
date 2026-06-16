@@ -5,11 +5,12 @@ import { useTranslation } from "react-i18next";
 import {
   Eye, EyeOff, User, Mail, Phone, Lock, MapPin,
   ShieldCheck, Star, Headphones, ChevronDown, Check,
-  AlertCircle, ArrowLeft,
+  AlertCircle, ArrowLeft, Calendar, Heart,
 } from "lucide-react";
 import { BrandMark } from "@/components/auth/BrandMark";
 import { GoogleIcon } from "@/components/auth/GoogleIcon";
 import { LanguageSelector } from "@/components/shared/LanguageSelector";
+import { authApi } from "@/lib/api";
 import loginbg from "@/assets/loginbg.png";
 
 /* ── Cities ─────────────────────────────────────────── */
@@ -89,9 +90,11 @@ export default function RegisterPage() {
   const { t } = useTranslation();
 
   const [form, setForm] = useState({
-    name: "", email: "", phone: "", password: "", confirm: "", city: "",
+    name: "", email: "", phone: "", password: "", confirm: "", city: "", dateOfBirth: "", marriageDate: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [errorMsg, setErrorMsg] = useState("");
+  const [loading, setLoading] = useState(false);
   const [showPass, setShowPass]   = useState(false);
   const [showConf, setShowConf]   = useState(false);
   const [cityOpen, setCityOpen]   = useState(false);
@@ -113,16 +116,36 @@ export default function RegisterPage() {
     const ph = validatePhone(f.phone, t);   if (ph) e.phone = ph;
     const pw = validatePassword(f.password, t); if (pw) e.password = pw;
     if (f.confirm !== f.password)        e.confirm  = t("app.validation.passwordMismatch", "Passwords do not match");
+    if (!f.dateOfBirth)                  e.dateOfBirth = t("app.validation.dobRequired", "Date of birth is required");
     if (!f.city)                         e.city     = t("app.validation.cityRequired", "Please select your city");
     if (!agreed)                         e.terms    = t("app.validation.termsRequired", "You must accept the terms to continue");
     setErrors(e);
     return Object.keys(e).length === 0;
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitted(true);
-    if (validate()) setSuccess(true);
+    setErrorMsg("");
+    if (!validate()) return;
+
+    try {
+      setLoading(true);
+      await authApi.register({
+        fullName: form.name,
+        email: form.email,
+        phone: form.phone,
+        password: form.password,
+        dateOfBirth: form.dateOfBirth,
+        marriageDate: form.marriageDate || null,
+        city: form.city,
+      });
+      setSuccess(true);
+    } catch (err: any) {
+      setErrorMsg(err.message || "Failed to create account. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -263,6 +286,12 @@ export default function RegisterPage() {
                   {t("app.auth.google", "Continue with Google")}
                 </button>
 
+                {errorMsg && (
+                  <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs px-4 py-2.5 rounded-xl">
+                    ✕ {errorMsg}
+                  </div>
+                )}
+
                 {/* Divider */}
                 <div className="flex items-center gap-3 text-[11px] tracking-[0.3em] text-muted-foreground uppercase">
                   <div className="h-px flex-1 bg-gradient-to-r from-transparent to-gold/30" />
@@ -364,6 +393,27 @@ export default function RegisterPage() {
                     </div>
                   </Field>
 
+                  {/* DOB and Marriage Date */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <Field label={t("app.auth.dateOfBirth", "Date of Birth")} icon={Calendar} error={errors.dateOfBirth}>
+                      <input
+                        type="date"
+                        value={form.dateOfBirth}
+                        onChange={(e) => set("dateOfBirth", e.target.value)}
+                        className={`luxury-input w-full rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 ${errors.dateOfBirth ? "border-rose-500/50" : ""}`}
+                      />
+                    </Field>
+
+                    <Field label={t("app.auth.marriageDate", "Marriage Date (Optional)")} icon={Heart} error={errors.marriageDate}>
+                      <input
+                        type="date"
+                        value={form.marriageDate}
+                        onChange={(e) => set("marriageDate", e.target.value)}
+                        className={`luxury-input w-full rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 ${errors.marriageDate ? "border-rose-500/50" : ""}`}
+                      />
+                    </Field>
+                  </div>
+
                   {/* City Dropdown */}
                   <Field label={t("app.auth.city", "City")} icon={MapPin} error={errors.city}>
                     <div className="relative">
@@ -436,9 +486,10 @@ export default function RegisterPage() {
                   {/* Submit */}
                   <button
                     type="submit"
-                    className="gold-btn w-full rounded-xl py-3 text-sm font-semibold tracking-wide mt-2"
+                    disabled={loading}
+                    className="gold-btn w-full rounded-xl py-3 text-sm font-semibold tracking-wide mt-2 disabled:opacity-50"
                   >
-                    {t("app.auth.createAccount", "Create My Account")}
+                    {loading ? t("app.auth.creatingAccount", "Creating Account...") : t("app.auth.createAccount", "Create My Account")}
                   </button>
                 </form>
 

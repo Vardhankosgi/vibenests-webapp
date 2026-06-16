@@ -10,6 +10,7 @@ import {
 import { LanguageSelector } from "@/components/shared/LanguageSelector";
 import { useAuth } from "@/components/auth/AuthContext";
 import { useTranslation } from "react-i18next";
+import { reviewsApi } from "@/lib/api";
 
 /* ─── Types ──────────────────────────────────────────── */
 type CategoryKey = "ambience" | "cleanliness" | "service" | "decoration" | "value";
@@ -80,12 +81,31 @@ export default function WriteReviewPage() {
   const [review, setReview]       = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [showError, setShowError] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const MAX_CHARS = 1000;
 
-  function handleSubmit() {
+  async function handleSubmit() {
     if (!overall) { setShowError(true); return; }
     setShowError(false);
-    setSubmitted(true);
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      await reviewsApi.create({
+        overall,
+        ambience: ratings.ambience,
+        cleanliness: ratings.cleanliness,
+        service: ratings.service,
+        decoration: ratings.decoration,
+        value: ratings.value,
+        comment: review,
+      });
+      setSubmitted(true);
+    } catch (err: any) {
+      setSubmitError(err.message || "Failed to submit review. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   function handleNav(id: string) {
@@ -385,15 +405,24 @@ export default function WriteReviewPage() {
 
                   {/* Buttons */}
                   <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
-                    className="flex gap-3 pb-8">
-                    <button onClick={() => navigate("/user/dashboard")}
-                      className="flex-1 glass rounded-xl py-3 text-sm text-muted-foreground border border-white/10 hover:text-foreground hover:border-white/20 transition-all">
-                      {t("app.userDashboard.cancel", "Cancel")}
-                    </button>
-                    <button onClick={handleSubmit}
-                      className="flex-1 gold-btn rounded-xl py-3 text-sm font-semibold flex items-center justify-center gap-2">
-                      <Sparkles className="h-4 w-4" /> {t("app.userDashboard.submitReview", "Submit Review")}
-                    </button>
+                    className="flex flex-col gap-3 pb-8">
+                    {submitError && (
+                      <p className="text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-xl px-4 py-2 text-center">
+                        {submitError}
+                      </p>
+                    )}
+                    <div className="flex gap-3">
+                      <button onClick={() => navigate("/user/dashboard")}
+                        disabled={submitting}
+                        className="flex-1 glass rounded-xl py-3 text-sm text-muted-foreground border border-white/10 hover:text-foreground hover:border-white/20 transition-all disabled:opacity-50">
+                        {t("app.userDashboard.cancel", "Cancel")}
+                      </button>
+                      <button onClick={handleSubmit}
+                        disabled={submitting}
+                        className="flex-1 gold-btn rounded-xl py-3 text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
+                        {submitting ? "Submitting..." : <><Sparkles className="h-4 w-4" /> {t("app.userDashboard.submitReview", "Submit Review")}</>}
+                      </button>
+                    </div>
                   </motion.div>
                 </div>
 
