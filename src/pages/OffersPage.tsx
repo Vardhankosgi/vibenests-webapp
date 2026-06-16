@@ -241,7 +241,7 @@ export default function OffersPage() {
           if (offerConfigs.addons !== undefined) {
             try {
               loadedAddons = JSON.parse(offerConfigs.addons);
-            } catch (e) {}
+            } catch (e) { }
           } else {
             try {
               const dbAddons = await addonsApi.getAll();

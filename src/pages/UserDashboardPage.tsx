@@ -7,13 +7,13 @@ import {
   MapPin, ChevronRight, Star, CreditCard, Phone, MessageSquare,
   ArrowUpRight, CheckCircle2, XCircle, Hourglass, Bell,
   Users, Wifi, Tv, Wind, Music, Camera, Coffee, Cake, Sparkles,
-  X, Download, AlertTriangle, Receipt, Package, Plus, Edit3, Trash2,
-  Search, TrendingUp, TrendingDown, BarChart3, Eye, RefreshCw,
+  Search, TrendingUp, TrendingDown, BarChart3, Eye, RefreshCw, RotateCcw,
   Building2, Smartphone, DollarSign, ArrowDownLeft, ArrowUpLeft,
   Heart, ChevronLeft, Menu,
+  X, Download, AlertTriangle, Receipt, Package, Plus, Edit3, Trash2,
 } from "lucide-react";
 import { useSuitesContext } from "@/components/admin/SuitesContext";
-import { bookingsApi, membershipsApi, usersApi, paymentsApi, offersApi, couponsApi } from "@/lib/api";
+import { bookingsApi, membershipsApi, usersApi, paymentsApi, offersApi, couponsApi, refundsApi } from "@/lib/api";
 import { NotificationPanel, type Notification } from "@/components/admin/NotificationPanel";
 import { LanguageSelector } from "@/components/shared/LanguageSelector";
 import { useAuth } from "@/components/auth/AuthContext";
@@ -137,7 +137,7 @@ function translatePaymentMethod(method: string, t: any): string {
 
 function generateNotifications(bookingsList: any[], readIds: string[]): Notification[] {
   const list: Notification[] = [];
-  
+
   bookingsList.forEach((b: any) => {
     const bookingId = b.orderId ? `#${b.orderId}` : `#VN${b.id}`;
     const suiteName = b.suite?.name ?? b.suiteName ?? `Suite #${b.suiteId}`;
@@ -250,6 +250,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: "upcoming", label: "Upcoming Bookings", icon: Clock },
   { id: "past", label: "Past Bookings", icon: History },
   { id: "wallet", label: "Payments", icon: Wallet },
+  { id: "refunds", label: "Refunds", icon: RotateCcw },
   { id: "memberships", label: "Celebration Packages", icon: Award },
   { id: "offers", label: "Special Offers", icon: Tag },
   { id: "profile", label: "Profile Settings", icon: UserCircle },
@@ -295,10 +296,10 @@ const PAYMENT_METHODS: PaymentMethod[] = [
 /* ─── Status Config ──────────────────────────────────── */
 const STATUS_CONFIG = {
   confirmed: { label: "Confirmed", color: "text-emerald-400", bg: "bg-emerald-400/10 border-emerald-400/25", icon: CheckCircle2 },
-  pending:   { label: "Pending",   color: "text-amber-400",   bg: "bg-amber-400/10 border-amber-400/25",     icon: Hourglass },
-  completed: { label: "Completed", color: "text-sky-400",     bg: "bg-sky-400/10 border-sky-400/25",         icon: CheckCircle2 },
-  checkIn:   {label: "Check-in", color: "text-emerald-400", bg: "bg-emerald-400/10 border-emerald-400/25", icon: CheckCircle2},
-  cancelled: { label: "Cancelled", color: "text-rose-400",    bg: "bg-rose-400/10 border-rose-400/25",       icon: XCircle },
+  pending: { label: "Pending", color: "text-amber-400", bg: "bg-amber-400/10 border-amber-400/25", icon: Hourglass },
+  completed: { label: "Completed", color: "text-sky-400", bg: "bg-sky-400/10 border-sky-400/25", icon: CheckCircle2 },
+  checkIn: { label: "Check-in", color: "text-emerald-400", bg: "bg-emerald-400/10 border-emerald-400/25", icon: CheckCircle2 },
+  cancelled: { label: "Cancelled", color: "text-rose-400", bg: "bg-rose-400/10 border-rose-400/25", icon: XCircle },
 };
 
 function fmt(n: number) {
@@ -309,6 +310,180 @@ function fmt(n: number) {
 // Booking extras were previously hardcoded for demo.
 // They are now computed from backend data inside the drawer.
 
+function RequestCancellationModal({ bookingId, onClose, onSuccess }: { bookingId: number; onClose: () => void; onSuccess: () => void }) {
+  const { t } = useTranslation();
+  const [category, setCategory] = useState("other");
+  const [comments, setComments] = useState("");
+  const [calculating, setCalculating] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [breakdown, setBreakdown] = useState<any>(null);
+
+  useEffect(() => {
+    setCalculating(true);
+    refundsApi.calculate(bookingId)
+      .then((data) => {
+        setBreakdown(data);
+      })
+      .catch((e) => {
+        console.error("Failed to calculate refund:", e);
+      })
+      .finally(() => {
+        setCalculating(false);
+      });
+  }, [bookingId]);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    try {
+      setSubmitting(true);
+      setError("");
+      const res = await refundsApi.initiate(bookingId, category, comments);
+      if (res.status === "approved" || res.status === "refunded" || res.status === "processing") {
+        alert("your amount is refunded back to your account");
+      } else if (res.status === "rejected") {
+        alert(`Refund Request Auto-Rejected\nReason: Submitted less than 24 hours before the event.`);
+      } else {
+        alert(`Refund request submitted successfully! Status: ${res.status}`);
+      }
+      onSuccess();
+      onClose();
+    } catch (e: any) {
+      setError(e?.message || "Failed to submit refund request");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+      <div className="glass-card rounded-2xl p-6 w-full max-w-md border border-[var(--gold)]/20 shadow-2xl relative">
+        <button onClick={onClose} className="absolute right-4 top-4 text-muted-foreground hover:text-foreground transition cursor-pointer">
+          <X className="h-5 w-5" />
+        </button>
+        <h3 className="font-display text-lg text-foreground mb-4">Request Refund & Cancellation</h3>
+
+        {calculating ? (
+          <div className="py-6 flex flex-col items-center justify-center text-muted-foreground space-y-2">
+            <RefreshCw className="h-6 w-6 animate-spin text-gold" />
+            <p className="text-xs">Calculating refund eligibility...</p>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4 text-sm bg-transparent">
+            {breakdown ? (
+              <div className="space-y-3">
+                {/* Eligibility details */}
+                <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4 space-y-2 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Original Paid Amount:</span>
+                    <span className="text-foreground">₹{Number(breakdown.originalAmount).toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Hours Before Event:</span>
+                    <span className="text-foreground">{breakdown.hoursBeforeEvent} hrs</span>
+                  </div>
+                  <div className="flex justify-between items-center border-t border-white/5 pt-2 mt-2">
+                    <span className="text-muted-foreground">Policy Tier:</span>
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${breakdown.isEligible
+                        ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                        : "bg-rose-500/10 border-rose-500/20 text-rose-400"
+                      }`}>
+                      {breakdown.tier}
+                    </span>
+                  </div>
+                  {breakdown.isEligible && (
+                    <>
+                      {breakdown.gatewayChargeAmount > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Gateway Processing Fee (2%):</span>
+                          <span className="text-rose-400">-₹{Number(breakdown.gatewayChargeAmount).toLocaleString()}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Cancellation Deduction:</span>
+                        <span className="text-rose-400">
+                          -₹{Number(breakdown.originalAmount * (100 - breakdown.percentage) / 100).toLocaleString()}
+                        </span>
+                      </div>
+                    </>
+                  )}
+                  <div className="flex justify-between border-t border-white/5 pt-2 text-sm font-semibold text-gold">
+                    <span>Estimated Refund Amount:</span>
+                    <span>₹{Number(breakdown.estimatedRefundAmount).toLocaleString()}</span>
+                  </div>
+                </div>
+
+                {!breakdown.isEligible && (
+                  <div className="rounded-xl bg-rose-500/10 border border-rose-500/20 p-3 text-xs text-rose-400 flex items-start gap-2">
+                    <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-semibold mb-0.5">Not Refund Eligible</p>
+                      <p className="leading-relaxed">This request will be automatically rejected. Events commencing in less than 24 hours do not qualify for refunds under the VibeNests terms.</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 p-3 text-xs text-amber-400">
+                Unable to load refund estimation. Standard refund policies will be evaluated automatically.
+              </div>
+            )}
+
+            <div>
+              <label className="text-xs text-muted-foreground uppercase tracking-wide block mb-1">Reason Category</label>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="luxury-input w-full rounded-xl px-3 py-2 text-sm bg-black/60 border border-white/10 text-foreground focus:border-[var(--gold)]/50 focus:outline-none"
+              >
+                <option value="service_issue">Service Issue</option>
+                <option value="booking_problem">Booking Problem</option>
+                <option value="incorrect_charge">Incorrect Charge</option>
+                <option value="technical_issue">Technical Issue</option>
+                <option value="other">Other / General Cancellation</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="text-xs text-muted-foreground uppercase tracking-wide block mb-1">
+                Additional Comments <span className="text-[10px] lowercase text-muted-foreground/60">(optional)</span>
+              </label>
+              <textarea
+                value={comments}
+                onChange={(e) => setComments(e.target.value)}
+                placeholder="Provide details about your request (optional)..."
+                className="luxury-input w-full rounded-xl px-3 py-2 text-sm h-20 resize-none bg-transparent"
+              />
+            </div>
+
+            {error && (
+              <div className="text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-lg px-3 py-2">
+                {error}
+              </div>
+            )}
+
+            <div className="flex gap-3 pt-2">
+              <button
+                type="submit"
+                disabled={submitting}
+                className="flex-1 gold-btn py-2.5 rounded-xl text-xs font-semibold hover:opacity-95 transition disabled:opacity-50 cursor-pointer"
+              >
+                {submitting ? "Processing..." : "Confirm & Request Refund"}
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 py-2.5 rounded-xl border border-white/10 hover:bg-white/5 text-muted-foreground hover:text-foreground text-xs font-medium transition cursor-pointer"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
 
 /* ─── Booking Details Drawer ─────────────────────────── */
 function BookingDetailsDrawer({ booking, onClose }: { booking: Booking; onClose: () => void }) {
@@ -321,6 +496,7 @@ function BookingDetailsDrawer({ booking, onClose }: { booking: Booking; onClose:
   const [payingBalance, setPayingBalance] = useState(false);
   const [payingCash, setPayingCash] = useState(false);
   const [payError, setPayError] = useState("");
+  const [showCancelModal, setShowCancelModal] = useState(false);
 
   const rawId = booking._raw?.id ?? Number(String(booking.id).replace(/^(VN-|#VN|VN)/, ""));
 
@@ -351,9 +527,9 @@ function BookingDetailsDrawer({ booking, onClose }: { booking: Booking; onClose:
       setPayingBalance(true);
       setPayError("");
       const balanceAmount = Number(details.totalAmount) - Number(details.advanceAmount);
-      
+
       const createOrderRes = await paymentsApi.createOrder(Number(rawId), balanceAmount, "razorpay");
-      
+
       const w = window as any;
       if (!createOrderRes?.keyId || !createOrderRes?.orderId) {
         throw new Error("Unable to create Razorpay order");
@@ -514,7 +690,7 @@ function BookingDetailsDrawer({ booking, onClose }: { booking: Booking; onClose:
                   <CreditCard className="h-4 w-4 text-gold" />
                   <h4 className="text-sm font-semibold text-foreground">{t("app.userDashboard.paymentDetails", "Payment Details")}</h4>
                 </div>
-                
+
                 <div className="space-y-2 text-xs border-b border-white/5 pb-3">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Payment Mode</span>
@@ -568,7 +744,7 @@ function BookingDetailsDrawer({ booking, onClose }: { booking: Booking; onClose:
                       <span>₹{Number(details?.totalAmount || 0).toLocaleString()}</span>
                     </div>
                   )}
-                  
+
                   <div className="flex justify-between pt-1">
                     <span className="text-muted-foreground">Payment Status</span>
                     <span className={`font-semibold uppercase ${details?.fullPaymentReceived || details?.paymentMode === 'package_credit' ? "text-emerald-400" : "text-amber-400"}`}>
@@ -647,16 +823,56 @@ function BookingDetailsDrawer({ booking, onClose }: { booking: Booking; onClose:
                   </div>
                   <p className="text-xs text-muted-foreground leading-relaxed">{extra.refundInfo}</p>
                 </div>
-                {(booking.status === "confirmed" || booking.status === "pending") && (
-                  <button className="flex items-center gap-2 px-4 py-2 rounded-xl border border-rose-500/30 bg-rose-500/8 text-rose-400 text-sm hover:bg-rose-500/15 transition-colors w-full justify-center">
-                    <XCircle className="h-4 w-4" /> {t("app.userDashboard.requestCancellation", "Request Cancellation")}
-                  </button>
+                {details?.refundRequest ? (
+                  <div className="mt-3 p-3 rounded-xl border border-white/10 space-y-2 text-xs bg-white/[0.02]">
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Request Status:</span>
+                      <span className={`font-semibold uppercase text-[10px] ${details.refundRequest.status === 'pending'
+                        ? "text-amber-400 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full"
+                        : details.refundRequest.status === 'approved' || details.refundRequest.status === 'processed'
+                          ? "text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full"
+                          : "text-rose-400 bg-rose-500/10 border border-rose-500/20 px-2 py-0.5 rounded-full"
+                        }`}>
+                        {details.refundRequest.status === 'pending' ? 'Cancellation Requested' : details.refundRequest.status}
+                      </span>
+                    </div>
+                    <p className="text-muted-foreground"><span className="text-foreground font-medium">Your Reason:</span> {details.refundRequest.cancellationReason || "No reason provided"}</p>
+                    {details.refundRequest.status === 'rejected' && details.refundRequest.rejectionReason && (
+                      <p className="text-rose-400/90 bg-rose-500/5 p-2 rounded-lg border border-rose-500/10">
+                        <span className="font-semibold text-foreground">Rejection Reason:</span> {details.refundRequest.rejectionReason}
+                      </p>
+                    )}
+                    {(details.refundRequest.status === 'approved' || details.refundRequest.status === 'processed') && (
+                      <p className="text-emerald-400/90 bg-emerald-500/5 p-2 rounded-lg border border-emerald-500/10">
+                        Refund of <span className="font-semibold">₹{Number(details.refundRequest.refundableAmount).toLocaleString()}</span> processed.
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  (booking.status === "confirmed" || booking.status === "pending") && (
+                    <button
+                      onClick={() => setShowCancelModal(true)}
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl border border-rose-500/30 bg-rose-500/8 text-rose-400 text-sm hover:bg-rose-500/15 transition-colors w-full justify-center cursor-pointer"
+                    >
+                      <XCircle className="h-4 w-4" /> {t("app.userDashboard.requestCancellation", "Request Cancellation")}
+                    </button>
+                  )
                 )}
               </div>
             </div>
           )}
         </motion.aside>
       </div>
+      {showCancelModal && (
+        <RequestCancellationModal
+          bookingId={rawId}
+          onClose={() => setShowCancelModal(false)}
+          onSuccess={async () => {
+            const updated = await bookingsApi.getById(rawId);
+            setDetails(updated);
+          }}
+        />
+      )}
     </AnimatePresence>
   );
 }
@@ -1542,6 +1758,285 @@ function WalletView() {
   );
 }
 
+/* ─── Refund Requests View ────────────────────────────── */
+function RefundRequestsView() {
+  const { t } = useTranslation();
+  const [refunds, setRefunds] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+
+  const fetchRefunds = () => {
+    setLoading(true);
+    setError("");
+    refundsApi.getAll()
+      .then((res) => {
+        setRefunds(res.data || []);
+      })
+      .catch((err) => {
+        console.error("Failed to load refunds:", err);
+        setError(err?.message || "Failed to load refund history.");
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  };
+
+  useEffect(() => {
+    fetchRefunds();
+  }, []);
+
+  const filtered = refunds.filter((r) => {
+    const matchSearch =
+      String(r.id).includes(searchTerm) ||
+      String(r.bookingId).includes(searchTerm) ||
+      (r.referenceId && r.referenceId.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (r.policyTier && r.policyTier.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    const matchStatus = statusFilter === "all" || r.status === statusFilter;
+    return matchSearch && matchStatus;
+  });
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "pending":
+        return "text-amber-400 bg-amber-500/10 border-amber-500/20";
+      case "under_review":
+        return "text-orange-400 bg-orange-500/10 border-orange-500/20";
+      case "approved":
+        return "text-emerald-400 bg-emerald-500/10 border-emerald-500/20";
+      case "processing":
+        return "text-blue-400 bg-blue-500/10 border-blue-500/20";
+      case "refunded":
+        return "text-emerald-400 bg-emerald-500/10 border-emerald-500/20";
+      case "rejected":
+        return "text-rose-400 bg-rose-500/10 border-rose-500/20";
+      default:
+        return "text-muted-foreground bg-white/5 border-white/10";
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="font-display text-2xl text-foreground">Refund Requests</h3>
+          <p className="text-xs text-muted-foreground mt-1">Monitor and track your automated refund requests</p>
+        </div>
+        <button
+          onClick={fetchRefunds}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-gold/30 bg-gold/8 text-gold text-xs hover:bg-gold/15 transition-colors cursor-pointer"
+        >
+          <RefreshCw className="h-3.5 w-3.5 animate-spin-hover" /> Refresh
+        </button>
+      </div>
+
+      <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
+        <div className="relative w-full sm:w-64">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <input
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search by ID or booking..."
+            className="luxury-input w-full rounded-xl pl-9 pr-3 py-2 text-xs text-foreground bg-transparent focus:border-[var(--gold)]/50 focus:outline-none"
+          />
+        </div>
+        <div className="flex gap-1 glass rounded-xl p-1 w-full sm:w-auto overflow-x-auto scrollbar-none">
+          {(["all", "pending", "approved", "processing", "refunded", "rejected"] as const).map((s) => (
+            <button
+              key={s}
+              onClick={() => setStatusFilter(s)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-colors shrink-0 ${statusFilter === s ? "bg-gold/20 text-gold" : "text-muted-foreground hover:text-foreground"
+                }`}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {error && (
+        <div className="text-sm text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-xl px-4 py-3">
+          {error}
+        </div>
+      )}
+
+      {loading ? (
+        <div className="py-20 flex flex-col items-center justify-center text-muted-foreground space-y-3">
+          <RefreshCw className="h-8 w-8 animate-spin text-gold" />
+          <p className="text-xs uppercase tracking-widest animate-pulse">Loading refund requests...</p>
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="glass-card rounded-2xl p-12 text-center text-muted-foreground">
+          No refund requests found.
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {filtered.map((r) => {
+            const hasGatewayDeduction = Number(r.gatewayChargeAmount) > 0;
+            const originalAmount = Number(r.originalAmount || 0);
+            const refundableAmount = Number(r.refundableAmount || 0);
+            const refundPercent = r.selectedPercentage ?? 0;
+            const deductionAmount = Number(r.deductionAmount || (originalAmount - refundableAmount));
+
+            return (
+              <div key={r.id} className="glass-card rounded-2xl p-6 border border-white/5 bg-white/[0.01] space-y-4 hover:border-gold/20 transition-all">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5 pb-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2.5">
+                      <h4 className="font-display text-base text-foreground font-semibold">Refund Request #{r.id}</h4>
+                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider ${getStatusBadge(r.status)}`}>
+                        {r.status === 'pending' ? 'cancellation requested' : r.status}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Booking: <span className="text-foreground">#{r.bookingId}</span> · Requested: {formatDateStr(r.createdAt)}
+                    </p>
+                  </div>
+                  <div className="text-left md:text-right">
+                    <p className="text-xs text-muted-foreground">Refund Value</p>
+                    <p className="font-display text-xl text-gold font-bold">₹{refundableAmount.toLocaleString()}</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs">
+                  {/* Left Column: Details */}
+                  <div className="space-y-2.5 border-r border-white/5 pr-4">
+                    <h5 className="font-semibold text-muted-foreground uppercase tracking-wider text-[10px]">Policy & Calculation</h5>
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Policy Tier:</span>
+                        <span className="text-foreground font-medium">{r.policyTier || "Standard"}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Refund Percentage:</span>
+                        <span className="text-foreground font-medium">{refundPercent}%</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Original Paid:</span>
+                        <span className="text-foreground font-medium">₹{originalAmount.toLocaleString()}</span>
+                      </div>
+                      {hasGatewayDeduction && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Gateway Charge (2%):</span>
+                          <span className="text-rose-400 font-medium">-₹{Number(r.gatewayChargeAmount).toLocaleString()}</span>
+                        </div>
+                      )}
+                      {deductionAmount > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Cancellation Deduction:</span>
+                          <span className="text-rose-400 font-medium">-₹{deductionAmount.toLocaleString()}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between border-t border-white/5 pt-1.5 font-bold">
+                        <span className="text-gold">Total Refund:</span>
+                        <span className="text-gold">₹{refundableAmount.toLocaleString()}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Middle Column: Request Info */}
+                  <div className="space-y-2.5 border-r border-white/5 pr-4">
+                    <h5 className="font-semibold text-muted-foreground uppercase tracking-wider text-[10px]">Request Details</h5>
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Category:</span>
+                        <span className="text-foreground font-medium capitalize">{String(r.refundReason || "other").replace("_", " ")}</span>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <span className="text-muted-foreground">Comments:</span>
+                        <p className="text-foreground leading-relaxed italic bg-white/[0.02] border border-white/5 p-2 rounded-lg min-h-[50px]">
+                          {r.customerMessage || "No additional comments provided."}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Column: References & Rejections */}
+                  <div className="space-y-2.5">
+                    <h5 className="font-semibold text-muted-foreground uppercase tracking-wider text-[10px]">Processing Details</h5>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Auto-Processed:</span>
+                        <span className="text-foreground font-medium">{r.autoProcessed ? "Yes (Automated)" : "No (Manual Override)"}</span>
+                      </div>
+                      {r.referenceId && (
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-muted-foreground">Reference/Transaction ID:</span>
+                          <span className="font-mono text-foreground font-semibold select-all bg-white/[0.03] border border-white/5 px-2 py-0.5 rounded text-[11px] block truncate">
+                            {r.referenceId}
+                          </span>
+                        </div>
+                      )}
+                      {r.completedAt && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Completed At:</span>
+                          <span className="text-foreground font-medium">{formatDateStr(r.completedAt)}</span>
+                        </div>
+                      )}
+                      {r.status === "rejected" && r.rejectionReason && (
+                        <div className="rounded-xl bg-rose-500/10 border border-rose-500/20 p-2.5 mt-1 text-rose-400">
+                          <p className="font-semibold mb-0.5">Rejection Reason:</p>
+                          <p className="leading-relaxed text-[11px]">{r.rejectionReason}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Timeline */}
+                <div className="border-t border-white/5 pt-4">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 text-[10px] text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-3 w-3" />
+                      <span>Processing Timeline:</span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="flex items-center gap-1">
+                        <span className="h-2 w-2 rounded-full bg-gold" />
+                        <span className="text-foreground">Submitted ({formatDateStr(r.createdAt)})</span>
+                      </div>
+                      <ChevronRight className="h-3 w-3" />
+                      {r.status === "rejected" ? (
+                        <div className="flex items-center gap-1">
+                          <span className="h-2 w-2 rounded-full bg-rose-500" />
+                          <span className="text-rose-400">Rejected ({formatDateStr(r.rejectedAt || r.updatedAt)})</span>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex items-center gap-1">
+                            <span className={`h-2 w-2 rounded-full ${r.approvedAt || r.status !== 'pending' ? "bg-emerald-500" : "bg-white/20"}`} />
+                            <span className={r.approvedAt || r.status !== 'pending' ? "text-foreground" : ""}>
+                              Approved {r.approvedAt && `(${formatDateStr(r.approvedAt)})`}
+                            </span>
+                          </div>
+                          <ChevronRight className="h-3 w-3" />
+                          <div className="flex items-center gap-1">
+                            <span className={`h-2 w-2 rounded-full ${['processing', 'refunded'].includes(r.status) ? "bg-emerald-500" : "bg-white/20"}`} />
+                            <span className={['processing', 'refunded'].includes(r.status) ? "text-foreground" : ""}>Processing</span>
+                          </div>
+                          <ChevronRight className="h-3 w-3" />
+                          <div className="flex items-center gap-1">
+                            <span className={`h-2 w-2 rounded-full ${r.status === "refunded" ? "bg-emerald-500" : "bg-white/20"}`} />
+                            <span className={r.status === "refunded" ? "text-foreground" : ""}>
+                              Refunded {r.completedAt && `(${formatDateStr(r.completedAt)})`}
+                            </span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ─── Celebration Memberships View ─────────────────────── */
 function CelebrationMembershipsView() {
   const { t } = useTranslation();
@@ -1590,16 +2085,16 @@ function CelebrationMembershipsView() {
         ? myActive.plan.benefits.split(',')
         : myActive.planName === 'Gold'
           ? [
-              '15 free bookings on eligible suites',
-              '24/7 dedicated support desk',
-              '1 complimentary add-on per booking',
-              'Free late check-out (up to 2 hours)'
-            ]
+            '15 free bookings on eligible suites',
+            '24/7 dedicated support desk',
+            '1 complimentary add-on per booking',
+            'Free late check-out (up to 2 hours)'
+          ]
           : [
-              '5 free bookings on eligible suites',
-              'Priority customer support',
-              'Complimentary soft drinks during stays'
-            ])
+            '5 free bookings on eligible suites',
+            'Priority customer support',
+            'Complimentary soft drinks during stays'
+          ])
     : [];
 
   const isActive = myActive && myActive.status === 'active';
@@ -1607,8 +2102,8 @@ function CelebrationMembershipsView() {
   const isExpired = myActive && myActive.status === 'expired';
   const activeSuiteNames = myActive
     ? (myActive.eligibleSuites || [])
-        .map((id: any) => suites.find((s: any) => String(s.id) === String(id))?.name || `Suite #${id}`)
-        .join(", ")
+      .map((id: any) => suites.find((s: any) => String(s.id) === String(id))?.name || `Suite #${id}`)
+      .join(", ")
     : "";
 
   return (
@@ -1634,26 +2129,23 @@ function CelebrationMembershipsView() {
 
       {/* Active Membership Dashboard Block */}
       {myActive ? (
-        <div className={`glass-card rounded-3xl border p-6 relative overflow-hidden transition-all duration-300 ${
-          isExpired
-            ? "border-rose-500/20 bg-gradient-to-br from-rose-500/10 via-rose-500/5 to-transparent"
-            : isGoldActive
-              ? "border-gold/30 bg-gradient-to-br from-gold/20 via-gold/5 to-transparent"
-              : "border-slate-400/30 bg-gradient-to-br from-slate-400/20 via-slate-400/5 to-transparent"
-        }`}>
-          <div className={`absolute right-0 top-0 translate-x-1/3 -translate-y-1/3 h-52 w-52 rounded-full blur-3xl pointer-events-none ${
-            isExpired ? "bg-rose-500/5" : (isGoldActive ? "bg-gold/10" : "bg-slate-400/10")
-          }`} />
+        <div className={`glass-card rounded-3xl border p-6 relative overflow-hidden transition-all duration-300 ${isExpired
+          ? "border-rose-500/20 bg-gradient-to-br from-rose-500/10 via-rose-500/5 to-transparent"
+          : isGoldActive
+            ? "border-gold/30 bg-gradient-to-br from-gold/20 via-gold/5 to-transparent"
+            : "border-slate-400/30 bg-gradient-to-br from-slate-400/20 via-slate-400/5 to-transparent"
+          }`}>
+          <div className={`absolute right-0 top-0 translate-x-1/3 -translate-y-1/3 h-52 w-52 rounded-full blur-3xl pointer-events-none ${isExpired ? "bg-rose-500/5" : (isGoldActive ? "bg-gold/10" : "bg-slate-400/10")
+            }`} />
           <div className="flex flex-col gap-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div className="space-y-2">
-                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] uppercase font-bold tracking-widest border ${
-                  isExpired
-                    ? "bg-rose-500/25 text-rose-400 border-rose-500/30"
-                    : isGoldActive
-                      ? "bg-gold/25 text-gold border-gold/30"
-                      : "bg-slate-400/25 text-slate-200 border-slate-400/30"
-                }`}>
+                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] uppercase font-bold tracking-widest border ${isExpired
+                  ? "bg-rose-500/25 text-rose-400 border-rose-500/30"
+                  : isGoldActive
+                    ? "bg-gold/25 text-gold border-gold/30"
+                    : "bg-slate-400/25 text-slate-200 border-slate-400/30"
+                  }`}>
                   {isExpired ? "⚠ Expired" : `★ ${myActive.planName} Member`}
                 </span>
                 <h3 className="font-display text-2xl font-bold tracking-wide text-foreground">
@@ -1727,10 +2219,10 @@ function CelebrationMembershipsView() {
           {plans.map((plan) => {
             const isGold = plan.name === "Gold";
             const isCurrent = myActive && myActive.planName === plan.name;
-            const benefitsArray = Array.isArray(plan.benefits) 
-              ? plan.benefits 
-              : typeof plan.benefits === "string" 
-                ? (plan.benefits as string).split(",") 
+            const benefitsArray = Array.isArray(plan.benefits)
+              ? plan.benefits
+              : typeof plan.benefits === "string"
+                ? (plan.benefits as string).split(",")
                 : [];
             const planSuiteNames = (plan.eligibleSuites || [])
               .map((id: any) => suites.find((s: any) => String(s.id) === String(id))?.name || `Suite #${id}`)
@@ -1739,11 +2231,10 @@ function CelebrationMembershipsView() {
             return (
               <div
                 key={plan.id}
-                className={`relative rounded-3xl border p-6 flex flex-col justify-between overflow-hidden transition-all duration-300 hover:shadow-2xl hover:border-gold/30 ${
-                  isGold
-                    ? "border-gold/25 bg-gradient-to-b from-gold/10 via-transparent to-transparent shadow-[0_20px_50px_rgba(212,160,60,0.03)]"
-                    : "border-slate-500/20 bg-gradient-to-b from-slate-500/10 via-transparent to-transparent"
-                }`}
+                className={`relative rounded-3xl border p-6 flex flex-col justify-between overflow-hidden transition-all duration-300 hover:shadow-2xl hover:border-gold/30 ${isGold
+                  ? "border-gold/25 bg-gradient-to-b from-gold/10 via-transparent to-transparent shadow-[0_20px_50px_rgba(212,160,60,0.03)]"
+                  : "border-slate-500/20 bg-gradient-to-b from-slate-500/10 via-transparent to-transparent"
+                  }`}
               >
                 <div>
                   {/* Plan Badge */}
@@ -2291,8 +2782,8 @@ export default function UserDashboardPage() {
         setNotifications(generated);
 
         // Find completed booking for review prompt
-        const completedBooking = rawList.find((b: any) => 
-          b.status === 'completed' && 
+        const completedBooking = rawList.find((b: any) =>
+          b.status === 'completed' &&
           localStorage.getItem(`vibenests_review_prompt_dismissed_${b.id}`) !== 'true'
         );
         if (completedBooking) {
@@ -2356,6 +2847,7 @@ export default function UserDashboardPage() {
       case "upcoming": return <BookingListView bookings={[]} title={t("app.userDashboard.upcomingBookings", "Upcoming Bookings")} fetchFromApi statusFilter="upcoming" />;
       case "past": return <BookingListView bookings={[]} title={t("app.userDashboard.pastBookings", "Past Bookings")} fetchFromApi statusFilter="past" />;
       case "wallet": return <WalletView />;
+      case "refunds": return <RefundRequestsView />;
       case "memberships": return <CelebrationMembershipsView />;
       case "offers": return <OffersView />;
       case "profile": return <ProfileView />;
@@ -2494,12 +2986,13 @@ export default function UserDashboardPage() {
                       id === "upcoming" ? t("app.userDashboard.upcomingBookings", "Upcoming Bookings") :
                         id === "past" ? t("app.userDashboard.pastBookings", "Past Bookings") :
                           id === "wallet" ? t("app.userDashboard.walletPayments", "Payments") :
-                            id === "memberships" ? t("app.userDashboard.celebrationMembership", "Celebration Packages") :
-                              id === "offers" ? t("app.userDashboard.specialOffersReferrals", "Special Offers") :
-                                id === "profile" ? t("app.userDashboard.profileSettings", "Profile Settings") :
-                                  id === "help" ? t("app.userDashboard.helpSupport", "Help & Support") :
-                                    id === "write-review" ? t("app.userDashboard.writeReview", "Write a Review") :
-                                      label;
+                            id === "refunds" ? t("app.userDashboard.refunds", "Refunds") :
+                              id === "memberships" ? t("app.userDashboard.celebrationMembership", "Celebration Packages") :
+                                id === "offers" ? t("app.userDashboard.specialOffersReferrals", "Special Offers") :
+                                  id === "profile" ? t("app.userDashboard.profileSettings", "Profile Settings") :
+                                    id === "help" ? t("app.userDashboard.helpSupport", "Help & Support") :
+                                      id === "write-review" ? t("app.userDashboard.writeReview", "Write a Review") :
+                                        label;
 
               return (
                 <button key={id}
@@ -2547,12 +3040,12 @@ export default function UserDashboardPage() {
             <div className="space-y-2">
               <h3 className="font-display text-xl text-foreground">Share Your Experience</h3>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                We hope you had a luxurious stay at <span className="text-gold font-medium">{reviewPromptBooking.suite?.name || reviewPromptBooking.suiteName || `Suite #${reviewPromptBooking.suiteId}`}</span>. 
+                We hope you had a luxurious stay at <span className="text-gold font-medium">{reviewPromptBooking.suite?.name || reviewPromptBooking.suiteName || `Suite #${reviewPromptBooking.suiteId}`}</span>.
                 Would you take a moment to write a review?
               </p>
             </div>
             <div className="flex gap-3 pt-2">
-              <button 
+              <button
                 onClick={() => {
                   localStorage.setItem(`vibenests_review_prompt_dismissed_${reviewPromptBooking.id}`, 'true');
                   setReviewPromptBooking(null);
@@ -2562,7 +3055,7 @@ export default function UserDashboardPage() {
               >
                 Write Review
               </button>
-              <button 
+              <button
                 onClick={() => {
                   localStorage.setItem(`vibenests_review_prompt_dismissed_${reviewPromptBooking.id}`, 'true');
                   setReviewPromptBooking(null);

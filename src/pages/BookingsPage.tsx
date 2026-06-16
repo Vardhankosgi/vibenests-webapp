@@ -4,17 +4,17 @@ import { Search, Filter, Download, Plus, X, Check, ChevronRight, ChevronLeft, Ey
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { DateRangePicker } from "@/components/admin/DateRangePicker";
 import { useAppData } from "@/components/admin/AppDataContext";
-import { suitesApi, addonsApi, bookingsApi } from "@/lib/api";
+import { suitesApi, addonsApi, bookingsApi, refundsApi } from "@/lib/api";
 import { useTranslation } from "react-i18next";
 
 const statusStyle: Record<string, string> = {
   Confirmed: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-  Pending:   "bg-amber-500/10 text-amber-400 border-amber-500/20",
+  Pending: "bg-amber-500/10 text-amber-400 border-amber-500/20",
   Cancelled: "bg-destructive/10 text-destructive border-destructive/20",
   Completed: "bg-blue-500/10 text-blue-400 border-blue-500/20",
 };
 
-const statuses  = ["All", "Confirmed", "Pending", "Cancelled", "Completed"];
+const statuses = ["All", "Confirmed", "Pending", "Cancelled", "Completed"];
 const occasions = ["All", "Birthday", "Anniversary", "Proposal", "Surprise Party", "Corporate", "Other"];
 
 export function generateSlots(startTime: string, endTime: string, durationMins: number, gapMins: number = 30): string[] {
@@ -72,7 +72,7 @@ function StepIndicator({ step, stepLabels }: { step: number; stepLabels: string[
           <div className={`flex items-center justify-center h-6 w-6 rounded-full text-[11px] font-semibold shrink-0 border transition-all
             ${i < step ? "bg-[var(--gold)] border-[var(--gold)] text-black" :
               i === step ? "border-[var(--gold)] text-gold" :
-              "border-white/20 text-muted-foreground"}`}>
+                "border-white/20 text-muted-foreground"}`}>
             {i < step ? <Check className="h-3 w-3" /> : i + 1}
           </div>
           <span className={`text-[11px] hidden sm:block ${i === step ? "text-gold" : "text-muted-foreground"}`}>{label}</span>
@@ -133,8 +133,8 @@ function NewBookingModal({ onClose, onCreated }: { onClose: () => void; onCreate
   const [guest, setGuest] = useState(emptyGuest);
 
   useEffect(() => {
-    suitesApi.getAll().then((list) => setSuites(list as ApiSuite[])).catch(() => {});
-    addonsApi.getAll().then((list) => setAddons(list as ApiAddon[])).catch(() => {});
+    suitesApi.getAll().then((list) => setSuites(list as ApiSuite[])).catch(() => { });
+    addonsApi.getAll().then((list) => setAddons(list as ApiAddon[])).catch(() => { });
   }, []);
 
   function toggleAddon(a: ApiAddon) {
@@ -288,21 +288,20 @@ function NewBookingModal({ onClose, onCreated }: { onClose: () => void; onCreate
                               ${isSelected
                                 ? "border-[var(--gold)] bg-[var(--gold)]/10 text-gold font-semibold shadow-[0_0_12px_rgba(212,160,60,0.15)]"
                                 : isBlocked
-                                ? "border-red-500/20 bg-red-500/5 text-rose-400/60 opacity-60 cursor-not-allowed"
-                                : "border-white/10 hover:border-[var(--gold)]/40 hover:bg-white/[0.04] text-muted-foreground hover:text-foreground"
+                                  ? "border-red-500/20 bg-red-500/5 text-rose-400/60 opacity-60 cursor-not-allowed"
+                                  : "border-white/10 hover:border-[var(--gold)]/40 hover:bg-white/[0.04] text-muted-foreground hover:text-foreground"
                               }`}
                           >
                             <div className="flex items-center gap-1.5">
                               <Clock className={`h-3.5 w-3.5 ${isSelected ? "text-gold" : isBlocked ? "text-rose-400/40" : "text-muted-foreground"}`} />
                               <span>{slot}</span>
                             </div>
-                            <span className={`text-[9px] px-1.5 py-0.5 rounded border ${
-                              isSelected
+                            <span className={`text-[9px] px-1.5 py-0.5 rounded border ${isSelected
                                 ? "border-gold/30 bg-gold/10 text-gold"
                                 : isBlocked
-                                ? "border-red-500/20 bg-red-500/10 text-rose-400"
-                                : "border-white/10 bg-white/5 text-muted-foreground"
-                            }`}>
+                                  ? "border-red-500/20 bg-red-500/10 text-rose-400"
+                                  : "border-white/10 bg-white/5 text-muted-foreground"
+                              }`}>
                               {isBlocked ? "Blocked" : "Available"}
                             </span>
                           </button>
@@ -408,8 +407,8 @@ function NewBookingModal({ onClose, onCreated }: { onClose: () => void; onCreate
                       u.name.toLowerCase().includes(userSearch.toLowerCase()) ||
                       u.email.toLowerCase().includes(userSearch.toLowerCase())
                   ).length === 0 && (
-                    <div className="px-3 py-2 text-xs text-muted-foreground">{t("app.admin.noUsersFound", "No users found")}</div>
-                  )}
+                      <div className="px-3 py-2 text-xs text-muted-foreground">{t("app.admin.noUsersFound", "No users found")}</div>
+                    )}
                 </div>
               )}
             </div>
@@ -417,7 +416,7 @@ function NewBookingModal({ onClose, onCreated }: { onClose: () => void; onCreate
             <div className="grid grid-cols-2 gap-3">
               {[
                 { label: t("app.admin.firstName", "First Name"), key: "firstName", placeholder: "John" },
-                { label: t("app.admin.lastName", "Last Name"),  key: "lastName",  placeholder: "Doe" },
+                { label: t("app.admin.lastName", "Last Name"), key: "lastName", placeholder: "Doe" },
               ].map(({ label, key, placeholder }) => (
                 <div key={key}>
                   <label className="text-xs text-muted-foreground uppercase tracking-wide">{label}</label>
@@ -449,13 +448,13 @@ function NewBookingModal({ onClose, onCreated }: { onClose: () => void; onCreate
             <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4 space-y-2 text-sm">
               <p className="text-xs text-muted-foreground uppercase tracking-wide mb-3">{t("app.admin.bookingSummary", "Booking Summary")}</p>
               {[
-                [t("app.admin.guest", "Guest"),   `${guest.firstName} ${guest.lastName}`],
-                [t("app.admin.email", "Email"),   guest.email],
-                [t("app.admin.phone", "Phone"),   guest.phone],
-                [t("app.admin.date", "Date"),    date],
-                [t("app.admin.time", "Time"),    `${startTime} – ${endTime}`],
+                [t("app.admin.guest", "Guest"), `${guest.firstName} ${guest.lastName}`],
+                [t("app.admin.email", "Email"), guest.email],
+                [t("app.admin.phone", "Phone"), guest.phone],
+                [t("app.admin.date", "Date"), date],
+                [t("app.admin.time", "Time"), `${startTime} – ${endTime}`],
                 [t("app.admin.occasion", "Occasion"), occasion],
-                [t("app.admin.suite", "Suite"),   selectedSuite?.name ?? ""],
+                [t("app.admin.suite", "Suite"), selectedSuite?.name ?? ""],
               ].map(([k, v]) => (
                 <div key={k} className="flex justify-between gap-4">
                   <span className="text-muted-foreground">{k}</span>
@@ -519,7 +518,7 @@ export default function BookingsPage() {
   const [searchParams] = useSearchParams();
   const dateParam = searchParams.get("date") ?? "";
   const navigate = useNavigate();
-  const { bookings, setBookings, addBooking, stats } = useAppData();
+  const { bookings, setBookings, addBooking, stats, refresh } = useAppData();
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
@@ -529,6 +528,55 @@ export default function BookingsPage() {
   const [dateRange, setDateRange] = useState<{ from: Date; to: Date } | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
   const [showNewBooking, setShowNewBooking] = useState(false);
+
+  const [activeTab, setActiveTab] = useState<'bookings' | 'refunds'>('bookings');
+  const [refundRequests, setRefundRequests] = useState<any[]>([]);
+  const [loadingRefunds, setLoadingRefunds] = useState(false);
+
+  async function fetchRefundRequests() {
+    try {
+      setLoadingRefunds(true);
+      const res = await refundsApi.getAll({ status: 'pending' });
+      setRefundRequests(res.data || []);
+    } catch (e) {
+      console.error("Failed to fetch refund requests:", e);
+    } finally {
+      setLoadingRefunds(false);
+    }
+  }
+
+  useEffect(() => {
+    fetchRefundRequests();
+  }, []);
+
+  async function handleApproveRefund(refundId: number) {
+    if (!window.confirm("Are you sure you want to approve this refund request? This will mark the booking as refunded, cancel its slot reservation, and issue the calculated refund.")) return;
+    try {
+      await refundsApi.process(refundId, 'approve');
+      alert("Refund and booking cancellation approved successfully!");
+      fetchRefundRequests();
+      refresh();
+    } catch (e: any) {
+      alert(e?.message || "Failed to approve refund");
+    }
+  }
+
+  async function handleRejectRefund(refundId: number) {
+    const reason = window.prompt("Please provide a reason for rejecting this cancellation/refund request:");
+    if (reason === null) return;
+    if (!reason.trim()) {
+      alert("Rejection reason is required to reject a cancellation request.");
+      return;
+    }
+    try {
+      await refundsApi.process(refundId, 'reject', reason);
+      alert("Refund request rejected successfully.");
+      fetchRefundRequests();
+      refresh();
+    } catch (e: any) {
+      alert(e?.message || "Failed to reject refund");
+    }
+  }
 
   useEffect(() => { if (dateParam) setDateFilter(dateParam); }, [dateParam]);
 
@@ -547,8 +595,8 @@ export default function BookingsPage() {
     const matchDate = !dateFilter || b.date === dateFilter;
     const matchDateRange = !dateRange || (() => {
       const d = new Date(b.date);
-      const from = new Date(dateRange.from); from.setHours(0,0,0,0);
-      const to = new Date(dateRange.to); to.setHours(23,59,59,999);
+      const from = new Date(dateRange.from); from.setHours(0, 0, 0, 0);
+      const to = new Date(dateRange.to); to.setHours(23, 59, 59, 999);
       return d >= from && d <= to;
     })();
     return matchSearch && matchStatus && matchOccasion && matchSuite && matchDate && matchDateRange;
@@ -566,9 +614,9 @@ export default function BookingsPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap gap-3">
             {[
-              { label: t("app.admin.total", "Total"),     count: bookings.length,        color: "border-[var(--gold)]/30 text-gold" },
+              { label: t("app.admin.total", "Total"), count: bookings.length, color: "border-[var(--gold)]/30 text-gold" },
               { label: t("app.admin.confirmed", "Confirmed"), count: stats.confirmedBookings, color: "border-emerald-500/30 text-emerald-400" },
-              { label: t("app.admin.pending", "Pending"),   count: stats.pendingBookings,   color: "border-amber-500/30 text-amber-400" },
+              { label: t("app.admin.pending", "Pending"), count: stats.pendingBookings, color: "border-amber-500/30 text-amber-400" },
               { label: t("app.admin.cancelled", "Cancelled"), count: stats.cancelledBookings, color: "border-destructive/30 text-destructive" },
             ].map((s) => (
               <div key={s.label} className={`glass-card rounded-xl px-4 py-2.5 border ${s.color} flex items-center gap-2`}>
@@ -615,81 +663,226 @@ export default function BookingsPage() {
         </div>
 
         <div className="glass-card rounded-2xl p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-display text-lg font-medium text-foreground">{t("app.admin.allBookings", "All Bookings")}</h3>
-            <div className="flex items-center gap-3">
+          <div className="flex border-b border-white/10 mb-5">
+            <button
+              onClick={() => setActiveTab('bookings')}
+              className={`pb-2.5 px-4 text-sm font-medium transition-all border-b-2 cursor-pointer ${activeTab === 'bookings'
+                  ? 'border-[var(--gold)] text-gold font-semibold'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
+                }`}
+            >
+              {t("app.admin.allBookings", "All Bookings")} ({filtered.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('refunds')}
+              className={`pb-2.5 px-4 text-sm font-medium transition-all border-b-2 cursor-pointer flex items-center gap-1.5 ${activeTab === 'refunds'
+                  ? 'border-[var(--gold)] text-gold font-semibold'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
+                }`}
+            >
+              Refund & Cancellation Requests
+              {refundRequests.length > 0 && (
+                <span className="px-2 py-0.5 text-[10px] font-bold bg-amber-500 text-black rounded-full leading-none animate-pulse">
+                  {refundRequests.length}
+                </span>
+              )}
+            </button>
+          </div>
 
-              <span className="text-xs text-muted-foreground">{filtered.length} of {bookings.length} bookings</span>
-            </div>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs text-muted-foreground uppercase tracking-wide border-b border-white/[0.06]">
-                  <th className="pb-3 pr-3"><input type="checkbox" checked={selected.length === filtered.length && filtered.length > 0} onChange={toggleAll} className="h-3.5 w-3.5 accent-[var(--gold)] cursor-pointer" /></th>
-                  <th className="pb-3 pr-4">{t("app.admin.id", "ID")}</th>
-                  <th className="pb-3 pr-4">{t("app.admin.guest", "Guest")}</th>
-                  <th className="pb-3 pr-4">{t("app.admin.suite", "Suite")}</th>
-                  <th className="pb-3 pr-4">{t("app.admin.occasion", "Occasion")}</th>
-                  <th className="pb-3 pr-4">{t("app.admin.date", "Date")}</th>
-                  <th className="pb-3 pr-4">{t("app.admin.time", "Time")}</th>
-                  <th className="pb-3 pr-4">{t("app.admin.amount", "Amount")}</th>
-                  <th className="pb-3 pr-4">{t("app.admin.status", "Status")}</th>
-                  <th className="pb-3 pr-4">{t("app.admin.fullPaymentsReceived", "Full Payment Received")}</th>
-                  <th className="pb-3">{t("app.admin.action", "Action")}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/[0.04]">
-                {filtered.length === 0 ? (
-                  <tr><td colSpan={10} className="py-10 text-center text-sm text-muted-foreground">{t("app.admin.noBookingsFound", "No bookings found")}</td></tr>
-                ) : filtered.map((b) => (
-                  <tr key={b.id} className={`hover:bg-white/[0.02] transition ${selected.includes(b.id) ? "bg-[var(--gold)]/5" : ""}`}>
-                    <td className="py-3 pr-3"><input type="checkbox" checked={selected.includes(b.id)} onChange={() => toggleSelect(b.id)} className="h-3.5 w-3.5 accent-[var(--gold)] cursor-pointer" /></td>
-                    <td className="py-3 pr-4 text-gold font-medium">{b.id}</td>
-                    <td className="py-3 pr-4">
-                      <div className="flex flex-col">
-                        <span className="text-foreground font-medium">{b.guest}</span>
-                        {b.email && <span className="text-[11px] text-muted-foreground">{b.email}</span>}
-                      </div>
-                    </td>
-                    <td className="py-3 pr-4 text-xs">
-                      <button onClick={() => navigate("/rooms")} className="text-gold hover:underline underline-offset-2 text-left transition">{b.suite}</button>
-                    </td>
-                    <td className="py-3 pr-4 text-muted-foreground">{b.occasion}</td>
-                    <td className="py-3 pr-4 text-muted-foreground text-xs">{b.date}</td>
-                    <td className="py-3 pr-4 text-muted-foreground text-xs">{b.time}{b.endTime ? ` – ${b.endTime}` : ""}</td>
-                    <td className="py-3 pr-4 text-foreground font-medium">{b.amount}</td>
-                    <td className="py-3 pr-4">
-                      <span className={`px-2.5 py-1 rounded-full text-[11px] font-medium border ${statusStyle[b.status]}`}>
-                        {b.status === "Confirmed" ? t("app.admin.confirmed", "Confirmed") : b.status === "Pending" ? t("app.admin.pending", "Pending") : b.status === "Completed" ? t("app.admin.completed", "Completed") : t("app.admin.cancelled", "Cancelled")}
-                      </span>
-                    </td>
-                    <td className="py-3 pr-4">
-                      <span className={`px-2.5 py-1 rounded-full text-[11px] font-medium border ${
-                        (b.fullPaymentReceived || b.paymentMode === 'package_credit')
-                          ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                          : "bg-amber-500/10 text-amber-400 border-amber-500/20"
-                      }`}>
-                        {(b.fullPaymentReceived || b.paymentMode === 'package_credit') ? t("app.admin.yes", "Yes") : t("app.admin.no", "No")}
-                      </span>
-                    </td>
-                    <td className="py-3">
-                      <button
-                        onClick={() =>
-                          navigate(
-                            `/bookings/${String((b as any).rawId ?? b.id).replace(/^#VN/, "")}`
-                          )
-                        }
-                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs text-gold border border-gold/25 bg-gold/5 hover:bg-gold/10 hover:border-gold/40 transition"
-                      >
-                        <Eye className="h-3.5 w-3.5" /> {t("app.admin.viewDetails", "View Details")}
-                      </button>
-                    </td>
+          {activeTab === 'refunds' ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-xs text-muted-foreground uppercase tracking-wide border-b border-white/[0.06]">
+                    <th className="pb-3 pr-4">Booking ID</th>
+                    <th className="pb-3 pr-4">Guest</th>
+                    <th className="pb-3 pr-4">Suite / Date</th>
+                    <th className="pb-3 pr-4">Calculated Refund</th>
+                    <th className="pb-3 pr-4">Cancellation Reason</th>
+                    <th className="pb-3 text-right">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-white/[0.04]">
+                  {loadingRefunds ? (
+                    <tr>
+                      <td colSpan={6} className="py-10 text-center text-sm text-muted-foreground">
+                        Loading refund requests...
+                      </td>
+                    </tr>
+                  ) : refundRequests.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="py-10 text-center text-sm text-muted-foreground">
+                        No pending cancellation requests found
+                      </td>
+                    </tr>
+                  ) : (
+                    refundRequests.map((r) => {
+                      const bookingIdStr = r.booking?.orderId ? `#${r.booking.orderId}` : `#VN${r.bookingId}`;
+                      const guestName = [r.booking?.guestFirstName, r.booking?.guestLastName].filter(Boolean).join(" ") || "Guest";
+                      return (
+                        <tr key={r.id} className="hover:bg-white/[0.02] transition">
+                          <td className="py-3 pr-4 text-gold font-medium">{bookingIdStr}</td>
+                          <td className="py-3 pr-4">
+                            <div className="flex flex-col">
+                              <span className="text-foreground font-medium">{guestName}</span>
+                              {r.booking?.guestEmail && <span className="text-[11px] text-muted-foreground">{r.booking.guestEmail}</span>}
+                            </div>
+                          </td>
+                          <td className="py-3 pr-4">
+                            <div className="flex flex-col text-xs text-muted-foreground">
+                              <span className="text-foreground font-medium">{r.booking?.suiteName || `Suite #${r.booking?.suiteId}`}</span>
+                              <span>{r.booking?.date} · {r.booking?.timeSlot}</span>
+                            </div>
+                          </td>
+                          <td className="py-3 pr-4">
+                            <div className="flex flex-col text-xs">
+                              <span className="text-gold font-semibold">₹{Number(r.refundableAmount).toLocaleString()}</span>
+                              <span className="text-muted-foreground text-[10px]">Paid: ₹{Number(r.originalAmount).toLocaleString()}</span>
+                            </div>
+                          </td>
+                          <td className="py-3 pr-4 max-w-xs truncate" title={r.cancellationReason}>
+                            <span className="text-foreground text-xs italic">{r.cancellationReason || "No reason provided"}</span>
+                          </td>
+                          <td className="py-3 text-right space-x-2">
+                            <button
+                              onClick={() => handleApproveRefund(r.id)}
+                              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition cursor-pointer"
+                            >
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => handleRejectRefund(r.id)}
+                              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500/20 transition cursor-pointer"
+                            >
+                              Reject
+                            </button>
+                            <button
+                              onClick={() => navigate(`/bookings/${r.bookingId}`)}
+                              className="px-2 py-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground transition cursor-pointer border border-white/10 hover:border-[var(--gold)]/30"
+                            >
+                              Details
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-xs text-muted-foreground">
+                  {filtered.length} of {bookings.length} bookings
+                </span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-xs text-muted-foreground uppercase tracking-wide border-b border-white/[0.06]">
+                      <th className="pb-3 pr-3">
+                        <input
+                          type="checkbox"
+                          checked={selected.length === filtered.length && filtered.length > 0}
+                          onChange={toggleAll}
+                          className="h-3.5 w-3.5 accent-[var(--gold)] cursor-pointer"
+                        />
+                      </th>
+                      <th className="pb-3 pr-4">{t("app.admin.id", "ID")}</th>
+                      <th className="pb-3 pr-4">{t("app.admin.guest", "Guest")}</th>
+                      <th className="pb-3 pr-4">{t("app.admin.suite", "Suite")}</th>
+                      <th className="pb-3 pr-4">{t("app.admin.occasion", "Occasion")}</th>
+                      <th className="pb-3 pr-4">{t("app.admin.date", "Date")}</th>
+                      <th className="pb-3 pr-4">{t("app.admin.time", "Time")}</th>
+                      <th className="pb-3 pr-4">{t("app.admin.amount", "Amount")}</th>
+                      <th className="pb-3 pr-4">{t("app.admin.status", "Status")}</th>
+                      <th className="pb-3 pr-4">{t("app.admin.fullPaymentsReceived", "Full Payment Received")}</th>
+                      <th className="pb-3">{t("app.admin.action", "Action")}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/[0.04]">
+                    {filtered.length === 0 ? (
+                      <tr>
+                        <td colSpan={11} className="py-10 text-center text-sm text-muted-foreground">
+                          {t("app.admin.noBookingsFound", "No bookings found")}
+                        </td>
+                      </tr>
+                    ) : (
+                      filtered.map((b) => (
+                        <tr
+                          key={b.id}
+                          className={`hover:bg-white/[0.02] transition ${selected.includes(b.id) ? "bg-[var(--gold)]/5" : ""}`}
+                        >
+                          <td className="py-3 pr-3">
+                            <input
+                              type="checkbox"
+                              checked={selected.includes(b.id)}
+                              onChange={() => toggleSelect(b.id)}
+                              className="h-3.5 w-3.5 accent-[var(--gold)] cursor-pointer"
+                            />
+                          </td>
+                          <td className="py-3 pr-4 text-gold font-medium">{b.id}</td>
+                          <td className="py-3 pr-4">
+                            <div className="flex flex-col">
+                              <span className="text-foreground font-medium">{b.guest}</span>
+                              {b.email && <span className="text-[11px] text-muted-foreground">{b.email}</span>}
+                            </div>
+                          </td>
+                          <td className="py-3 pr-4 text-xs">
+                            <button
+                              onClick={() => navigate("/rooms")}
+                              className="text-gold hover:underline underline-offset-2 text-left transition cursor-pointer bg-transparent border-0 p-0"
+                            >
+                              {b.suite}
+                            </button>
+                          </td>
+                          <td className="py-3 pr-4 text-muted-foreground">{b.occasion}</td>
+                          <td className="py-3 pr-4 text-muted-foreground text-xs">{b.date}</td>
+                          <td className="py-3 pr-4 text-muted-foreground text-xs">
+                            {b.time}
+                            {b.endTime ? ` – ${b.endTime}` : ""}
+                          </td>
+                          <td className="py-3 pr-4 text-foreground font-medium">{b.amount}</td>
+                          <td className="py-3 pr-4">
+                            <span className={`px-2.5 py-1 rounded-full text-[11px] font-medium border ${statusStyle[b.status]}`}>
+                              {b.status === "Confirmed"
+                                ? t("app.admin.confirmed", "Confirmed")
+                                : b.status === "Pending"
+                                  ? t("app.admin.pending", "Pending")
+                                  : b.status === "Completed"
+                                    ? t("app.admin.completed", "Completed")
+                                    : t("app.admin.cancelled", "Cancelled")}
+                            </span>
+                          </td>
+                          <td className="py-3 pr-4">
+                            <span
+                              className={`px-2.5 py-1 rounded-full text-[11px] font-medium border ${b.fullPaymentReceived || b.paymentMode === "package_credit"
+                                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                                  : "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                                }`}
+                            >
+                              {b.fullPaymentReceived || b.paymentMode === "package_credit"
+                                ? t("app.admin.yes", "Yes")
+                                : t("app.admin.no", "No")}
+                            </span>
+                          </td>
+                          <td className="py-3">
+                            <button
+                              onClick={() => navigate(`/bookings/${String((b as any).rawId ?? b.id).replace(/^#VN/, "")}`)}
+                              className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs text-gold border border-gold/25 bg-gold/5 hover:bg-gold/10 hover:border-gold/40 transition cursor-pointer"
+                            >
+                              <Eye className="h-3.5 w-3.5" /> {t("app.admin.viewDetails", "View Details")}
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
         </div>
       </div>
 

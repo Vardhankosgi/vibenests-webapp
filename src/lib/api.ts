@@ -241,3 +241,49 @@ export const reviewsApi = {
   }) => request<any>('/reviews', { method: 'POST', body: JSON.stringify(body) }),
   remove: (id: number) => request<any>(`/reviews/${id}`, { method: 'DELETE' }),
 };
+
+export const refundsApi = {
+  // Policy preview (no auth)
+  getPolicy: () => request<any>('/refunds/policy'),
+
+  // Calculate eligibility preview
+  calculate: (bookingId: number) =>
+    request<any>('/refunds/calculate', { method: 'POST', body: JSON.stringify({ bookingId }) }),
+
+  // Initiate automated refund
+  initiate: (bookingId: number, refundReason?: string, customerMessage?: string, attachments?: string[]) =>
+    request<any>('/refunds/initiate', { method: 'POST', body: JSON.stringify({ bookingId, refundReason, customerMessage, attachments }) }),
+
+  // List (supports search + filter)
+  getAll: (params?: { status?: string; searchKeyword?: string; userId?: number; page?: number; limit?: number }) => {
+    const q = new URLSearchParams();
+    if (params?.status) q.set('status', params.status);
+    if (params?.searchKeyword) q.set('searchKeyword', params.searchKeyword);
+    if (params?.userId) q.set('userId', String(params.userId));
+    if (params?.page) q.set('page', String(params.page));
+    if (params?.limit) q.set('limit', String(params.limit));
+    return request<{ data: any[]; total: number; page: number; limit: number; totalPages: number }>(`/refunds?${q}`);
+  },
+
+  getById: (id: number) => request<any>(`/refunds/${id}`),
+
+  // Admin manual overrides
+  underReview: (id: number) =>
+    request<any>(`/refunds/${id}/under-review`, { method: 'PATCH' }),
+  approve: (id: number, body: { selectedPercentage: number; adminNotes?: string }) =>
+    request<any>(`/refunds/${id}/approve`, { method: 'POST', body: JSON.stringify(body) }),
+  reject: (id: number, body: { rejectionReason: string }) =>
+    request<any>(`/refunds/${id}/reject`, { method: 'POST', body: JSON.stringify(body) }),
+  processing: (id: number) =>
+    request<any>(`/refunds/${id}/processing`, { method: 'POST' }),
+  complete: (id: number, body: { referenceId: string; paymentGatewayResponse?: any }) =>
+    request<any>(`/refunds/${id}/complete`, { method: 'POST', body: JSON.stringify(body) }),
+  process: (id: number, action: 'approve' | 'reject', reason?: string) => {
+    if (action === 'approve') {
+      return request<any>(`/refunds/${id}/approve`, { method: 'POST', body: JSON.stringify({ selectedPercentage: 100 }) });
+    } else {
+      return request<any>(`/refunds/${id}/reject`, { method: 'POST', body: JSON.stringify({ rejectionReason: reason || 'Rejected by administrator' }) });
+    }
+  },
+};
+
