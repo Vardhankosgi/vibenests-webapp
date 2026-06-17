@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Eye, ArrowLeft, CheckCircle2, XCircle, CalendarDays, Wallet, User, Phone, Mail, Ticket } from "lucide-react";
 import { AdminHeader } from "@/components/admin/AdminHeader";
-import { bookingsApi, suitesApi } from "@/lib/api";
+import { bookingsApi, suitesApi, refundsApi } from "@/lib/api";
+// import { bookingsApi, refundsApi } from "@/lib/api";
 
 
 const statusStyle: Record<string, string> = {
@@ -140,17 +141,88 @@ export default function BookingDetailsPage() {
                 )}
                 {booking.paymentStatus && (
                   <span
-                    className={`px-2.5 py-1 rounded-full text-[11px] font-medium border ${
-                      booking.paymentStatus === "success" || booking.paymentStatus === "paid"
+                    className={`px-2.5 py-1 rounded-full text-[11px] font-medium border ${booking.paymentStatus === "success" || booking.paymentStatus === "paid"
                         ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
                         : "bg-amber-500/10 text-amber-400 border-amber-500/20"
-                    }`}
+                      }`}
                   >
                     {String(booking.paymentStatus).toUpperCase()}
                   </span>
                 )}
               </div>
             </div>
+
+            {booking.refundRequest && (
+              <div className={`rounded-xl border p-4 text-sm space-y-3 ${booking.refundRequest.status === 'pending'
+                  ? 'border-amber-500/30 bg-amber-500/10 text-amber-200'
+                  : booking.refundRequest.status === 'approved' || booking.refundRequest.status === 'processed'
+                    ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200'
+                    : 'border-rose-500/30 bg-rose-500/10 text-rose-200'
+                }`}>
+                <div className="flex items-center justify-between flex-wrap gap-3">
+                  <h4 className="font-semibold text-sm flex items-center gap-2">
+                    ⚠️ Cancellation & Refund Request ({booking.refundRequest.status.toUpperCase()})
+                  </h4>
+                  {booking.refundRequest.status === 'pending' && (
+                    <div className="flex gap-2">
+                      <button
+                        disabled={actionLoading}
+                        onClick={async () => {
+                          if (!window.confirm("Approve cancellation and refund?")) return;
+                          try {
+                            setActionLoading(true);
+                            await refundsApi.process(booking.refundRequest.id, 'approve');
+                            alert("Cancellation and refund approved!");
+                            const resp = await bookingsApi.getById(booking.id);
+                            setBooking(resp);
+                          } catch (e: any) {
+                            alert(e.message || "Failed to approve");
+                          } finally {
+                            setActionLoading(false);
+                          }
+                        }}
+                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold transition cursor-pointer"
+                      >
+                        Approve Refund
+                      </button>
+                      <button
+                        disabled={actionLoading}
+                        onClick={async () => {
+                          const reason = window.prompt("Reason for rejection:");
+                          if (reason === null) return;
+                          if (!reason.trim()) {
+                            alert("Rejection reason is required.");
+                            return;
+                          }
+                          try {
+                            setActionLoading(true);
+                            await refundsApi.process(booking.refundRequest.id, 'reject', reason);
+                            alert("Cancellation request rejected.");
+                            const resp = await bookingsApi.getById(booking.id);
+                            setBooking(resp);
+                          } catch (e: any) {
+                            alert(e.message || "Failed to reject");
+                          } finally {
+                            setActionLoading(false);
+                          }
+                        }}
+                        className="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-semibold transition cursor-pointer"
+                      >
+                        Reject Request
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-1 text-xs">
+                  <p><span className="font-medium text-white">Guest Reason for Cancellation:</span> <span className="italic">"{booking.refundRequest.cancellationReason || "No reason provided"}"</span></p>
+                  <p><span className="font-medium text-white">Estimated Refundable Amount:</span> ₹{Number(booking.refundRequest.refundableAmount).toLocaleString()}</p>
+                  <p><span className="font-medium text-white">Policy Applied:</span> {booking.refundRequest.calculationBreakdown?.policyName || "Standard"}</p>
+                  {booking.refundRequest.status === 'rejected' && booking.refundRequest.rejectionReason && (
+                    <p><span className="font-medium text-rose-300">Rejection Reason:</span> {booking.refundRequest.rejectionReason}</p>
+                  )}
+                </div>
+              </div>
+            )}
 
             <div className="grid md:grid-cols-2 gap-4">
               <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4 text-sm space-y-3">
@@ -179,7 +251,7 @@ export default function BookingDetailsPage() {
                 </div>
 
                 <div className="pt-2 border-t border-white/10 space-y-2">
-                  
+
                   <div className="flex items-center justify-between gap-4">
                     <span className="text-muted-foreground">Advance Paid</span>
                     <span className="text-foreground">{formatMoney(advancePaid)}</span>
@@ -215,24 +287,24 @@ export default function BookingDetailsPage() {
 
             <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4 text-sm space-y-3">
               <p className="text-xs text-muted-foreground uppercase tracking-wide">Guest Details</p>
-                <div className="grid md:grid-cols-2 gap-3">
-                  <div className="flex items-center justify-between gap-4">
-                    <span className="text-muted-foreground flex items-center gap-2"><User className="h-4 w-4" /> Name</span>
-                    <span className="text-foreground">{resolvedGuest?.fullName || ""}</span>
-                  </div>
-                  <div className="flex items-center justify-between gap-4">
-                    <span className="text-muted-foreground flex items-center gap-2"><Mail className="h-4 w-4" /> Email</span>
-                    <span className="text-foreground">{resolvedGuest?.email || ""}</span>
-                  </div>
-                  <div className="flex items-center justify-between gap-4">
-                    <span className="text-muted-foreground flex items-center gap-2"><Phone className="h-4 w-4" /> Phone</span>
-                    <span className="text-foreground">{resolvedGuest?.phone || ""}</span>
-                  </div>
-                  <div className="flex items-center justify-between gap-4">
-                    <span className="text-muted-foreground">Persons</span>
-                    <span className="text-foreground">{booking.persons ?? ""}</span>
-                  </div>
+              <div className="grid md:grid-cols-2 gap-3">
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-muted-foreground flex items-center gap-2"><User className="h-4 w-4" /> Name</span>
+                  <span className="text-foreground">{resolvedGuest?.fullName || ""}</span>
                 </div>
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-muted-foreground flex items-center gap-2"><Mail className="h-4 w-4" /> Email</span>
+                  <span className="text-foreground">{resolvedGuest?.email || ""}</span>
+                </div>
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-muted-foreground flex items-center gap-2"><Phone className="h-4 w-4" /> Phone</span>
+                  <span className="text-foreground">{resolvedGuest?.phone || ""}</span>
+                </div>
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-muted-foreground">Persons</span>
+                  <span className="text-foreground">{booking.persons ?? ""}</span>
+                </div>
+              </div>
 
             </div>
 
@@ -241,15 +313,15 @@ export default function BookingDetailsPage() {
               <div className="text-foreground">
                 {Array.isArray(resolvedAddOns) && resolvedAddOns.length > 0
                   ? resolvedAddOns
-                      .map((a) => {
-                        const qty = typeof a.quantity === "number" ? a.quantity : 1;
-                        const hasPrice = typeof a.price === "number";
-                        return hasPrice
-                          ? `${a.name} (₹${(a.price as number).toLocaleString("en-IN")}) x${qty}`
-                          : `${a.name} x${qty}`;
+                    .map((a) => {
+                      const qty = typeof a.quantity === "number" ? a.quantity : 1;
+                      const hasPrice = typeof a.price === "number";
+                      return hasPrice
+                        ? `${a.name} (₹${(a.price as number).toLocaleString("en-IN")}) x${qty}`
+                        : `${a.name} x${qty}`;
 
-                      })
-                      .join(", ")
+                    })
+                    .join(", ")
                   : Array.isArray(booking.addOnsNames) && booking.addOnsNames.length > 0
                     ? booking.addOnsNames.join(", ")
                     : "No add-ons"}
