@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -134,6 +134,7 @@ function translatePaymentMethod(method: string, t: any): string {
   }
   return method;
 }
+
 
 function generateNotifications(bookingsList: any[], readIds: string[]): Notification[] {
   const list: Notification[] = [];
@@ -318,9 +319,13 @@ function BookingDetailsDrawer({ booking, onClose }: { booking: Booking; onClose:
 
   const [details, setDetails] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [rescheduleOpen, setRescheduleOpen] = useState(false);
+
   const [payingBalance, setPayingBalance] = useState(false);
   const [payingCash, setPayingCash] = useState(false);
   const [payError, setPayError] = useState("");
+  const [actionLoading, setActionLoading] = useState(false);
+  const [actionError, setActionError] = useState("");
 
   const rawId = booking._raw?.id ?? Number(String(booking.id).replace(/^(VN-|#VN|VN)/, ""));
 
@@ -636,7 +641,54 @@ function BookingDetailsDrawer({ booking, onClose }: { booking: Booking; onClose:
                 </button>
               </div>
 
+              {(
+                details?.status === "confirmed" || details?.status === "pending" || booking.status === "confirmed" || booking.status === "pending"
+              ) && (
+                <div className="glass-card rounded-2xl p-4 space-y-3 border-gold/20">
+                  <div className="flex items-center gap-2">
+                    <CalendarDays className="h-4 w-4 text-gold" />
+                    <h4 className="text-sm font-semibold text-foreground">{t("app.userDashboard.rescheduleBooking", "Reschedule Booking")}</h4>
+                  </div>
+
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    {t("app.userDashboard.rescheduleHint", "Change only the date and time slot. Payment remains the same.")}
+                  </p>
+
+                  <button
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl border border-gold/30 bg-gold/8 text-gold text-sm hover:bg-gold/15 transition-colors w-full justify-center"
+                    onClick={() => {
+                      setRescheduleOpen(true);
+                    }}
+                  >
+                    <CalendarDays className="h-4 w-4" /> {t("app.userDashboard.reschedule", "Reschedule")}
+                  </button>
+
+                </div>
+              )}
+
+              {rescheduleOpen && rawId && (
+                <RescheduleBookingModal
+                  bookingId={rawId}
+                  initialDate={booking.checkIn || ""}
+                  initialTimeSlot={booking.checkInTime || ""}
+                  suite={details?.suite ?? booking._raw?.suite ?? booking}
+                  onSuccess={async () => {
+                    if (!rawId) return;
+                    try {
+                      const updated = await bookingsApi.getById(rawId);
+                      setDetails(updated);
+                    } catch (e) {
+                      console.error(e);
+                    } finally {
+                      setRescheduleOpen(false);
+                    }
+                  }}
+                />
+              )}
+
+
               <div className="glass-card rounded-2xl p-4 space-y-3 border-rose-500/20">
+
                 <div className="flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4 text-rose-400" />
                   <h4 className="text-sm font-semibold text-foreground">{t("app.userDashboard.cancellationRefund", "Cancellation & Refund")}</h4>
@@ -2258,6 +2310,236 @@ function HelpView() {
 }
 
 /* ─── Main Component ─────────────────────────────────── */
+function RescheduleBookingModal({
+  bookingId,
+  initialDate,
+  initialTimeSlot,
+  suite,
+  initialBlockedSlots,
+  onSuccess,
+}: {
+  bookingId: number;
+  initialDate: string;
+  initialTimeSlot: string;
+  suite: any;
+  initialBlockedSlots?: string[];
+  onSuccess: () => Promise<void> | void;
+}) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(true);
+
+  const [date, setDate] = useState<string>(initialDate);
+  const [timeSlot, setTimeSlot] = useState<string>(initialTimeSlot);
+  const [blockedSlots, setBlockedSlots] = useState<string[]>(Array.isArray(initialBlockedSlots) ? initialBlockedSlots : []);
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string>("");
+
+  const suiteId = suite?.id ?? suite?.suiteId ?? suite?.suite_id ?? null;
+
+  const slotDurationMins: number = Number(suite?.slotDurationMins ?? suite?.slotDuration ?? 150);
+  const gapMins: number = Number(suite?.gapBetweenSlotsMins ?? suite?.gapBetweenSlots ?? 30);
+
+  const generateSlots = (startTime: string, endTime: string, duration: number, gap: number) => {
+    const slots: string[] = [];
+    const to24 = (t: string) => {
+      const [time, period] = t.trim().split(/\s+/);
+      const [hhS, mmS] = time.split(':');
+      let hh = Number(hhS);
+      const mm = Number(mmS);
+      const isPm = period.toUpperCase() === 'PM';
+      if (isPm && hh !== 12) hh += 12;
+      if (!isPm && hh === 12) hh = 0;
+      return hh * 60 + mm;
+    };
+
+    const from24 = (min: number) => {
+      const hh24 = Math.floor(min / 60) % 24;
+      const mm = min % 60;
+      const period = hh24 >= 12 ? 'PM' : 'AM';
+      const hh12 = hh24 % 12 === 0 ? 12 : hh24 % 12;
+      return `${String(hh12).padStart(2, '0')}:${String(mm).padStart(2, '0')} ${period}`;
+    };
+
+    if (!startTime || !endTime) return slots;
+
+    let cur = to24(startTime);
+    let end = to24(endTime);
+    if (end < cur) end += 24 * 60;
+
+    const step = duration + gap;
+    while (cur + duration <= end) {
+      slots.push(from24(cur));
+      cur += step;
+    }
+    return slots;
+  };
+
+  const timeSlots: string[] = useMemo(() => {
+    if (!suite) return [];
+    const start = suite.slotStartTime ?? suite.slot_start_time ?? '09:00 AM';
+    const end = suite.slotEndTime ?? suite.slot_end_time ?? '21:00 PM';
+    return generateSlots(String(start), String(end), slotDurationMins, gapMins);
+  }, [suite, slotDurationMins, gapMins]);
+
+  useEffect(() => {
+    if (!open) return;
+    if (!suiteId || !date) return;
+
+    // Refresh blocked slots for this suite/date (best-effort)
+    // NOTE: This user dashboard uses a fallback if a dedicated suitesApi isn't available.
+    // The backend may expose this via bookingsApi/other endpoints.
+    (async () => {
+      try {
+        const anyBookingsApi: any = bookingsApi as any;
+        const getBlockedSlots = anyBookingsApi?.getBlockedSlots;
+        if (typeof getBlockedSlots !== "function") {
+          setBlockedSlots(Array.isArray(initialBlockedSlots) ? initialBlockedSlots : []);
+          return;
+        }
+        const slots: unknown = await getBlockedSlots(suiteId, date);
+        setBlockedSlots(Array.isArray(slots) ? (slots as string[]) : []);
+      } catch {
+        setBlockedSlots(Array.isArray(initialBlockedSlots) ? initialBlockedSlots : []);
+      }
+    })();
+  }, [suiteId, date, open]);
+
+  useEffect(() => {
+    if (blockedSlots.includes(timeSlot)) {
+      setTimeSlot("");
+    }
+  }, [blockedSlots, timeSlot]);
+
+  const submitEnabled = Boolean(date) && Boolean(timeSlot) && !blockedSlots.includes(timeSlot) && !loading;
+
+  async function handleSubmit() {
+    setLoading(true);
+    setError("");
+    try {
+      if (blockedSlots.includes(timeSlot)) {
+        throw new Error(t("app.userDashboard.rescheduleSlotBlocked", "Selected slot is unavailable.") as string);
+      }
+      await bookingsApi.reschedule(bookingId, { date, timeSlot });
+      await Promise.resolve(onSuccess());
+      setOpen(false);
+    } catch (e: any) {
+      setError(e?.message || "Unable to reschedule booking");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (!open) return null;
+
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
+
+  return (
+    <AnimatePresence>
+      <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" role="dialog" aria-modal="true">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="absolute inset-0"
+          onClick={() => setOpen(false)}
+        />
+
+        <motion.div
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.95, opacity: 0 }}
+          transition={{ duration: 0.15 }}
+          className="relative z-10 w-full max-w-md glass-card rounded-2xl p-5 space-y-4 border border-gold/20"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h3 className="font-display text-lg text-foreground">{t("app.userDashboard.rescheduleBooking", "Reschedule Booking")}</h3>
+              <p className="text-xs text-muted-foreground mt-1">{t("app.userDashboard.rescheduleHint", "Change only the date and time slot. Payment remains the same.")}</p>
+            </div>
+            <button onClick={() => setOpen(false)} className="h-8 w-8 rounded-xl glass flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[10px] uppercase tracking-widest text-muted-foreground">{t("app.userDashboard.chooseDate", "Choose Date")}</label>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="luxury-input w-full rounded-xl px-4 py-2.5 text-sm bg-black/40"
+              style={{ colorScheme: 'dark' }}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[10px] uppercase tracking-widest text-muted-foreground">{t("app.userDashboard.chooseTimeSlot", "Choose Time Slot")}</label>
+            {timeSlots.length === 0 ? (
+              <div className="text-xs text-muted-foreground border border-dashed border-white/10 rounded-xl px-4 py-6 text-center">
+                {t("app.userDashboard.noTimeSlots", "No slots available")}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                {timeSlots.map((s) => {
+                  const isBlocked = blockedSlots.includes(s);
+                  const active = timeSlot === s;
+                  return (
+                    <button
+                      key={s}
+                      type="button"
+                      disabled={isBlocked}
+                      onClick={() => setTimeSlot(s)}
+                      className={`px-3 py-2 rounded-xl border text-xs transition-colors text-left ${
+                        isBlocked
+                          ? 'border-white/5 bg-white/[0.01] text-muted-foreground/45 opacity-45 cursor-not-allowed'
+                          : active
+                            ? 'border-gold bg-gold/15 text-gold shadow-[0_0_16px_rgba(212,160,60,0.2)]'
+                            : 'border-white/10 bg-white/5 text-muted-foreground hover:border-gold/40 hover:text-foreground hover:bg-white/10'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Clock className={`h-3.5 w-3.5 ${active ? 'text-gold' : isBlocked ? 'text-muted-foreground/35' : 'text-gold/40'}`} />
+                        <span className="truncate">{s}</span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {error && <p className="text-xs text-rose-400">{error}</p>}
+
+          <div className="flex gap-2 pt-2">
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="flex-1 rounded-xl border border-white/10 text-muted-foreground hover:text-foreground hover:border-white/20 transition-colors px-4 py-2.5 text-sm"
+            >
+              {t("app.userDashboard.cancel", "Cancel")}
+            </button>
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={!submitEnabled}
+              className="flex-1 gold-btn rounded-xl px-4 py-2.5 text-sm font-semibold disabled:opacity-50"
+            >
+              {loading ? t("app.userDashboard.processing", "Processing...") : t("app.userDashboard.submitReschedule", "Confirm")}
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    </AnimatePresence>
+  );
+}
+
 export default function UserDashboardPage() {
   const navigate = useNavigate();
   const { t } = useTranslation();

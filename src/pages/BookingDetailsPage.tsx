@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Eye, ArrowLeft, CheckCircle2, XCircle, CalendarDays, Wallet, User, Phone, Mail, Ticket } from "lucide-react";
 import { AdminHeader } from "@/components/admin/AdminHeader";
-import { bookingsApi } from "@/lib/api";
+import { bookingsApi, suitesApi } from "@/lib/api";
 
 
 const statusStyle: Record<string, string> = {

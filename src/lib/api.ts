@@ -97,6 +97,8 @@ export const bookingsApi = {
   cancel: (id: number) => request<any>(`/bookings/${id}/cancel`, { method: 'PATCH' }),
   getMeetingLink: (id: number) => request<{ meeting_link: string }>(`/bookings/${id}/meeting-link`, { method: 'POST' }),
   payCash: (id: number) => request<any>(`/bookings/${id}/pay-cash`, { method: 'POST' }),
+  reschedule: (id: number, body: { date: string; timeSlot: string }) =>
+    request<any>(`/bookings/${id}/reschedule`, { method: 'PATCH', body: JSON.stringify(body) }),
 };
 
 // ── Suites ───────────────────────────────────────────────────────────────────
