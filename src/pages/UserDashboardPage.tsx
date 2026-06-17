@@ -3313,7 +3313,7 @@ export default function UserDashboardPage() {
         </main>
       </div>
 
-      {reviewPromptBooking && (
+      {reviewPromptBooking && user?.role !== 'admin' && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
           <div className="glass-card rounded-2xl p-6 w-full max-w-sm border border-[var(--gold)]/20 text-center space-y-4 animate-in fade-in zoom-in-95 duration-200">
             <div className="h-12 w-12 rounded-full bg-gold/10 border border-gold/20 flex items-center justify-center mx-auto text-gold">

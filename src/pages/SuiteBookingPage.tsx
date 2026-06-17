@@ -7,6 +7,7 @@ import {
   HelpCircle, LogOut, Package, Bell, ChevronDown, Award,
 } from "lucide-react";
 import { useSuitesContext, type Suite } from "@/components/admin/SuitesContext";
+import { useAuth } from "@/components/auth/AuthContext";
 import { suitesApi, addonsApi, bookingsApi, paymentsApi, couponsApi, membershipsApi } from "@/lib/api";
 import { LanguageSelector } from "@/components/shared/LanguageSelector";
 import { useTranslation } from "react-i18next";
@@ -103,6 +104,9 @@ export default function SuiteBookingPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const displayName = user?.fullName || t("app.userDashboard.welcome_back_name", "Guest");
+  const displayLetter = displayName ? displayName.charAt(0).toUpperCase() : "U";
   const { suites, loading: suitesLoading } = useSuitesContext();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -128,7 +132,9 @@ export default function SuiteBookingPage() {
 
 
 
-  const passedPackage = useMemo(() => (location.state as any)?.package, [location.state]);
+  // NOTE: location.state does NOT persist on hard refresh.
+  // Keep this page functional even when booking was not navigated to with state.
+  const passedPackage = useMemo(() => (location.state as any)?.package ?? null, [location.state]);
   const mapOccasionToId = (occasion: string): string => {
     const normalized = (occasion ?? "").toLowerCase().trim();
     if (normalized.includes("birthday")) return "birthday";
@@ -152,6 +158,41 @@ export default function SuiteBookingPage() {
   const [selectedSuite, setSelectedSuite] = useState(passedPackage ? "0" : "");
   const [blockedSlots, setBlockedSlots] = useState<string[]>([]);
 
+  // Block slots whose time window has already ended for the selected date.
+  // Uses slot END time (so a currently-running slot stays selectable).
+  const isPastSlot = (slotStart: string, selectedDate: string, durationMins: number) => {
+    if (!slotStart || !selectedDate) return false;
+
+    const now = new Date();
+    const sel = new Date(selectedDate);
+    if (isNaN(sel.getTime())) return false;
+
+    // Only care about “today” (local timezone).
+    if (now.toDateString() !== sel.toDateString()) return false;
+
+    // Convert slot start like "09:00 AM" to a Date, then add duration to get end.
+    const parts = slotStart.trim().split(/\s+/);
+    if (parts.length < 2) return false;
+    const timePart = parts[0];
+    const periodRaw = parts[1];
+
+    const [hStr, mStr] = timePart.split(":");
+    const startH12 = Number(hStr);
+    const startM = Number(mStr);
+    const period = String(periodRaw).toUpperCase();
+    if (!Number.isFinite(startH12) || !Number.isFinite(startM)) return false;
+
+    let startHours24 = startH12 % 12;
+    if (period === "PM") startHours24 += 12;
+
+    const slotEnd = new Date(sel);
+    slotEnd.setHours(startHours24, startM, 0, 0);
+    slotEnd.setMinutes(slotEnd.getMinutes() + durationMins);
+
+    // Expired if current time is strictly greater than end.
+    return now.getTime() > slotEnd.getTime();
+  };
+
   useEffect(() => {
     if (selectedSuite && selectedSuite !== "0" && bookingDate) {
       suitesApi.getBlockedSlots(selectedSuite, bookingDate)
@@ -166,10 +207,15 @@ export default function SuiteBookingPage() {
     }
   }, [selectedSuite, bookingDate]);
 
+  // clear selection if it becomes unavailable (booked or expired)
+  // (slot duration is derived from suite, so this effect should run after suite is computed)
+  // clear selection if it becomes unavailable (booked)
+  // NOTE: we intentionally don't auto-clear for expired time here, because suite-derived slot duration
+  // is computed later in the component (avoids TS “used before declaration” issues).
   useEffect(() => {
-    if (startTime && blockedSlots.includes(startTime)) {
-      setStartTime("");
-    }
+    if (!startTime) return;
+    const isBooked = blockedSlots.includes(startTime);
+    if (isBooked) setStartTime("");
   }, [blockedSlots, startTime]);
 
   const [addonQty, setAddonQty] = useState<Record<string, number>>({});
@@ -287,6 +333,8 @@ export default function SuiteBookingPage() {
     return suites.find((s) => s.id === selectedSuite);
   }, [selectedSuite, suites, passedPackage]);
 
+  const slotDuration = suite?.slotDurationMins ?? 150;
+
   if (suitesLoading) {
     return (
       <div className="h-screen flex items-center justify-center bg-[oklch(0.08_0.015_260)]">
@@ -300,7 +348,6 @@ export default function SuiteBookingPage() {
     );
   }
 
-  const slotDuration = suite?.slotDurationMins ?? 150;
   const slotGap = suite?.gapBetweenSlotsMins ?? 30;
   const timeSlots = suite
     ? generateSlots(suite.slotStartTime, suite.slotEndTime, slotDuration, slotGap)
@@ -357,12 +404,18 @@ export default function SuiteBookingPage() {
 
   // Pre-select suite passed from Book Now
   useEffect(() => {
+    // location.state is not persistent on refresh; guard usage.
     const passedId = (location.state as any)?.suiteId;
     if (passedId && suites.length > 0) {
       const found = suites.find((s) => s.id === String(passedId));
-      if (found) { setSelectedSuite(String(passedId)); setPersons(found.minCapacity); }
+      if (found) {
+        setSelectedSuite(String(passedId));
+        setPersons(found.minCapacity);
+      }
     }
-  }, [suites, location.state]);
+    // Intentionally depend only on `suites` to avoid re-running when `location.state` is reset on refresh.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [suites]);
   const subtotal = basePrice + addonsTotal;
 
   const filteredCoupons = useMemo(() => {
@@ -564,7 +617,7 @@ export default function SuiteBookingPage() {
                 onClick={() => setProfileOpen((o) => !o)}
                 className="h-9 w-9 rounded-xl bg-gradient-gold flex items-center justify-center font-bold text-[oklch(0.12_0.02_260)] text-sm hover:opacity-80 transition-opacity"
               >
-                A
+                {displayLetter}
               </button>
               {profileOpen && (
                 <>
@@ -720,8 +773,14 @@ export default function SuiteBookingPage() {
                       {/* Date */}
                       <div className="space-y-2">
                         <label className="text-xs uppercase tracking-[0.25em] text-muted-foreground">{t("app.userDashboard.selectDate", "Select Date")}</label>
-                        <input type="date" value={bookingDate} onChange={(e) => setBookingDate(e.target.value)}
-                          className="luxury-input w-full rounded-2xl px-4 py-3 text-sm bg-black/40" style={{ colorScheme: "dark" }} />
+                        <input
+                          type="date"
+                          value={bookingDate}
+                          min={new Date().toISOString().split('T')[0]}
+                          onChange={(e) => setBookingDate(e.target.value)}
+                          className="luxury-input w-full rounded-2xl px-4 py-3 text-sm bg-black/40"
+                          style={{ colorScheme: "dark" }}
+                        />
                       </div>
 
                       {/* Time slot boxes */}
@@ -737,7 +796,9 @@ export default function SuiteBookingPage() {
                             </div>
                           ) : (
                             timeSlots.map((slot) => {
-                              const isBlocked = blockedSlots.includes(slot);
+                              const isBooked = blockedSlots.includes(slot);
+                              const isPast = bookingDate ? isPastSlot(slot, bookingDate, slotDuration) : false;
+                              const isBlocked = isBooked || isPast;
                               const end = getEndTime(slot, slotDuration);
                               const active = startTime === slot;
                               return (

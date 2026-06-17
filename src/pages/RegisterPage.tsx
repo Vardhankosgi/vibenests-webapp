@@ -399,8 +399,12 @@ export default function RegisterPage() {
                       <input
                         type="date"
                         value={form.dateOfBirth}
+                        max={new Date().toISOString().split("T")[0]}
                         onChange={(e) => set("dateOfBirth", e.target.value)}
-                        className={`luxury-input w-full rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 ${errors.dateOfBirth ? "border-rose-500/50" : ""}`}
+                        className={`luxury-input w-full rounded-xl px-4 py-2.5 text-sm text-foreground ${
+                          errors.dateOfBirth ? "border-rose-500/50" : ""
+                        }`}
+                        style={{ colorScheme: "dark" }}
                       />
                     </Field>
 
@@ -408,8 +412,12 @@ export default function RegisterPage() {
                       <input
                         type="date"
                         value={form.marriageDate}
+                        max={new Date().toISOString().split("T")[0]}
                         onChange={(e) => set("marriageDate", e.target.value)}
-                        className={`luxury-input w-full rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 ${errors.marriageDate ? "border-rose-500/50" : ""}`}
+                        className={`luxury-input w-full rounded-xl px-4 py-2.5 text-sm text-foreground ${
+                          errors.marriageDate ? "border-rose-500/50" : ""
+                        }`}
+                        style={{ colorScheme: "dark" }}
                       />
                     </Field>
                   </div>
