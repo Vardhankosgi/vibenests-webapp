@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { Eye, EyeOff, Lock, CheckCircle2 } from "lucide-react";
+import { Eye, EyeOff, Lock, CheckCircle2, AlertTriangle, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { authApi } from "@/lib/api";
 import { LanguageSelector } from "@/components/shared/LanguageSelector";
@@ -19,6 +19,33 @@ export default function ResetPasswordPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
+
+  // Token verification states
+  const [verifying, setVerifying] = useState(true);
+  const [tokenValid, setTokenValid] = useState(false);
+  const [userEmail, setUserEmail] = useState("");
+
+  useEffect(() => {
+    async function checkToken() {
+      if (!token) {
+        setTokenValid(false);
+        setVerifying(false);
+        return;
+      }
+      try {
+        const res = await authApi.verifyResetToken(token);
+        setTokenValid(res.valid);
+        if (res.email) {
+          setUserEmail(res.email);
+        }
+      } catch (err) {
+        setTokenValid(false);
+      } finally {
+        setVerifying(false);
+      }
+    }
+    checkToken();
+  }, [token]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -59,10 +86,10 @@ export default function ResetPasswordPage() {
 
   return (
     <main
-      className="min-h-screen flex items-center justify-center px-4"
-      style={{ backgroundImage: `url(${loginbg})`, backgroundSize: "cover", backgroundPosition: "center" }}
+      className="min-h-screen flex items-center justify-center px-4 relative"
+      style={{ backgroundImage: `url(${loginbg})`, backgroundSize: "cover", backgroundPosition: "center", backgroundAttachment: "fixed" }}
     >
-      <div className="absolute inset-0 bg-black/60" />
+      <div className="absolute inset-0 bg-black/60 pointer-events-none" />
 
       {/* Top-right language switcher */}
       <div className="absolute top-5 right-5 z-20">
@@ -70,19 +97,55 @@ export default function ResetPasswordPage() {
       </div>
 
       <div className="relative z-10 glass-card rounded-2xl p-8 w-full max-w-md border border-[var(--gold)]/20">
-        {done ? (
+        {verifying ? (
+          <div className="text-center py-12 space-y-4 flex flex-col items-center justify-center">
+            <Loader2 className="h-10 w-10 text-gold animate-spin" />
+            <p className="text-sm text-muted-foreground">{t("app.auth.verifyingToken", "Verifying your security link...")}</p>
+          </div>
+        ) : !tokenValid ? (
+          <div className="text-center space-y-5 py-4 animate-in fade-in duration-500">
+            <div className="mx-auto h-14 w-14 rounded-full bg-destructive/10 border border-destructive/20 flex items-center justify-center">
+              <AlertTriangle className="h-7 w-7 text-destructive" />
+            </div>
+            <h2 className="font-display text-2xl text-destructive font-semibold">
+              {t("app.auth.invalidResetTitle", "Invalid or Expired Link")}
+            </h2>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              {t("app.auth.invalidResetDesc", "This password reset link is invalid, has expired, or has already been used. Please request a new link.")}
+            </p>
+            <div className="pt-2 flex flex-col gap-2">
+              <button
+                onClick={() => navigate("/forgot-password")}
+                className="gold-btn w-full rounded-lg py-3.5 text-sm font-semibold"
+              >
+                {t("app.auth.requestNewLink", "Request New Link")}
+              </button>
+              <button
+                onClick={() => navigate("/login")}
+                className="w-full rounded-lg py-3.5 text-sm font-semibold border border-[var(--gold)]/30 text-muted-foreground hover:text-gold transition-colors bg-transparent"
+              >
+                {t("app.auth.backToLogin", "Back to Login")}
+              </button>
+            </div>
+          </div>
+        ) : done ? (
           <div className="text-center space-y-4 py-4 animate-in fade-in duration-500">
             <div className="mx-auto h-14 w-14 rounded-full bg-gradient-gold flex items-center justify-center">
               <CheckCircle2 className="h-7 w-7 text-[oklch(0.14_0.03_260)]" />
             </div>
             <h2 className="font-display text-2xl text-gradient-gold">{t("app.auth.resetSuccessTitle", "Password Set!")}</h2>
-            <p className="text-sm text-muted-foreground">{t("app.auth.resetSuccessDesc", "Your account is now active. Redirecting to login...")}</p>
+            <p className="text-sm text-muted-foreground">{t("app.auth.resetSuccessDesc", "Your password has been successfully updated. Redirecting to login...")}</p>
           </div>
         ) : (
           <>
             <div className="mb-6">
               <h2 className="font-display text-2xl text-foreground mb-1">{t("app.auth.resetTitle", "Set Your Password")}</h2>
-              <p className="text-sm text-muted-foreground">{t("app.auth.resetDesc", "Create a secure password to activate your VibeNests account.")}</p>
+              <p className="text-sm text-muted-foreground">
+                {userEmail 
+                  ? t("app.auth.resetDescWithEmail", "Choose a new password for {{email}}.", { email: userEmail })
+                  : t("app.auth.resetDesc", "Create a secure password for your VibeNests account.")
+                }
+              </p>
             </div>
 
             <form onSubmit={submit} className="space-y-4">
@@ -140,7 +203,7 @@ export default function ResetPasswordPage() {
                 disabled={loading}
                 className="gold-btn w-full rounded-lg py-3.5 text-sm font-semibold disabled:opacity-70 mt-1"
               >
-                {loading ? t("app.auth.saving", "Saving...") : t("app.auth.setBtn", "Set Password & Activate Account")}
+                {loading ? t("app.auth.saving", "Saving...") : t("app.auth.setBtn", "Set Password")}
               </button>
             </form>
           </>

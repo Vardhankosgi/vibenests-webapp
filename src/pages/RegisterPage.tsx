@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import {
@@ -89,8 +89,11 @@ export default function RegisterPage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
 
+  const [searchParams] = useSearchParams();
+  const refCodeFromUrl = searchParams.get("ref") || "";
+
   const [form, setForm] = useState({
-    name: "", email: "", phone: "", password: "", confirm: "", city: "", dateOfBirth: "", marriageDate: "",
+    name: "", email: "", phone: "", password: "", confirm: "", city: "", dateOfBirth: "", marriageDate: "", referralCode: refCodeFromUrl,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [errorMsg, setErrorMsg] = useState("");
@@ -139,6 +142,7 @@ export default function RegisterPage() {
         dateOfBirth: form.dateOfBirth,
         marriageDate: form.marriageDate || null,
         city: form.city,
+        referralCode: form.referralCode || undefined,
       });
       setSuccess(true);
     } catch (err: any) {
@@ -300,7 +304,7 @@ export default function RegisterPage() {
                 </div>
 
                 {/* Form fields */}
-                <form onSubmit={handleSubmit} noValidate className="space-y-4">
+                <form onSubmit={handleSubmit} noValidate className="space-y-4" autoComplete="off">
                   {/* Full Name */}
                   <Field label={t("app.auth.fullName", "Full Name")} icon={User} error={errors.name}>
                     <input
@@ -309,6 +313,7 @@ export default function RegisterPage() {
                       value={form.name}
                       onChange={(e) => set("name", e.target.value)}
                       className={`luxury-input w-full rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 ${errors.name ? "border-rose-500/50" : ""}`}
+                      autoComplete="new-name"
                     />
                   </Field>
 
@@ -320,6 +325,7 @@ export default function RegisterPage() {
                       value={form.email}
                       onChange={(e) => set("email", e.target.value)}
                       className={`luxury-input w-full rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 ${errors.email ? "border-rose-500/50" : ""}`}
+                      autoComplete="new-email"
                     />
                   </Field>
 
@@ -333,6 +339,7 @@ export default function RegisterPage() {
                         value={form.phone}
                         onChange={(e) => set("phone", e.target.value.replace(/\D/g, "").slice(0, 10))}
                         className={`luxury-input flex-1 rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 ${errors.phone ? "border-rose-500/50" : ""}`}
+                        autoComplete="new-phone"
                       />
                     </div>
                   </Field>
@@ -346,6 +353,7 @@ export default function RegisterPage() {
                         value={form.password}
                         onChange={(e) => set("password", e.target.value)}
                         className={`luxury-input w-full rounded-xl px-4 py-2.5 pr-11 text-sm text-foreground placeholder:text-muted-foreground/50 ${errors.password ? "border-rose-500/50" : ""}`}
+                        autoComplete="new-password"
                       />
                       <button
                         type="button"
@@ -382,6 +390,7 @@ export default function RegisterPage() {
                         value={form.confirm}
                         onChange={(e) => set("confirm", e.target.value)}
                         className={`luxury-input w-full rounded-xl px-4 py-2.5 pr-11 text-sm text-foreground placeholder:text-muted-foreground/50 ${errors.confirm ? "border-rose-500/50" : ""}`}
+                        autoComplete="new-password"
                       />
                       <button
                         type="button"
@@ -460,6 +469,20 @@ export default function RegisterPage() {
                         )}
                       </AnimatePresence>
                     </div>
+                  </Field>
+
+                  {/* Referral Code (Optional) */}
+                  <Field label={t("app.auth.referralCode", "Referral Code (Optional)")} icon={Star} error={errors.referralCode}>
+                    <input
+                      type="text"
+                      placeholder={t("app.auth.referralCodePlaceholder", "Enter a referral code if you have one")}
+                      value={form.referralCode}
+                      onChange={(e) => set("referralCode", e.target.value.toUpperCase())}
+                      disabled={!!refCodeFromUrl}
+                      className={`luxury-input w-full rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 ${
+                        refCodeFromUrl ? "opacity-60 bg-white/[0.02] border-gold/30 text-gold font-semibold cursor-not-allowed select-none" : ""
+                      }`}
+                    />
                   </Field>
 
                   {/* Terms */}

@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { useSuitesContext, type Suite } from "@/components/admin/SuitesContext";
 import { useAuth } from "@/components/auth/AuthContext";
-import { suitesApi, addonsApi, bookingsApi, paymentsApi, couponsApi, membershipsApi } from "@/lib/api";
+import { suitesApi, addonsApi, bookingsApi, paymentsApi, couponsApi, membershipsApi, offerConfigsApi, offersApi } from "@/lib/api";
 import { LanguageSelector } from "@/components/shared/LanguageSelector";
 import { useTranslation } from "react-i18next";
 
@@ -233,6 +233,7 @@ export default function SuiteBookingPage() {
   const [liveCoupons, setLiveCoupons] = useState<any[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [myMembership, setMyMembership] = useState<any>(null);
+  const [offerConfig, setOfferConfig] = useState<Record<string, string> | null>(null);
 
   // Fetch real coupons from the public /coupons/active endpoint
   useEffect(() => {
@@ -250,6 +251,22 @@ export default function SuiteBookingPage() {
         setMyMembership(null);
       }
     }).catch(() => setMyMembership(null));
+  }, []);
+
+  // Fetch active offer configurations
+  useEffect(() => {
+    offerConfigsApi.getMap().then((config) => {
+      setOfferConfig(config);
+    }).catch(() => setOfferConfig(null));
+  }, []);
+
+  const [activeOffers, setActiveOffers] = useState<any[]>([]);
+
+  // Fetch active offers list
+  useEffect(() => {
+    offersApi.getActive().then((list) => {
+      setActiveOffers(Array.isArray(list) ? list : []);
+    }).catch(() => setActiveOffers([]));
   }, []);
 
   async function applyCoupon(codeToUse?: string) {
@@ -432,6 +449,60 @@ export default function SuiteBookingPage() {
   const membershipDiscount = 0;
   const membershipSavings = 0;
 
+  const bestOffer = useMemo(() => {
+    if (activeOffers.length === 0) return null;
+
+    // Globally disabled check via settings
+    if (offerConfig && offerConfig.enableOffers !== 'true') return null;
+
+    // Convert selection ID to category label matching admin options
+    const categoryLabelMap: Record<string, string> = {
+      "birthday": "Birthday",
+      "anniversary": "Anniversary",
+      "proposal": "Proposal",
+      "baby-shower": "Baby Shower",
+      "corporate": "Corporate Events",
+      "other": "Other Celebrations"
+    };
+
+    const targetLabel = categoryLabelMap[selectedOccasion] || "";
+    if (!targetLabel) return null;
+
+    let highestSavings = 0;
+    let selectedOffer = null;
+
+    for (const offer of activeOffers) {
+      // Parse description which stores applicable categories (occasions)
+      const configuredCats = offer.description || "";
+      const catsList = configuredCats.split(",").map((c: any) => c.trim().toLowerCase());
+      const isMatched = catsList.includes("all") || catsList.includes(targetLabel.toLowerCase());
+
+      if (isMatched) {
+        const discVal = Number(offer.discountValue || 0);
+        if (discVal <= 0) continue;
+
+        let savings = 0;
+        if (offer.discountType === "percentage") {
+          savings = Math.round(subtotal * discVal / 100);
+        } else if (offer.discountType === "flat") {
+          savings = Math.min(discVal, subtotal);
+        }
+
+        if (savings > highestSavings) {
+          highestSavings = savings;
+          selectedOffer = {
+            ...offer,
+            computedSavings: savings
+          };
+        }
+      }
+    }
+
+    return selectedOffer;
+  }, [activeOffers, offerConfig, selectedOccasion, subtotal]);
+
+  const offerSavings = bestOffer ? bestOffer.computedSavings : 0;
+
   const isEligibleForPackageCredit = useMemo(() => {
     if (!myMembership || myMembership.status !== 'active') return false;
     const remaining = Number(myMembership.maxFreeBookings ?? 0) - Number(myMembership.bookingsUsed ?? 0);
@@ -442,7 +513,7 @@ export default function SuiteBookingPage() {
   }, [myMembership, suite]);
 
   const isPackageCreditSelected = paymentMethod === "package-credit";
-  const grandTotal = isPackageCreditSelected ? 0 : Math.max(0, subtotal - couponSavings - membershipSavings);
+  const grandTotal = isPackageCreditSelected ? 0 : Math.max(0, subtotal - couponSavings - membershipSavings - offerSavings);
 
   // Requested: dynamic payable amount (full vs 20% advance).
   const advanceAmount = Math.round(grandTotal * 0.2);
@@ -1172,6 +1243,15 @@ export default function SuiteBookingPage() {
                                   <td className="py-2 text-right text-emerald-400">− ₹{couponSavings.toLocaleString()}</td>
                                 </tr>
                               )}
+                              {offerSavings > 0 && bestOffer && (
+                                <tr>
+                                  <td className="py-2 text-emerald-400 flex items-center gap-1.5">
+                                    <Tag className="h-3.5 w-3.5" />
+                                    {bestOffer.title} ({bestOffer.discountType === "percentage" ? `${bestOffer.discountValue}% off` : `₹${bestOffer.discountValue} off`})
+                                  </td>
+                                  <td className="py-2 text-right text-emerald-400">− ₹{offerSavings.toLocaleString()}</td>
+                                </tr>
+                              )}
                               {membershipSavings > 0 && (
                                 <tr>
                                   <td className="py-2 text-emerald-400 flex items-center gap-1.5">
@@ -1272,10 +1352,11 @@ export default function SuiteBookingPage() {
                                 persons,
                                 basePrice,
                                 addonsTotal,
-                                savings: couponSavings + membershipSavings,
+                                savings: couponSavings + membershipSavings + offerSavings,
                                 totalAmount: grandTotal,
                                 paymentMode: paymentMethod === "package-credit" ? "package_credit" : (paymentMethod === "pay-now" ? "pay_now" : "pay_at_venue"),
                                 advanceAmount: paymentMethod === "package-credit" ? 0 : (paymentMethod === "pay-now" ? payableNow : payableAtVenue),
+                                couponCode: couponCode || undefined,
                               };
 
                               const bookingRes = await bookingsApi.create(bookingPayload);

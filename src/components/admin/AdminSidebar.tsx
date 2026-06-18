@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/auth/AuthContext";
 import { authApi } from "@/lib/api";
-import { LayoutDashboard, CalendarDays, BedDouble, BarChart2, Settings, LogOut, Menu, Tag, Package, Users, Gift, CreditCard, Star, RotateCcw } from "lucide-react";
+import { LayoutDashboard, CalendarDays, BedDouble, BarChart2, Settings, LogOut, Menu, Tag, Package, Users, Gift, CreditCard, Star, RotateCcw, Share2 } from "lucide-react";
 import { LogoPopover } from "@/components/shared/LogoPopover";
 import { useTranslation } from "react-i18next";
 
@@ -17,6 +17,7 @@ const navItemKeys: { [key: string]: string } = {
   "Add-on Management": "addonManagement",
   "Celebration Packages": "celebrationMembership",
   "User Management": "userManagement",
+  "Referral Management": "referralManagement",
   "Analytics": "analytics",
   "Offers & Refund Configurations": "offersRefund",
   "Ratings & Reviews": "ratingsReviews",
@@ -32,6 +33,7 @@ const navItems = [
   { icon: Package, label: "Add-on Management", to: "/addons" },
   { icon: Gift, label: "Celebration Packages", to: "/celebration-memberships" },
   { icon: Users, label: "User Management", to: "/customers" },
+  { icon: Share2, label: "Referral Management", to: "/referrals" },
   { icon: BarChart2, label: "Analytics", to: "/analytics" },
   { icon: Tag, label: "Offers & Refund Configurations", to: "/offers" },
   { icon: Star, label: "Ratings & Reviews", to: "/reviews" },

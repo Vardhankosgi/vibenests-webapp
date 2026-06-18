@@ -119,7 +119,7 @@ export function MobileOtpForm() {
               value={mobile}
               onChange={(e) => setMobile(e.target.value.replace(/\D/g, ""))}
               disabled={stage !== "input"}
-              placeholder="98765 43210"
+              placeholder={t("app.auth.phonePlaceholder", "Enter your phone number")}
               className="luxury-input w-full rounded-lg pl-11 pr-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/60 disabled:opacity-70"
             />
           </div>

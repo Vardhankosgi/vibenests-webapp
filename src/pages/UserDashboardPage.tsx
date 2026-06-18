@@ -13,7 +13,7 @@ import {
   X, Download, AlertTriangle, Receipt, Package, Plus, Edit3, Trash2,
 } from "lucide-react";
 import { useSuitesContext } from "@/components/admin/SuitesContext";
-import { bookingsApi, membershipsApi, usersApi, paymentsApi, offersApi, couponsApi, refundsApi } from "@/lib/api";
+import { bookingsApi, membershipsApi, usersApi, paymentsApi, offersApi, couponsApi, refundsApi, referralsApi } from "@/lib/api";
 import { NotificationPanel, type Notification } from "@/components/admin/NotificationPanel";
 import { LanguageSelector } from "@/components/shared/LanguageSelector";
 import { useAuth } from "@/components/auth/AuthContext";
@@ -1153,7 +1153,214 @@ function TransactionModal({ txn, onClose }: { txn: Transaction; onClose: () => v
 }
 
 /* ─── Section Views ──────────────────────────────────── */
-function DashboardView({ onNavigate }: { onNavigate: (id: string) => void }) {
+import { Share2, Copy, Gift, Users as UsersIcon, Ticket } from "lucide-react";
+
+function ReferralWidget({ referralStats, refreshReferrals }: { referralStats: any; refreshReferrals?: () => void }) {
+  const [copied, setCopied] = useState(false);
+  const [shared, setShared] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const { t } = useTranslation();
+
+  if (!referralStats) {
+    return (
+      <div className="glass-card rounded-3xl p-6 border border-gold/10 text-center text-muted-foreground text-sm">
+        Loading referral details...
+      </div>
+    );
+  }
+
+  if (referralStats.systemEnabled === false) {
+    return (
+      <div className="glass-card rounded-3xl p-6 border border-white/5 text-center relative overflow-hidden space-y-3">
+        <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-rose-500/[0.03] blur-3xl pointer-events-none" />
+        <div className="h-10 w-10 rounded-full bg-rose-500/10 border border-rose-500/25 flex items-center justify-center mx-auto text-rose-400">
+          <AlertTriangle className="h-5 w-5" />
+        </div>
+        <h3 className="font-display text-base text-foreground font-semibold">
+          Referral Program Suspended
+        </h3>
+        <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+          The VibeNests customer referral program is temporarily disabled. Please check back later for updates.
+        </p>
+      </div>
+    );
+  }
+
+  const code = referralStats.referralCode;
+  const shareLink = `${window.location.origin}/register?ref=${code}`;
+
+  function handleCopy() {
+    navigator.clipboard.writeText(code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  async function handleShare() {
+    const shareData = {
+      title: "Join VibeNests Luxury!",
+      text: `Hey, register on VibeNests using my referral code ${code} and let's get luxury celebration rewards!`,
+      url: shareLink,
+    };
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+        setShared(true);
+        setTimeout(() => setShared(false), 2000);
+      } catch (err) {
+        console.log(err);
+      }
+    } else {
+      // Fallback: copy link & open whatsapp
+      navigator.clipboard.writeText(shareLink);
+      setShared(true);
+      setTimeout(() => setShared(false), 2000);
+      const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(
+        `Hey, register on VibeNests using my referral code ${code} and let's get luxury rewards! Link: ${shareLink}`
+      )}`;
+      window.open(whatsappUrl, "_blank");
+    }
+  }
+
+  async function handleRefresh() {
+    if (!refreshReferrals) return;
+    setRefreshing(true);
+    try {
+      await refreshReferrals();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      // Small timeout to let the user see the premium spin animation
+      setTimeout(() => setRefreshing(false), 800);
+    }
+  }
+
+  return (
+    <div className="glass-card rounded-3xl p-6 border border-gold/10 relative overflow-hidden space-y-6">
+      {/* Background glow blobs */}
+      <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-gold/10 blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-32 h-32 rounded-full bg-gold/5 blur-3xl pointer-events-none" />
+
+      {/* Header and code block */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
+        <div className="space-y-1">
+          <h3 className="font-display text-lg text-foreground flex items-center gap-2">
+            <Gift className="h-5 w-5 text-gold" />
+            Invite Friends & Earn Rewards
+            {refreshReferrals && (
+              <button
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="p-1.5 rounded-lg bg-white/5 border border-white/10 text-muted-foreground hover:text-gold hover:border-gold/30 transition-all duration-300 cursor-pointer inline-flex items-center justify-center shadow-sm hover:shadow-gold/10"
+                title="Refresh Referral Stats"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin text-gold" : "hover:rotate-180 transition-transform duration-500"}`} />
+              </button>
+            )}
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            Share your unique code and get a ₹500 discount coupon when they complete their first booking stay.
+          </p>
+        </div>
+
+        {/* Code selector */}
+        <div className="flex items-center gap-2 bg-white/[0.03] border border-white/10 rounded-2xl p-2 shrink-0">
+          <div className="px-3 py-1 font-mono text-sm tracking-wider text-gold font-semibold uppercase select-all">
+            {code}
+          </div>
+          <button
+            onClick={handleCopy}
+            className="p-2 rounded-xl bg-white/[0.05] border border-white/10 text-muted-foreground hover:text-gold hover:border-gold/30 transition-all cursor-pointer"
+            title="Copy Referral Code"
+          >
+            {copied ? <CheckCircle2 className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+          </button>
+          <button
+            onClick={handleShare}
+            className="p-2 rounded-xl bg-white/[0.05] border border-white/10 text-muted-foreground hover:text-gold hover:border-gold/30 transition-all cursor-pointer"
+            title="Share Referral Link"
+          >
+            <Share2 className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* Stats row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 relative z-10">
+        {[
+          { label: "Total Invites", value: referralStats.totalReferrals, icon: UsersIcon, color: "text-sky-400" },
+          { label: "Successful", value: referralStats.successfulReferrals, icon: CheckCircle2, color: "text-emerald-400" },
+          { label: "Pending", value: referralStats.pendingReferrals, icon: Hourglass, color: "text-amber-400" },
+          { label: "Rewards Earned", value: `₹${referralStats.earnedRewards}`, icon: Ticket, color: "text-gold" },
+        ].map((stat, i) => {
+          const Icon = stat.icon;
+          return (
+            <div key={i} className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 flex items-center gap-3">
+              <div className={`h-9 w-9 rounded-xl bg-white/5 flex items-center justify-center shrink-0 ${stat.color}`}>
+                <Icon className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="text-xl font-display text-foreground font-semibold">{stat.value}</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{stat.label}</p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Earned Coupons table list */}
+      {referralStats.rewards && referralStats.rewards.length > 0 && (
+        <div className="space-y-2 relative z-10 pt-2 border-t border-white/5">
+          <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+            Your Earned Referral Rewards
+          </h4>
+          <div className="overflow-x-auto rounded-2xl border border-white/5 bg-white/[0.01]">
+            <table className="w-full border-collapse text-left text-xs">
+              <thead>
+                <tr className="border-b border-white/5 bg-white/[0.02] text-muted-foreground uppercase tracking-wider font-semibold">
+                  <th className="px-4 py-2.5">Invited Friend</th>
+                  <th className="px-4 py-2.5">Coupon Code</th>
+                  <th className="px-4 py-2.5">Value</th>
+                  <th className="px-4 py-2.5">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {referralStats.rewards.map((rew: any) => (
+                  <tr key={rew.id} className="hover:bg-white/[0.02] transition-colors">
+                    <td className="px-4 py-3">
+                      <div>
+                        <p className="font-semibold text-foreground">{rew.refereeName}</p>
+                        <p className="text-[10px] text-muted-foreground">{rew.refereeEmail}</p>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 font-mono font-medium text-gold select-all">
+                      {rew.couponCode}
+                    </td>
+                    <td className="px-4 py-3 font-medium text-foreground">
+                      ₹{rew.rewardValue}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-semibold border ${
+                        rew.status === 'redeemed'
+                          ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                          : rew.status === 'revoked'
+                            ? "bg-rose-500/10 border-rose-500/20 text-rose-400"
+                            : "bg-gold/10 border-gold/20 text-gold"
+                      }`}>
+                        {rew.status === 'redeemed' ? 'Redeemed' : rew.status === 'revoked' ? 'Revoked' : 'Active'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DashboardView({ onNavigate, referralStats, refreshReferrals }: { onNavigate: (id: string) => void; referralStats: any; refreshReferrals?: () => void }) {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { suites } = useSuitesContext();
@@ -1237,6 +1444,9 @@ function DashboardView({ onNavigate }: { onNavigate: (id: string) => void }) {
         {/* </div> */}
         {/* </div> */}
       </motion.div>
+
+      {/* Referral Card */}
+      <ReferralWidget referralStats={referralStats} refreshReferrals={refreshReferrals} />
 
       {/* <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {statsTranslated.map((s, i) => {
@@ -2608,7 +2818,7 @@ function OffersView() {
   );
 }
 
-function ProfileView() {
+function ProfileView({ referralStats, refreshReferrals }: { referralStats: any; refreshReferrals?: () => void }) {
   const { t } = useTranslation();
   const { user, saveSession } = useAuth();
 
@@ -2661,14 +2871,22 @@ function ProfileView() {
   }, [user]);
 
   async function handleSave() {
+    if (!form.fullName.trim()) {
+      alert(t("app.validation.nameRequired", "Full name is required"));
+      return;
+    }
     setSaving(true);
     try {
-      const payload = { marriageDate: form.marriageDate || undefined };
+      const payload = { 
+        fullName: form.fullName.trim(),
+        marriageDate: form.marriageDate || undefined 
+      };
       const updated = await usersApi.updateMe(payload);
 
 
       setForm((f: any) => ({
         ...f,
+        fullName: updated.fullName || '',
         marriageDate: toDateInputValue(updated?.marriageDate) || '',
       }));
 
@@ -2700,7 +2918,12 @@ function ProfileView() {
         <div className="glass-card rounded-2xl p-6 space-y-5">
           <div className="space-y-1.5">
             <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">{t("app.auth.fullName", "Full Name")}</label>
-            <input type="text" value={form.fullName} disabled className="luxury-input w-full rounded-xl px-4 py-2.5 text-sm text-foreground bg-transparent opacity-60 cursor-not-allowed" />
+            <input 
+              type="text" 
+              value={form.fullName} 
+              onChange={(e) => setForm((f: any) => ({ ...f, fullName: e.target.value }))} 
+              className="luxury-input w-full rounded-xl px-4 py-2.5 text-sm text-foreground bg-transparent" 
+            />
           </div>
           <div className="space-y-1.5">
             <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">{t("app.auth.emailLabel", "Email Address")}</label>
@@ -2723,6 +2946,11 @@ function ProfileView() {
           </button>
         </div>
       )}
+
+      {/* Referral details in profile tab */}
+      <div className="pt-4">
+        <ReferralWidget referralStats={referralStats} refreshReferrals={refreshReferrals} />
+      </div>
     </div>
   );
 }
@@ -3075,11 +3303,27 @@ export default function UserDashboardPage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { user } = useAuth();
+  const [referralStats, setReferralStats] = useState<any>(null);
+  const [activeNav, setActiveNav] = useState("dashboard");
+
+  useEffect(() => {
+    if (!user?.id) return;
+    referralsApi.getStats()
+      .then((data) => setReferralStats(data))
+      .catch((err) => console.error("Failed to load referral stats:", err));
+  }, [user?.id, activeNav]);
+
+  async function refreshReferrals() {
+    try {
+      const data = await referralsApi.getStats();
+      setReferralStats(data);
+    } catch (err) {
+      console.error(err);
+    }
+  }
   const displayName = user?.fullName || t("app.userDashboard.welcome_back_name", "Guest");
   const displayLetter = displayName ? displayName.charAt(0).toUpperCase() : "U";
   const displayEmail = user?.email || "";
-
-  const [activeNav, setActiveNav] = useState("dashboard");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -3163,7 +3407,7 @@ export default function UserDashboardPage() {
 
   function renderContent() {
     switch (activeNav) {
-      case "dashboard": return <DashboardView onNavigate={setActiveNav} />;
+      case "dashboard": return <DashboardView onNavigate={setActiveNav} referralStats={referralStats} refreshReferrals={refreshReferrals} />;
       case "suites": return <SuitesView />;
       case "my-bookings": return <BookingListView bookings={[]} title={t("app.userDashboard.myBookings", "My Bookings")} fetchFromApi />;
       case "upcoming": return <BookingListView bookings={[]} title={t("app.userDashboard.upcomingBookings", "Upcoming Bookings")} fetchFromApi statusFilter="upcoming" />;
@@ -3172,9 +3416,9 @@ export default function UserDashboardPage() {
       case "refunds": return <RefundRequestsView />;
       case "memberships": return <CelebrationMembershipsView />;
       case "offers": return <OffersView />;
-      case "profile": return <ProfileView />;
+      case "profile": return <ProfileView referralStats={referralStats} refreshReferrals={refreshReferrals} />;
       case "help": return <HelpView />;
-      default: return <DashboardView onNavigate={setActiveNav} />;
+      default: return <DashboardView onNavigate={setActiveNav} referralStats={referralStats} refreshReferrals={refreshReferrals} />;
     }
   }
 

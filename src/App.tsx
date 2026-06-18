@@ -22,6 +22,7 @@ import CustomersPage from "@/pages/CustomersPage";
 import AvgBookingValuePage from "@/pages/AvgBookingValuePage";
 import UserDashboardPage from "@/pages/UserDashboardPage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
+import ForgotPage from "@/pages/ForgotPage";
 import WriteReviewPage from "@/pages/WriteReviewPage";
 import ReviewsPage from "@/pages/ReviewsPage";
 import PrivacyPolicyPage from "@/pages/PrivacyPolicyPage";
@@ -29,6 +30,7 @@ import TermsOfUsePage from "@/pages/TermsOfUsePage";
 import ContactUsPage from "@/pages/ContactUsPage";
 import TransactionsPage from "@/pages/TransactionsPage";
 import RefundsPage from "@/pages/RefundsPage";
+import AdminReferralsPage from "@/pages/AdminReferralsPage";
 import { SuitesProvider } from "@/components/admin/SuitesContext";
 import RazorpayProvider from "@/components/shared/RazorpayProvider";
 import { AppDataProvider } from "@/components/admin/AppDataContext";
@@ -41,6 +43,7 @@ export default function App() {
         <FloatingWhatsAppBot />
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/forgot-password" element={<ForgotPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/admin/register" element={<AdminRegisterPage />} />
@@ -66,6 +69,7 @@ export default function App() {
               <Route path="/celebration-memberships" element={<CelebrationMembershipsPage />} />
               <Route path="/suite-booking" element={<SuiteBookingPage />} />
               <Route path="/customers" element={<UsersPage />} />
+              <Route path="/referrals" element={<AdminReferralsPage />} />
               <Route path="/analytics" element={<AnalyticsPage />} />
               <Route path="/offers" element={<OffersPage />} />
               <Route path="/transactions" element={<TransactionsPage />} />

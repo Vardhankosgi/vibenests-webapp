@@ -84,6 +84,8 @@ export const authApi = {
     request<{ message: string }>('/auth/logout', { method: 'POST', body: JSON.stringify({ refreshToken }) }),
   resetPassword: (token: string, password: string) =>
     request<{ message: string }>('/auth/reset-password', { method: 'POST', body: JSON.stringify({ token, password }) }),
+  verifyResetToken: (token: string) =>
+    request<{ valid: boolean; email?: string }>(`/auth/verify-reset-token/${token}`),
 };
 
 // ── Bookings ─────────────────────────────────────────────────────────────────
@@ -297,5 +299,33 @@ export const refundsApi = {
       return request<any>(`/refunds/${id}/reject`, { method: 'POST', body: JSON.stringify({ rejectionReason: reason || 'Rejected by administrator' }) });
     }
   },
+};
+
+export const referralsApi = {
+  getStats: () => request<{
+    referralCode: string;
+    totalReferrals: number;
+    pendingReferrals: number;
+    successfulReferrals: number;
+    earnedRewards: number;
+    redeemedRewards: number;
+    rewards: any[];
+  }>('/referrals/stats'),
+  
+  validateCode: (code: string) =>
+    request<{ valid: boolean; message?: string }>(`/referrals/validate/${code}`),
+    
+  adminGetAll: (params?: { page?: number; limit?: number }) => {
+    const q = new URLSearchParams();
+    if (params?.page) q.set('page', String(params.page));
+    if (params?.limit) q.set('limit', String(params.limit));
+    return request<{ data: any[]; total: number }>(`/referrals/admin/all?${q}`);
+  },
+  
+  adminApproveReward: (rewardId: number) =>
+    request<any>(`/referrals/admin/rewards/${rewardId}/approve`, { method: 'POST' }),
+    
+  adminRevokeReward: (rewardId: number) =>
+    request<any>(`/referrals/admin/rewards/${rewardId}/revoke`, { method: 'POST' }),
 };
 

@@ -397,8 +397,7 @@ export default function OffersPage() {
         <div className="p-6 space-y-6">
 
           <div className="flex gap-1 p-1 rounded-xl bg-white/[0.04] border border-[var(--gold)]/15 w-fit">
-            <button onClick={() => setTab("config")} className={tabBtn(tab === "config")}><Settings2 className="h-4 w-4" /> {t("app.admin.offersConfig", "Offers & Configuration")}</button>
-            <button onClick={() => setTab("add")} className={tabBtn(tab === "add")}><Plus className="h-4 w-4" /> {t("app.admin.addNewOffer", "Add New Offer")}</button>
+            <button onClick={() => setTab("config")} className={tabBtn(tab === "config")}><Settings2 className="h-4 w-4" /> {t("app.admin.addOffer", "Add Offer")}</button>
             <button onClick={() => setTab("coupon")} className={tabBtn(tab === "coupon")}><Ticket className="h-4 w-4" /> {t("app.admin.addCoupon", "Add Coupon")}</button>
           </div>
 
@@ -444,48 +443,6 @@ export default function OffersPage() {
               </Card>
             </div>
           )}
-
-          {tab === "add" && (
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-              <Card title={t("app.admin.newOfferDetails", "New Offer Details")}>
-                <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
-                    <Field label={t("app.admin.offerName", "Offer Name")}><Input value={newOffer.name} onChange={(v) => setNewOffer((f) => ({ ...f, name: v }))} placeholder="e.g. Diwali Special" /></Field>
-                    <Field label={t("app.admin.offerType", "Offer Type")}><Select value={newOffer.type} onChange={(v) => setNewOffer((f) => ({ ...f, type: v }))} options={["Percentage", "Flat Amount", "Buy 1 Get 1"]} /></Field>
-                    <Field label={t("app.admin.discountValue", "Discount Value")}><Input value={newOffer.value} onChange={(v) => setNewOffer((f) => ({ ...f, value: v }))} type="number" placeholder="e.g. 20" /></Field>
-                    <Field label={t("app.admin.offerStatus", "Status")}><Select value={newOffer.status} onChange={(v) => setNewOffer((f) => ({ ...f, status: v }))} options={["Active", "Inactive", "Scheduled"]} /></Field>
-                    <Field label={t("app.admin.validFrom", "Valid From")}><Input value={newOffer.from} onChange={(v) => setNewOffer((f) => ({ ...f, from: v }))} type="date" /></Field>
-                    <Field label={t("app.admin.validUntil", "Valid Until")}><Input value={newOffer.until} onChange={(v) => setNewOffer((f) => ({ ...f, until: v }))} type="date" /></Field>
-                  </div>
-                  <Field label={t("app.admin.applicableCategories", "Applicable Categories")}><Input value={newOffer.categories} onChange={(v) => setNewOffer((f) => ({ ...f, categories: v }))} placeholder="e.g. Birthday, Anniversary, All" /></Field>
-                  <button onClick={handleAddOffer} className="gold-btn w-full rounded-lg py-2.5 text-sm font-semibold flex items-center justify-center gap-2 mt-1">
-                    <Plus className="h-4 w-4" /> {offerSaved ? t("app.admin.offerAddedMsg", "Offer Added!") : t("app.admin.addOfferBtn", "Add Offer")}
-                  </button>
-                </div>
-              </Card>
-              <Card title={t("app.admin.existingOffers", "Existing Offers")}>
-                <div className="space-y-2">
-                  {offers.length === 0 && <p className="text-xs text-muted-foreground text-center py-4">{t("app.admin.noOffersYet", "No offers yet")}</p>}
-                  {offers.map((o) => (
-                    <div key={o.id} className="flex items-center justify-between gap-3 bg-white/[0.03] rounded-xl px-3 py-2.5">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <Tag className="h-4 w-4 text-gold shrink-0" />
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium text-foreground truncate">{o.name}</p>
-                          <p className="text-[11px] text-muted-foreground">{o.type} · {o.value}{o.type === "Percentage" ? "%" : "₹"} · {o.from} – {o.until}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className={`text-[11px] px-2 py-0.5 rounded-full border font-medium ${o.status === "Active" ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : o.status === "Scheduled" ? "bg-amber-500/10 text-amber-400 border-amber-500/20" : "bg-white/5 text-muted-foreground border-white/10"}`}>{o.status}</span>
-                        <button onClick={() => handleDeleteOffer(o.id)} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition"><Trash2 className="h-3.5 w-3.5" /></button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-            </div>
-          )}
-
           {tab === "config" && (
             <>
               <div className="glass-card rounded-2xl p-4 border border-[var(--gold)]/30 bg-[var(--gold)]/5 flex gap-3">
@@ -497,143 +454,73 @@ export default function OffersPage() {
               </div>
 
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-
-                <Card title={t("app.admin.discountSettings", "Discount Settings")}>
+                <Card title={t("app.admin.addOffer", "Add Offer")}>
                   <div className="space-y-3">
                     <ToggleRow label={t("app.admin.enableOffers", "Enable Offers")} checked={enableOffers} onChange={setEnableOffers} />
                     <div className="grid grid-cols-2 gap-3">
                       <Field label={t("app.admin.offerName", "Offer Name")}>
-                        <Select value={offerName} onChange={(v) => { setOfferName(v); const sel = offers.find((o) => o.name === v); if (sel) { setOfferType(sel.type); setDiscountValue(sel.value); setValidFrom(sel.from); setValidUntil(sel.until); setCategories(sel.categories); setOfferStatus(sel.status); } }}
-                          options={offers.filter((o) => o.status === "Active").length > 0 ? offers.filter((o) => o.status === "Active").map((o) => o.name) : ["No active offers"]} />
+                        <Input value={newOffer.name} onChange={(v) => setNewOffer((f) => ({ ...f, name: v }))} placeholder="e.g. Diwali Special" />
                       </Field>
-                      <Field label={t("app.admin.offerType", "Offer Type")}><Select value={offerType} onChange={setOfferType} options={["Percentage", "Flat Amount", "Buy 1 Get 1"]} /></Field>
-                      <Field label={t("app.admin.discountValue", "Discount Value")}><Input value={discountValue} onChange={setDiscountValue} type="number" placeholder="e.g. 15" /></Field>
-                      <Field label={t("app.admin.bookingWindow", "Booking Window (Days)")}><Input value={bookingWindow} onChange={setBookingWindow} type="number" /></Field>
-                      <Field label={t("app.admin.validFrom", "Valid From")}><Input value={validFrom} onChange={setValidFrom} type="date" /></Field>
-                      <Field label={t("app.admin.validUntil", "Valid Until")}><Input value={validUntil} onChange={setValidUntil} type="date" /></Field>
+                      <Field label={t("app.admin.offerType", "Offer Type")}>
+                        <Select value={newOffer.type} onChange={(v) => setNewOffer((f) => ({ ...f, type: v }))} options={["Percentage", "Flat Amount"]} />
+                      </Field>
+                      <Field label={t("app.admin.discountValue", "Discount Value")}>
+                        <Input value={newOffer.value} onChange={(v) => setNewOffer((f) => ({ ...f, value: v }))} type="number" placeholder="e.g. 15" />
+                      </Field>
+                      <Field label={t("app.admin.validFrom", "Valid From")}>
+                        <Input value={newOffer.from} onChange={(v) => setNewOffer((f) => ({ ...f, from: v }))} type="date" />
+                      </Field>
+                      <Field label={t("app.admin.validUntil", "Valid Until")}>
+                        <Input value={newOffer.until} onChange={(v) => setNewOffer((f) => ({ ...f, until: v }))} type="date" />
+                      </Field>
+                      <Field label={t("app.admin.offerStatus", "Status")}>
+                        <Select value={newOffer.status} onChange={(v) => setNewOffer((f) => ({ ...f, status: v }))} options={["Active", "Inactive", "Scheduled"]} />
+                      </Field>
                     </div>
-                    <Field label={t("app.admin.applicableCategories", "Applicable Categories")}><Input value={categories} onChange={setCategories} placeholder="e.g. Birthday, Anniversary" /></Field>
-                    <Field label={t("app.admin.offerStatus", "Status")}><Select value={offerStatus} onChange={setOfferStatus} options={["Active", "Inactive", "Scheduled"]} /></Field>
-                  </div>
-                </Card>
-
-                <Card title={t("app.admin.refundSettings", "Refund / Partial Refund Settings")}>
-                  <div className="space-y-3">
-                    <ToggleRow label={t("app.admin.enableRefunds", "Enable Refunds")} checked={enableRefunds} onChange={setEnableRefunds} />
-                    <div className="grid grid-cols-2 gap-3">
-                      <Field label={t("app.admin.refundPercentage", "Refund Percentage (%)")}><Input value={refundPct} onChange={setRefundPct} type="number" /></Field>
-                      <Field label={t("app.admin.refundWindow", "Refund Window (Hours)")}><Input value={refundWindow} onChange={setRefundWindow} type="number" /></Field>
-                      <Field label={t("app.admin.minBookingAmount", "Minimum Booking Amount (₹)")}><Input value={minBooking} onChange={setMinBooking} type="number" /></Field>
-                      <Field label={t("app.admin.maxRefundsPerMonth", "Maximum Refunds Per Month")}><Input value={maxRefunds} onChange={setMaxRefunds} type="number" /></Field>
-                    </div>
-                  </div>
-                </Card>
-
-                <Card title={t("app.admin.refundPolicyConfig", "Refund Policy Configuration")}>
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-2 gap-3">
-                      <Field label={t("app.admin.cancelBeforeEvent", "Cancellation Before Event (Hours)")}><Input value={cancelBefore} onChange={setCancelBefore} type="number" /></Field>
-                      <Field label={t("app.admin.refundPercentage", "Refund Percentage (%)")}><Input value={policyRefundPct} onChange={setPolicyRefundPct} type="number" /></Field>
-                      <Field label={t("app.admin.latePenalty", "Late Refund Penalty (%)")}><Input value={latePenalty} onChange={setLatePenalty} type="number" /></Field>
-                      <Field label={t("app.admin.processingDays", "Refund Processing Days")}><Input value={processingDays} onChange={setProcessingDays} type="number" /></Field>
-                    </div>
-                    <Field label={t("app.admin.refundMethod", "Refund Method")}><Select value={refundMethod} onChange={setRefundMethod} options={["Original Payment Method", "Wallet Credit", "Bank Transfer", "UPI"]} /></Field>
-                    <ToggleRow label={t("app.admin.dynamicRecovery", "Enable Dynamic Recovery Charges")} checked={dynamicRecovery} onChange={setDynamicRecovery} />
-                    <ToggleRow label={t("app.admin.autoRebook", "Auto Offer Rebook Instead of Refund")} checked={autoRebook} onChange={setAutoRebook} />
-                  </div>
-                </Card>
-
-                <Card title={t("app.admin.addonRefundRules", "Add-on Refund Rules")}>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="text-left text-xs text-muted-foreground uppercase tracking-wide border-b border-white/[0.06]">
-                          <th className="pb-3 pr-4">{t("app.admin.addonCol", "Add-on")}</th>
-                          <th className="pb-3 pr-4 text-center">{t("app.admin.refundableCol", "Refundable")}</th>
-                          <th className="pb-3">{t("app.admin.refundBeforeHrs", "Refund Before (Hrs)")}</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-white/[0.04]">
-                        {addons.map((a, i) => (
-                          <tr key={a.name}>
-                            <td className="py-2.5 pr-4 text-foreground/80 text-sm">{a.name}</td>
-                            <td className="py-2.5 pr-4 text-center"><Toggle checked={a.refundable} onChange={(v) => setAddons((prev) => prev.map((x, j) => j === i ? { ...x, refundable: v } : x))} /></td>
-                            <td className="py-2.5"><input type="number" value={a.hours} onChange={(e) => setAddons((prev) => prev.map((x, j) => j === i ? { ...x, hours: e.target.value } : x))} className="luxury-input rounded-lg px-3 py-1.5 text-sm w-24" /></td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </Card>
-
-                <Card title={t("app.admin.liveCelebrationSettings", "Live Celebration Settings")}>
-                  <div className="space-y-3">
-                    <ToggleRow label={t("app.admin.enableLive", "Enable Live Celebration Feature")} checked={enableLive} onChange={setEnableLive} />
-                    <ToggleRow label={t("app.admin.enableRecording", "Enable Recording")} checked={enableRecording} onChange={setEnableRecording} />
-                    <ToggleRow label={t("app.admin.autoLinkGen", "Auto Link Generation")} checked={autoGen} onChange={setAutoGen} />
-                    <ToggleRow label={t("app.admin.allowUserEdits", "Allow User Edits")} checked={allowEdits} onChange={setAllowEdits} />
-                    <div className="grid grid-cols-2 gap-3">
-                      <Field label={t("app.admin.durationMinutes", "Duration (Minutes)")}><Input value={duration} onChange={setDuration} type="number" /></Field>
-                      <Field label={t("app.admin.notifTime", "Notification Time (Minutes)")}><Input value={notifTime} onChange={setNotifTime} type="number" /></Field>
-                      <Field label={t("app.admin.maxViewers", "Maximum Viewer Count")}><Input value={maxViewers} onChange={setMaxViewers} type="number" /></Field>
-                    </div>
-                  </div>
-                </Card>
-
-                <Card title={t("app.admin.taxCharges", "Tax & Charges")}>
-                  <div className="space-y-3">
-                    <ToggleRow label={t("app.admin.dynamicPricing", "Dynamic Pricing")} checked={dynamicPricing} onChange={setDynamicPricing} />
-                    <div className="grid grid-cols-2 gap-3">
-                      <Field label={t("app.admin.gst", "GST (%)")}><Input value={gst} onChange={setGst} type="number" /></Field>
-                      <Field label={t("app.admin.platformFee", "Platform Fee (%)")}><Input value={platformFee} onChange={setPlatformFee} type="number" /></Field>
-                      <Field label={t("app.admin.convFee", "Convenience Fee (%)")}><Input value={convFee} onChange={setConvFee} type="number" /></Field>
-                      <Field label={t("app.admin.serviceCharge", "Service Charge (%)")}><Input value={serviceCharge} onChange={setServiceCharge} type="number" /></Field>
-                      <Field label={t("app.admin.dynamicMultiplier", "Dynamic Pricing Multiplier")}><Input value={pricingMultiplier} onChange={setPricingMultiplier} type="number" /></Field>
-                    </div>
-                  </div>
-                </Card>
-
-                <Card title={t("app.admin.bookingRules", "Booking Rules")}>
-                  <div className="space-y-3">
-                    <ToggleRow label={t("app.admin.allowModification", "Allow Booking Modification")} checked={allowModification} onChange={setAllowModification} />
-                    <ToggleRow label={t("app.admin.allowCancellation", "Allow Cancellation")} checked={allowCancellation} onChange={setAllowCancellation} />
-                    <div className="grid grid-cols-2 gap-3">
-                      <Field label={t("app.admin.minBookingRule", "Minimum Booking Amount (₹)")}><Input value={minBookingRule} onChange={setMinBookingRule} type="number" /></Field>
-                      <Field label={t("app.admin.advanceRestriction", "Advance Booking Restriction (Days)")}><Input value={advanceRestriction} onChange={setAdvanceRestriction} type="number" /></Field>
-                      <Field label={t("app.admin.maxRefundDays", "Maximum Allowed Refund Days")}><Input value={maxRefundDays} onChange={setMaxRefundDays} type="number" /></Field>
-                      <Field label={t("app.admin.maxNotifications", "Max Notifications Allowed")}><Input value={maxNotifications} onChange={setMaxNotifications} type="number" /></Field>
-                    </div>
-                  </div>
-                </Card>
-
-                <Card title={t("app.admin.activeCoupons", "Active Coupons")}>
-                  <div className="space-y-2">
-                    {coupons.filter((c) => c.status === "Active").length === 0 && (
-                      <p className="text-xs text-muted-foreground text-center py-4">{t("app.admin.noActiveCoupons", "No active coupons.")} <button onClick={() => setTab("coupon")} className="text-gold hover:underline">{t("app.admin.addCouponBtn", "Add one")}</button></p>
-                    )}
-                    {coupons.filter((c) => c.status === "Active").map((c) => (
-                      <div key={c.id} className="flex items-center justify-between gap-3 bg-white/[0.03] rounded-xl px-3 py-2.5">
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <Ticket className="h-4 w-4 text-gold shrink-0" />
-                          <div>
-                            <p className="text-sm font-mono font-semibold text-gold tracking-widest">{c.code}</p>
-                            <p className="text-[11px] text-muted-foreground">{c.value}{c.type === "Percentage" ? "%" : "₹"} off · {c.used}/{c.maxUses} used · Exp: {c.expiry}</p>
-                          </div>
-                        </div>
-                        <span className="text-[11px] px-2 py-0.5 rounded-full border bg-emerald-500/10 text-emerald-400 border-emerald-500/20">{t("app.admin.active", "Active")}</span>
+                    <div className="space-y-1">
+                      <label className="text-[11px] text-muted-foreground uppercase tracking-wide">
+                        {t("app.admin.applicableOccasions", "Applicable Occasions")}
+                      </label>
+                      <div className="grid grid-cols-2 gap-2.5 mt-1 bg-white/[0.02] border border-white/10 rounded-lg p-3">
+                        {["All", "Birthday", "Anniversary", "Proposal", "Baby Shower", "Corporate Events", "Other Celebrations"].map((occ) => {
+                          const currentList = newOffer.categories ? newOffer.categories.split(",").map((c) => c.trim()) : [];
+                          const isChecked = currentList.includes(occ);
+                          return (
+                            <label key={occ} className="flex items-center gap-2 cursor-pointer select-none text-xs text-foreground/80 hover:text-foreground">
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={(e) => {
+                                  let newList;
+                                  if (occ === "All") {
+                                    newList = e.target.checked ? ["All"] : [];
+                                  } else {
+                                    const filtered = currentList.filter((x) => x !== "All" && x !== "");
+                                    if (e.target.checked) {
+                                      newList = [...filtered, occ];
+                                    } else {
+                                      newList = filtered.filter((x) => x !== occ);
+                                    }
+                                  }
+                                  setNewOffer((f) => ({ ...f, categories: newList.join(", ") }));
+                                }}
+                                className="h-3.5 w-3.5 rounded border-[var(--gold)]/40 bg-transparent accent-[var(--gold)]"
+                              />
+                              {occ}
+                            </label>
+                          );
+                        })}
                       </div>
-                    ))}
-                    <button onClick={() => setTab("coupon")} className="w-full mt-1 text-xs text-gold border border-[var(--gold)]/20 rounded-lg py-2 hover:bg-[var(--gold)]/5 transition flex items-center justify-center gap-1.5">
-                      <Ticket className="h-3.5 w-3.5" /> {t("app.admin.manageAllCoupons", "Manage All Coupons")}
+                    </div>
+                    <button onClick={handleAddOffer} className="gold-btn w-full rounded-lg py-2.5 text-sm font-semibold flex items-center justify-center gap-2 mt-1">
+                      <Plus className="h-4 w-4" /> {offerSaved ? t("app.admin.offerAddedMsg", "Offer Added!") : t("app.admin.addOfferBtn", "Add Offer")}
                     </button>
                   </div>
                 </Card>
 
                 <Card title={t("app.admin.existingOffers", "Existing Offers")}>
                   <div className="space-y-2">
-                    {offers.length === 0 && (
-                      <p className="text-xs text-muted-foreground text-center py-4">{t("app.admin.noOffersYet", "No offers yet.")} <button onClick={() => setTab("add")} className="text-gold hover:underline">{t("app.admin.addOfferBtn", "Add one")}</button></p>
-                    )}
+                    {offers.length === 0 && <p className="text-xs text-muted-foreground text-center py-4">{t("app.admin.noOffersYet", "No offers yet")}</p>}
                     {offers.map((o) => (
                       <div key={o.id} className="flex items-center justify-between gap-3 bg-white/[0.03] rounded-xl px-3 py-2.5">
                         <div className="flex items-center gap-2.5 min-w-0">
@@ -641,6 +528,7 @@ export default function OffersPage() {
                           <div className="min-w-0">
                             <p className="text-sm font-medium text-foreground truncate">{o.name}</p>
                             <p className="text-[11px] text-muted-foreground">{o.type} · {o.value}{o.type === "Percentage" ? "%" : "₹"} · {o.from} – {o.until}</p>
+                            <p className="text-[10px] text-muted-foreground italic truncate">Occasions: {o.categories}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
@@ -649,11 +537,10 @@ export default function OffersPage() {
                         </div>
                       </div>
                     ))}
-                    <button onClick={() => setTab("add")} className="w-full mt-1 text-xs text-gold border border-[var(--gold)]/20 rounded-lg py-2 hover:bg-[var(--gold)]/5 transition flex items-center justify-center gap-1.5">
-                      <Plus className="h-3.5 w-3.5" /> {t("app.admin.addNewOffer", "Add New Offer")}
-                    </button>
                   </div>
                 </Card>
+
+
 
               </div>
 
