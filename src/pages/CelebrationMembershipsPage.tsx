@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 
 interface MembershipPlanType {
   id: number;
-  name: "Silver" | "Gold";
+  name: string;
   price: number;
   validityType?: "monthly" | "yearly" | "custom";
   validityDays: number;
@@ -24,7 +24,7 @@ interface UserMembershipType {
   id: number;
   userId: number;
   planId?: number;
-  planName: "Silver" | "Gold";
+  planName: string;
   maxFreeBookings?: number;
   bookingsUsed?: number;
   eligibleSuites?: string[];
@@ -62,7 +62,7 @@ export default function CelebrationMembershipsPage() {
   // Edit modal states
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<"create" | "edit">("edit");
-  const [editName, setEditName] = useState<"Silver" | "Gold">("Silver");
+  const [editName, setEditName] = useState<string>("Silver");
   const [editingPlan, setEditingPlan] = useState<MembershipPlanType | null>(null);
   const [editPrice, setEditPrice] = useState("");
   const [editValidityType, setEditValidityType] = useState<"monthly" | "yearly" | "custom">("yearly");
@@ -293,7 +293,7 @@ export default function CelebrationMembershipsPage() {
             ) : (
               <div className="grid md:grid-cols-2 gap-6">
                 {plans.map((plan) => {
-                  const isGold = plan.name === "Gold";
+                  const isGold = plan.name?.toLowerCase().includes("gold") || !plan.name?.toLowerCase().includes("silver");
                   const benefitsArray = Array.isArray(plan.benefits) 
                     ? plan.benefits 
                     : typeof plan.benefits === "string" 
@@ -489,7 +489,7 @@ export default function CelebrationMembershipsPage() {
                     </thead>
                     <tbody className="divide-y divide-white/5 text-xs">
                       {filteredPurchases.map((purchase) => {
-                        const isGold = purchase.planName === "Gold";
+                        const isGold = purchase.planName?.toLowerCase().includes("gold") || !purchase.planName?.toLowerCase().includes("silver");
                         const suiteNames = (purchase.eligibleSuites || [])
                           .map(id => allSuites.find(s => String(s.id) === String(id))?.name || `Suite #${id}`)
                           .join(", ");
@@ -595,19 +595,17 @@ export default function CelebrationMembershipsPage() {
             )}
 
             <form onSubmit={handleSavePlan} className="space-y-4 text-xs">
-              {modalMode === "create" && (
-                <div className="space-y-1.5 mb-3">
-                  <label className="text-muted-foreground uppercase tracking-widest text-[9px] font-semibold text-gold">Package Tier</label>
-                  <select
-                    value={editName}
-                    onChange={(e) => setEditName(e.target.value as "Silver" | "Gold")}
-                    className="luxury-input w-full px-3 py-2 bg-[oklch(0.12_0.02_260)]"
-                  >
-                    <option value="Silver">Silver Package</option>
-                    <option value="Gold">Gold Package</option>
-                  </select>
-                </div>
-              )}
+              <div className="space-y-1.5 mb-3">
+                <label className="text-muted-foreground uppercase tracking-widest text-[9px] font-semibold text-gold">Package Name</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Silver Package, Gold Package, Platinum Custom..."
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="luxury-input w-full px-3 py-2"
+                />
+              </div>
 
               <div className="grid grid-cols-2 gap-4">
                 {/* Price */}

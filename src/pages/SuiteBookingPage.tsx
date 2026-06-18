@@ -149,6 +149,7 @@ export default function SuiteBookingPage() {
 
   const [step, setStep] = useState(passedPackage ? 4 : 0);
   const [selectedOccasion, setSelectedOccasion] = useState(passedPackage ? "package:0" : "");
+  const [customOccasion, setCustomOccasion] = useState("");
   const [bookingDate, setBookingDate] = useState(passedPackage ? new Date().toISOString().split('T')[0] : "");
   const [startTime, setStartTime] = useState(passedPackage ? "09:00 AM" : "");
   const [selectedSuite, setSelectedSuite] = useState(passedPackage ? "0" : (passedSuiteId ?? ""));
@@ -450,11 +451,11 @@ export default function SuiteBookingPage() {
 
 
   const isStepValid = useMemo(() => {
-    if (step === 0) return !!selectedOccasion;
+    if (step === 0) return selectedOccasion === "other" ? !!customOccasion.trim() : !!selectedOccasion;
     if (step === 1) return !!bookingDate && !!startTime;
     if (step === 4) return !!paymentMethod;
     return true;
-  }, [step, selectedOccasion, bookingDate, startTime, selectedSuite, paymentMethod]);
+  }, [step, selectedOccasion, customOccasion, bookingDate, startTime, selectedSuite, paymentMethod]);
 
   function handleNext() {
     if (!isStepValid) { setShowValidation(true); return; }
@@ -547,7 +548,11 @@ export default function SuiteBookingPage() {
                 </>
               ) : (
                 <>
-                  <p className="text-xs text-muted-foreground">{OCCASIONS.find(o => o.id === selectedOccasion)?.label}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {selectedOccasion === "other"
+                      ? (customOccasion || "Other Celebration")
+                      : (OCCASIONS.find(o => o.id === selectedOccasion)?.label || "No Occasion")}
+                  </p>
                   <p className="text-sm text-foreground font-medium">{suite?.name}</p>
                   <p className="text-xs text-muted-foreground">{bookingDate} · {startTime}{startTime ? ` – ${getEndTime(startTime, slotDuration)}` : ""}</p>
                 </>
@@ -742,25 +747,46 @@ export default function SuiteBookingPage() {
 
                   {/* Step 0 */}
                   {step === 0 && (
-                    <div className="grid gap-3 md:grid-cols-2">
-                      {localizedOccasions.map((o) => {
-                        const Icon = o.icon;
-                        const active = o.id === selectedOccasion;
-                        return (
-                          <button key={o.id} type="button" onClick={() => setSelectedOccasion(o.id)}
-                            className={`flex flex-col gap-3 rounded-2xl border p-4 text-left transition-all ${active ? "border-gold bg-gold/10 shadow-[0_16px_40px_rgba(255,190,90,0.1)]"
-                              : "border-white/10 bg-white/5 hover:border-gold/20 hover:bg-white/10"
-                              }`}>
-                            <span className={`inline-flex h-10 w-10 items-center justify-center rounded-2xl ${o.highlight}`}>
-                              <Icon className="h-5 w-5" />
-                            </span>
-                            <div>
-                              <h4 className="font-display text-base text-foreground">{o.label}</h4>
-                              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{o.description}</p>
-                            </div>
-                          </button>
-                        );
-                      })}
+                    <div className="space-y-4">
+                      <div className="grid gap-3 md:grid-cols-2">
+                        {localizedOccasions.map((o) => {
+                          const Icon = o.icon;
+                          const active = o.id === selectedOccasion;
+                          return (
+                            <button key={o.id} type="button" onClick={() => setSelectedOccasion(o.id)}
+                              className={`flex flex-col gap-3 rounded-2xl border p-4 text-left transition-all ${active ? "border-gold bg-gold/10 shadow-[0_16px_40px_rgba(255,190,90,0.1)]"
+                                : "border-white/10 bg-white/5 hover:border-gold/20 hover:bg-white/10"
+                                }`}>
+                              <span className={`inline-flex h-10 w-10 items-center justify-center rounded-2xl ${o.highlight}`}>
+                                <Icon className="h-5 w-5" />
+                              </span>
+                              <div>
+                                <h4 className="font-display text-base text-foreground">{o.label}</h4>
+                                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{o.description}</p>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {selectedOccasion === "other" && (
+                        <div className="space-y-2 mt-4 animate-in fade-in slide-in-from-top-4 duration-300">
+                          <label className="text-xs uppercase tracking-[0.25em] text-muted-foreground font-semibold block">
+                            Specify Celebration / Occasion
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={customOccasion}
+                            onChange={(e) => setCustomOccasion(e.target.value)}
+                            placeholder="e.g. Graduation Party, Farewell, Custom Celebration..."
+                            className="luxury-input w-full rounded-2xl px-4 py-3 text-sm bg-black/40"
+                          />
+                          {showValidation && !customOccasion.trim() && (
+                            <p className="text-xs text-rose-400 mt-1 font-medium">Please specify the occasion to proceed.</p>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -927,7 +953,11 @@ export default function SuiteBookingPage() {
                       <div className="grid gap-4 sm:grid-cols-2">
                         <div className="glass-card rounded-2xl border border-white/10 p-4">
                           <h4 className="text-xs uppercase tracking-[0.25em] text-muted-foreground">{t("app.userDashboard.yourCelebration", "Your Celebration")}</h4>
-                          <p className="mt-3 text-base text-foreground font-semibold">{localizedOccasions.find((o) => o.id === selectedOccasion)?.label ?? t("app.userDashboard.noOccasion", "No occasion")}</p>
+                          <p className="mt-3 text-base text-foreground font-semibold">
+                            {selectedOccasion === "other"
+                              ? (customOccasion || "Other Celebration")
+                              : (localizedOccasions.find((o) => o.id === selectedOccasion)?.label ?? t("app.userDashboard.noOccasion", "No occasion"))}
+                          </p>
                           <p className="text-xs text-muted-foreground mt-1">{bookingDate ? new Date(bookingDate).toLocaleDateString() : t("app.userDashboard.noDate", "No date")}</p>
                           <p className="text-xs text-muted-foreground">{startTime ? `${startTime} – ${getEndTime(startTime, slotDuration)}` : t("app.userDashboard.noTime", "No time")}</p>
                         </div>
@@ -1234,7 +1264,7 @@ export default function SuiteBookingPage() {
 
                                 suiteId: Number(suite.id),
                                 suiteName: suite.name,
-                                eventType: selectedOccasion,
+                                eventType: selectedOccasion === "other" ? customOccasion : selectedOccasion,
                                 addOns: Object.keys(addonQty).filter((k) => (addonQty[k] ?? 0) > 0),
                                 date: bookingDate,
                                 timeSlot: startTime,

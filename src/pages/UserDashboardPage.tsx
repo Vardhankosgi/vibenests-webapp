@@ -2105,8 +2105,8 @@ function CelebrationMembershipsView() {
       setLoading(true);
       setErrorMsg("");
       const pData = await membershipsApi.getPlans();
-      // Only display Silver and Gold active membership plans
-      setPlans(Array.isArray(pData) ? pData.filter(p => p.status === 'active' && (p.name === 'Silver' || p.name === 'Gold')) : []);
+      // Display all active membership plans
+      setPlans(Array.isArray(pData) ? pData.filter(p => p.status === 'active') : []);
       const activeData = await membershipsApi.getMyActive();
       setMyActive(activeData || null);
     } catch (err: any) {
@@ -2135,7 +2135,7 @@ function CelebrationMembershipsView() {
       ? myActive.plan.benefits
       : typeof myActive.plan?.benefits === 'string'
         ? myActive.plan.benefits.split(',')
-        : myActive.planName === 'Gold'
+        : (myActive.planName?.toLowerCase().includes('gold') || !myActive.planName?.toLowerCase().includes('silver'))
           ? [
             '15 free bookings on eligible suites',
             '24/7 dedicated support desk',
@@ -2150,7 +2150,7 @@ function CelebrationMembershipsView() {
     : [];
 
   const isActive = myActive && myActive.status === 'active';
-  const isGoldActive = isActive && myActive.planName === 'Gold';
+  const isGoldActive = isActive && (myActive.planName?.toLowerCase().includes('gold') || !myActive.planName?.toLowerCase().includes('silver'));
   const isExpired = myActive && myActive.status === 'expired';
   const activeSuiteNames = myActive
     ? (myActive.eligibleSuites || [])
@@ -2260,7 +2260,7 @@ function CelebrationMembershipsView() {
       ) : (
         <div className="glass-card rounded-3xl border border-white/5 p-6 bg-gradient-to-br from-white/5 to-transparent">
           <h3 className="font-display text-xl text-foreground font-semibold">Unlock Exclusive Private Luxury Packages</h3>
-          <p className="text-xs text-muted-foreground mt-1">Purchase a Silver or Gold Package to enjoy prepaid free bookings on eligible suites and priority support.</p>
+          <p className="text-xs text-muted-foreground mt-1">Purchase a Membership Package to enjoy prepaid free bookings on eligible suites and priority support.</p>
         </div>
       )}
 
@@ -2269,7 +2269,7 @@ function CelebrationMembershipsView() {
         <p className="text-xs text-muted-foreground uppercase tracking-widest mb-4">Available Package Options</p>
         <div className="grid md:grid-cols-2 gap-6">
           {plans.map((plan) => {
-            const isGold = plan.name === "Gold";
+            const isGold = plan.name?.toLowerCase().includes("gold") || !plan.name?.toLowerCase().includes("silver");
             const isCurrent = myActive && myActive.planName === plan.name;
             const benefitsArray = Array.isArray(plan.benefits)
               ? plan.benefits
@@ -2366,7 +2366,9 @@ function CelebrationMembershipsView() {
                     );
                   }
 
-                  if (plan.name === "Gold" && myActive.planName === "Silver") {
+                  const currentPrice = Number(myActive.plan?.price || 0);
+                  const planPrice = Number(plan.price || 0);
+                  if (planPrice > currentPrice) {
                     return (
                       <button
                         onClick={() => navigate("/user/suite-booking", { state: { package: plan, isMembershipPurchase: true } })}
@@ -2382,7 +2384,7 @@ function CelebrationMembershipsView() {
                       disabled
                       className="w-full rounded-2xl py-3 text-xs font-bold uppercase tracking-wider border border-white/10 text-muted-foreground bg-white/5 cursor-not-allowed"
                     >
-                      Gold Package Active
+                      {myActive.planName} Package Active
                     </button>
                   );
                 })()}
