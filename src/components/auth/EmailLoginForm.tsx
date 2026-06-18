@@ -95,7 +95,7 @@ export function EmailLoginForm() {
       </div>
 
       <div className="flex items-center justify-between text-xs">
-      
+
 
         <label className="flex items-center gap-2 cursor-pointer select-none">
           <input
