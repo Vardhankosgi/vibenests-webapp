@@ -2609,11 +2609,26 @@ function OffersView() {
 function ProfileView() {
   const { t } = useTranslation();
   const { user, saveSession } = useAuth();
+
+  function toDateInputValue(value: any): string {
+    if (!value) return '';
+    // If it's already YYYY-MM-DD
+    if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+    // If it's ISO/Date-like
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return '';
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
   const [form, setForm] = useState({
     fullName: user?.fullName || '',
     email: user?.email || '',
     phone: user?.phone || '',
-    dateOfBirth: user?.dateOfBirth || ''
+    dateOfBirth: toDateInputValue((user as any)?.dateOfBirth) || '',
+    marriageDate: toDateInputValue((user as any)?.marriageDate) || '',
   });
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -2625,7 +2640,8 @@ function ProfileView() {
         fullName: user.fullName || '',
         email: user.email || '',
         phone: user.phone || '',
-        dateOfBirth: user.dateOfBirth || ''
+        dateOfBirth: toDateInputValue((user as any).dateOfBirth) || '',
+        marriageDate: toDateInputValue((user as any)?.marriageDate) || '',
       });
     } else {
       setLoading(true);
@@ -2634,7 +2650,8 @@ function ProfileView() {
           fullName: u.fullName || '',
           email: u.email || '',
           phone: u.phone || '',
-          dateOfBirth: u.dateOfBirth || ''
+          dateOfBirth: toDateInputValue(u.dateOfBirth) || '',
+          marriageDate: toDateInputValue(u.marriageDate) || '',
         }))
         .catch(console.error)
         .finally(() => setLoading(false));
@@ -2644,18 +2661,35 @@ function ProfileView() {
   async function handleSave() {
     setSaving(true);
     try {
-      const updated = await usersApi.updateMe({ fullName: form.fullName, phone: form.phone, dateOfBirth: form.dateOfBirth });
-      setForm((f: any) => ({ ...f, fullName: updated.fullName, phone: updated.phone || '', dateOfBirth: updated.dateOfBirth || '' }));
+      const payload = { marriageDate: form.marriageDate || undefined };
+      const updated = await usersApi.updateMe(payload);
+
+
+      setForm((f: any) => ({
+        ...f,
+        marriageDate: toDateInputValue(updated?.marriageDate) || '',
+      }));
+
       if (user) {
         const token = localStorage.getItem('accessToken') || '';
         const refresh = localStorage.getItem('refreshToken') || '';
-        saveSession(token, refresh, { ...user, fullName: updated.fullName, phone: updated.phone || '', dateOfBirth: updated.dateOfBirth || '' });
+        saveSession(token, refresh, {
+          ...user,
+          fullName: updated.fullName,
+          phone: updated.phone || '',
+          dateOfBirth: updated.dateOfBirth || '',
+        });
       }
+
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
-    } catch (err: any) { alert(err.message); }
-    finally { setSaving(false); }
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setSaving(false);
+    }
   }
+
 
   return (
     <div className="space-y-6 max-w-xl">
@@ -2664,7 +2698,7 @@ function ProfileView() {
         <div className="glass-card rounded-2xl p-6 space-y-5">
           <div className="space-y-1.5">
             <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">{t("app.auth.fullName", "Full Name")}</label>
-            <input type="text" value={form.fullName} onChange={(e) => setForm((f: any) => ({ ...f, fullName: e.target.value }))} className="luxury-input w-full rounded-xl px-4 py-2.5 text-sm text-foreground bg-transparent" />
+            <input type="text" value={form.fullName} disabled className="luxury-input w-full rounded-xl px-4 py-2.5 text-sm text-foreground bg-transparent opacity-60 cursor-not-allowed" />
           </div>
           <div className="space-y-1.5">
             <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">{t("app.auth.emailLabel", "Email Address")}</label>
@@ -2672,11 +2706,15 @@ function ProfileView() {
           </div>
           <div className="space-y-1.5">
             <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">{t("app.auth.phoneNumber", "Phone Number")}</label>
-            <input type="tel" value={form.phone} onChange={(e) => setForm((f: any) => ({ ...f, phone: e.target.value }))} className="luxury-input w-full rounded-xl px-4 py-2.5 text-sm text-foreground bg-transparent" />
+            <input type="tel" value={form.phone} disabled className="luxury-input w-full rounded-xl px-4 py-2.5 text-sm text-foreground bg-transparent opacity-60 cursor-not-allowed" />
           </div>
           <div className="space-y-1.5">
             <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">{t("app.userDashboard.dateOfBirth", "Date of Birth")}</label>
-            <input type="date" value={form.dateOfBirth} onChange={(e) => setForm((f: any) => ({ ...f, dateOfBirth: e.target.value }))} className="luxury-input w-full rounded-xl px-4 py-2.5 text-sm text-foreground bg-transparent" style={{ colorScheme: "dark" }} />
+            <input type="date" value={form.dateOfBirth} disabled className="luxury-input w-full rounded-xl px-4 py-2.5 text-sm text-foreground bg-transparent opacity-60 cursor-not-allowed" style={{ colorScheme: "dark" }} />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">{t("app.userDashboard.marriageDate", "Marriage Date")}</label>
+            <input type="date" value={form.marriageDate} onChange={(e) => setForm((f: any) => ({ ...f, marriageDate: e.target.value }))} className="luxury-input w-full rounded-xl px-4 py-2.5 text-sm text-foreground bg-transparent" style={{ colorScheme: "dark" }} />
           </div>
           <button onClick={handleSave} disabled={saving} className="gold-btn w-full rounded-xl py-2.5 text-sm font-semibold mt-2 disabled:opacity-60">
             {saving ? "Saving..." : saved ? "Saved!" : t("app.userDashboard.saveChanges", "Save Changes")}

@@ -94,7 +94,9 @@ export const bookingsApi = {
   adminCreate: (body: any) => request<any>('/bookings/admin', { method: 'POST', body: JSON.stringify(body) }),
   updateStatus: (id: number, status: string) =>
     request<any>(`/bookings/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
-  cancel: (id: number) => request<any>(`/bookings/${id}/cancel`, { method: 'PATCH' }),
+  cancel: (id: number, body?: { reason: string }) =>
+    request<any>(`/bookings/${id}/cancel`, { method: 'PATCH', body: JSON.stringify(body || {}) }),
+
   getMeetingLink: (id: number) => request<{ meeting_link: string }>(`/bookings/${id}/meeting-link`, { method: 'POST' }),
   payCash: (id: number) => request<any>(`/bookings/${id}/pay-cash`, { method: 'POST' }),
   reschedule: (id: number, body: { date: string; timeSlot: string }) =>
@@ -129,7 +131,7 @@ export const addonsApi = {
 export const usersApi = {
   getAll: () => request<any[]>('/users'),
   me: () => request<any>('/users/me'),
-  updateMe: (body: { fullName?: string; phone?: string; dateOfBirth?: string }) => request<any>('/users/me', { method: 'PATCH', body: JSON.stringify(body) }),
+  updateMe: (body: { fullName?: string; phone?: string; dateOfBirth?: string; marriageDate?: string }) => request<any>('/users/me', { method: 'PATCH', body: JSON.stringify(body) }),
   getById: (id: string) => request<any>(`/users/${id}`),
   create: (body: { fullName: string; email: string; phone?: string }) =>
     request<any>('/users', { method: 'POST', body: JSON.stringify(body) }),
@@ -137,7 +139,15 @@ export const usersApi = {
     request<any>(`/users/${id}/status`, { method: 'PATCH' }),
   resendSetup: (id: string) =>
     request<any>(`/users/${id}/resend-setup`, { method: 'POST' }),
+
+  updateByAdmin: (
+    id: string,
+    body: { fullName?: string; phone?: string; dateOfBirth?: string; marriageDate?: string; isActive?: boolean }
+  ) => request<any>(`/users/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+
+  deleteByAdmin: (id: string) => request<any>(`/users/${id}`, { method: 'DELETE' }),
 };
+
 
 // ── Payments ─────────────────────────────────────────────────────────────────
 export const paymentsApi = {

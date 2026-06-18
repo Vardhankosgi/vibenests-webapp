@@ -135,28 +135,25 @@ export default function SuiteBookingPage() {
   // NOTE: location.state does NOT persist on hard refresh.
   // Keep this page functional even when booking was not navigated to with state.
   const passedPackage = useMemo(() => (location.state as any)?.package ?? null, [location.state]);
-  const mapOccasionToId = (occasion: string): string => {
-    const normalized = (occasion ?? "").toLowerCase().trim();
-    if (normalized.includes("birthday")) return "birthday";
-    if (normalized.includes("anniversary")) return "anniversary";
-    if (normalized.includes("proposal")) return "proposal";
-    if (normalized.includes("baby")) return "baby-shower";
-    if (normalized.includes("corporate")) return "corporate";
-    return "other";
-  };
+
+
+  // Hard-refresh robustness:
+  // `location.state` does not persist, so if `passedPackage` is missing
+  // we derive a best-effort default from `location.state.suiteId` (if present)
+  // or start with a safe empty state.
+  const passedSuiteId = useMemo(() => {
+    const state = location.state as any;
+    const suiteId = state?.suiteId;
+    return suiteId != null ? String(suiteId) : null;
+  }, [location.state]);
 
   const [step, setStep] = useState(passedPackage ? 4 : 0);
-  const [selectedOccasion, setSelectedOccasion] = useState(
-    passedPackage ? `package:${passedPackage.id}` : ""
-  );
-  const [bookingDate, setBookingDate] = useState(
-    passedPackage ? new Date().toISOString().split('T')[0] : ""
-  );
-  const [startTime, setStartTime] = useState(
-    passedPackage ? "09:00 AM" : ""
-  );
-  const [selectedSuite, setSelectedSuite] = useState(passedPackage ? "0" : "");
+  const [selectedOccasion, setSelectedOccasion] = useState(passedPackage ? "package:0" : "");
+  const [bookingDate, setBookingDate] = useState(passedPackage ? new Date().toISOString().split('T')[0] : "");
+  const [startTime, setStartTime] = useState(passedPackage ? "09:00 AM" : "");
+  const [selectedSuite, setSelectedSuite] = useState(passedPackage ? "0" : (passedSuiteId ?? ""));
   const [blockedSlots, setBlockedSlots] = useState<string[]>([]);
+
 
   // Block slots whose time window has already ended for the selected date.
   // Uses slot END time (so a currently-running slot stays selectable).

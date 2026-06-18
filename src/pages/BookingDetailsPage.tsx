@@ -349,10 +349,17 @@ export default function BookingDetailsPage() {
                   <button
                     disabled={actionLoading}
                     onClick={async () => {
+                      const reason = window.prompt("Enter cancellation reason:");
+                      if (reason === null) return;
+                      if (!reason.trim()) {
+                        alert("Cancellation reason is required.");
+                        return;
+                      }
+
                       try {
                         setActionLoading(true);
                         setActionError("");
-                        const resp = await bookingsApi.cancel(booking.id);
+                        const resp = await bookingsApi.cancel(booking.id, { reason });
                         setBooking(resp);
                       } catch (e: any) {
                         setActionError(e?.message || "Failed to cancel booking");
@@ -364,6 +371,7 @@ export default function BookingDetailsPage() {
                   >
                     <XCircle className="h-4 w-4" /> Cancel
                   </button>
+
 
                   <button
                     disabled={actionLoading}

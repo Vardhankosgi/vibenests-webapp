@@ -7,6 +7,8 @@ import {
 import { useAppData, type UserType } from "@/components/admin/AppDataContext";
 import { usersApi } from "@/lib/api";
 import { useTranslation } from "react-i18next";
+import { Trash2, PencilLine } from "lucide-react";
+
 
 const emptyForm = { name: "", email: "", phone: "" };
 
@@ -38,6 +40,26 @@ export default function UsersPage() {
 
   // view drawer
   const [viewUser, setViewUser]     = useState<DetailUser | null>(null);
+
+  // edit modal
+  const [editOpen, setEditOpen] = useState(false);
+  const [editUser, setEditUser] = useState<DetailUser | null>(null);
+  const [editForm, setEditForm] = useState<{ fullName: string; phone: string; dateOfBirth: string; marriageDate: string; isActive: boolean }>(() => ({
+    fullName: "",
+    phone: "",
+    dateOfBirth: "",
+    marriageDate: "",
+    isActive: true,
+  }));
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+
+  // delete confirm
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteUser, setDeleteUser] = useState<DetailUser | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
   const [detailLoading, setDetailLoading] = useState(false);
   const [resending, setResending]   = useState(false);
   const [resendDone, setResendDone] = useState(false);
@@ -87,6 +109,73 @@ export default function UsersPage() {
     } catch {
       setViewUser({ ...u, rawBookings: [] });
     } finally { setDetailLoading(false); }
+  }
+
+  /* ── Edit User ───────────────────────────────────────────────────────── */
+  function openEdit(u: UserType) {
+    const du = u as DetailUser;
+    setEditUser(du);
+    setEditError(null);
+    setEditSaving(false);
+    setEditForm({
+      fullName: du.name || "",
+      phone: du.phone || "",
+      dateOfBirth: (du as any).dateOfBirth ? String((du as any).dateOfBirth) : "",
+      marriageDate: (du as any).marriageDate ? String((du as any).marriageDate) : "",
+      isActive: du.status === "Active",
+    });
+    setEditOpen(true);
+  }
+
+  async function saveEdit() {
+    if (!editUser) return;
+    if (!editForm.fullName.trim()) {
+      setEditError("Full name is required.");
+      return;
+    }
+
+    setEditSaving(true);
+    setEditError(null);
+    try {
+      await usersApi.updateByAdmin(editUser.id, {
+        fullName: editForm.fullName.trim(),
+        phone: editForm.phone ? editForm.phone : undefined,
+        dateOfBirth: editForm.dateOfBirth ? editForm.dateOfBirth : undefined,
+        marriageDate: editForm.marriageDate ? editForm.marriageDate : undefined,
+        isActive: editForm.isActive,
+      });
+      refresh();
+      setEditOpen(false);
+      setEditUser(null);
+    } catch (err: any) {
+      setEditError(err.message || "Failed to update user.");
+    } finally {
+      setEditSaving(false);
+    }
+  }
+
+  /* ── Delete User ─────────────────────────────────────────────────────── */
+  function openDelete(u: UserType) {
+    setDeleteUser(u as DetailUser);
+    setDeleteError(null);
+    setDeleteBusy(false);
+    setDeleteOpen(true);
+  }
+
+  async function confirmDelete() {
+    if (!deleteUser) return;
+    setDeleteBusy(true);
+    setDeleteError(null);
+    try {
+      await usersApi.deleteByAdmin(deleteUser.id);
+      refresh();
+      setDeleteOpen(false);
+      setDeleteUser(null);
+    } catch (err: any) {
+      setDeleteError(err.message || "Failed to delete user.");
+    } finally {
+      setDeleteBusy(false);
+    }
   }
 
   /* ── Resend Setup Email ───────────────────────────────────────────────── */
@@ -200,6 +289,12 @@ export default function UsersPage() {
                     <td className="py-3">
                       <div className="flex items-center gap-1">
                         <button onClick={() => openView(u)} className="p-1.5 rounded-lg text-muted-foreground hover:text-sky-400 hover:bg-sky-400/10 transition" title="View Details"><Eye className="h-3.5 w-3.5" /></button>
+                        <button onClick={() => openEdit(u)} className="p-1.5 rounded-lg transition text-muted-foreground hover:text-[var(--gold)] hover:bg-[var(--gold)]/10" title="Edit">
+                          <PencilLine className="h-3.5 w-3.5" />
+                        </button>
+                        <button onClick={() => openDelete(u)} className="p-1.5 rounded-lg transition text-muted-foreground hover:text-destructive hover:bg-destructive/10" title="Delete">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
                         <button onClick={() => toggleBlock(u)} className={`p-1.5 rounded-lg transition ${u.status === "Active" ? "text-muted-foreground hover:text-amber-400 hover:bg-amber-400/10" : "text-amber-400 bg-amber-400/10"}`} title={u.status === "Active" ? "Block" : "Unblock"}>
                           {u.status === "Active" ? <ShieldOff className="h-3.5 w-3.5" /> : <Shield className="h-3.5 w-3.5" />}
                         </button>
@@ -308,6 +403,83 @@ export default function UsersPage() {
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Edit User Modal ───────────────────────────────────────────── */}
+      {editOpen && editUser && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4" onClick={() => setEditOpen(false)}>
+          <div className="glass-card rounded-2xl p-6 w-full max-w-md border border-[var(--gold)]/20" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="font-display text-lg text-foreground">Edit Customer</h3>
+              <button onClick={() => setEditOpen(false)} className="text-muted-foreground hover:text-foreground transition"><X className="h-5 w-5" /></button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="text-[11px] text-muted-foreground uppercase tracking-wide">Full Name *</label>
+                <input value={editForm.fullName} onChange={(e) => setEditForm((f) => ({ ...f, fullName: e.target.value }))} className="luxury-input w-full rounded-lg px-3 py-2.5 text-sm mt-0.5" />
+              </div>
+              <div>
+                <label className="text-[11px] text-muted-foreground uppercase tracking-wide">Phone</label>
+                <input value={editForm.phone} onChange={(e) => setEditForm((f) => ({ ...f, phone: e.target.value }))} className="luxury-input w-full rounded-lg px-3 py-2.5 text-sm mt-0.5" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[11px] text-muted-foreground uppercase tracking-wide">DOB</label>
+                  <input type="date" value={editForm.dateOfBirth} onChange={(e) => setEditForm((f) => ({ ...f, dateOfBirth: e.target.value }))} className="luxury-input w-full rounded-lg px-3 py-2.5 text-sm mt-0.5" />
+                </div>
+                <div>
+                  <label className="text-[11px] text-muted-foreground uppercase tracking-wide">Marriage Date</label>
+                  <input type="date" value={editForm.marriageDate} onChange={(e) => setEditForm((f) => ({ ...f, marriageDate: e.target.value }))} className="luxury-input w-full rounded-lg px-3 py-2.5 text-sm mt-0.5" />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[11px] text-muted-foreground uppercase tracking-wide">Status</label>
+                <select value={editForm.isActive ? "Active" : "Blocked"} onChange={(e) => setEditForm((f) => ({ ...f, isActive: e.target.value === "Active" }))} className="luxury-input w-full rounded-lg px-3 py-2.5 text-sm mt-0.5 bg-transparent">
+                  <option value="Active">Active</option>
+                  <option value="Blocked">Blocked</option>
+                </select>
+              </div>
+            </div>
+
+            {editError && <p className="text-xs text-destructive bg-destructive/10 border border-destructive/30 rounded-md px-3 py-2 mt-2">{editError}</p>}
+
+            <div className="flex gap-3 mt-5">
+              <button onClick={saveEdit} disabled={editSaving} className="gold-btn flex-1 rounded-lg py-2.5 text-sm font-semibold disabled:opacity-70 flex items-center justify-center gap-2">
+                {editSaving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                {editSaving ? "Saving..." : "Save"}
+              </button>
+              <button onClick={() => setEditOpen(false)} className="flex-1 rounded-lg py-2.5 text-sm border border-white/10 text-muted-foreground hover:text-foreground transition">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Delete User Confirm ───────────────────────────────────────────── */}
+      {deleteOpen && deleteUser && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4" onClick={() => setDeleteOpen(false)}>
+          <div className="glass-card rounded-2xl p-6 w-full max-w-md border border-destructive/30" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="font-display text-lg text-foreground">Delete Customer</h3>
+              <button onClick={() => setDeleteOpen(false)} className="text-muted-foreground hover:text-foreground transition"><X className="h-5 w-5" /></button>
+            </div>
+
+            <p className="text-sm text-muted-foreground">
+              Are you sure you want to delete <span className="text-foreground font-semibold">{deleteUser.name}</span>? This cannot be undone.
+            </p>
+
+            {deleteError && <p className="text-xs text-destructive bg-destructive/10 border border-destructive/30 rounded-md px-3 py-2 mt-3">{deleteError}</p>}
+
+            <div className="flex gap-3 mt-6">
+              <button onClick={confirmDelete} disabled={deleteBusy} className="bg-destructive text-white flex-1 rounded-lg py-2.5 text-sm font-semibold disabled:opacity-70 flex items-center justify-center gap-2">
+                {deleteBusy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                {deleteBusy ? "Deleting..." : "Delete"}
+              </button>
+              <button onClick={() => setDeleteOpen(false)} className="flex-1 rounded-lg py-2.5 text-sm border border-white/10 text-muted-foreground hover:text-foreground transition">Cancel</button>
             </div>
           </div>
         </div>
