@@ -19,6 +19,8 @@ import { LanguageSelector } from "@/components/shared/LanguageSelector";
 import { useAuth } from "@/components/auth/AuthContext";
 import { useTranslation } from "react-i18next";
 import i18n from "i18next";
+import { generateBookingInvoicePDF, generateTransactionInvoicePDF } from "@/lib/pdfGenerator";
+import { exportToCSV } from "@/lib/csvExport";
 
 function formatDateStr(dateStr: string, lang: string = i18n.language): string {
   if (!dateStr) return dateStr;
@@ -229,6 +231,7 @@ type Booking = {
   nights: number; amount: number;
   status: "confirmed" | "pending" | "completed" | "cancelled";
   image?: string;
+  addons?: any[];
   _raw?: any;
 };
 
@@ -811,7 +814,7 @@ function BookingDetailsDrawer({ booking, onClose }: { booking: Booking; onClose:
                 </div>
                 <p className="text-xs text-muted-foreground">{t("app.userDashboard.invoiceDesc", "Invoice #{{id}}-INV · Generated on booking confirmation", { id: booking.id })}</p>
                 <button
-                  onClick={() => alert(`Invoice for ${booking.id} would download here.`)}
+                  onClick={() => generateBookingInvoicePDF(booking, null, booking.addons || [])}
                   className="flex items-center gap-2 px-4 py-2 rounded-xl border border-gold/30 bg-gold/8 text-gold text-sm hover:bg-gold/15 transition-colors w-full justify-center">
                   <Download className="h-4 w-4" /> {t("app.userDashboard.downloadInvoicePdf", "Download Invoice PDF")}
                 </button>
@@ -1141,7 +1144,7 @@ function TransactionModal({ txn, onClose }: { txn: Transaction; onClose: () => v
             </div>
           </div>
           {txn.invoice && (
-            <button onClick={() => alert(`Downloading invoice ${txn.invoice}`)}
+            <button onClick={() => generateTransactionInvoicePDF(txn)}
               className="w-full gold-btn rounded-xl py-2.5 text-sm font-semibold flex items-center justify-center gap-2">
               <Download className="h-4 w-4" /> {t("app.userDashboard.downloadInvoice", "Download Invoice")}
             </button>
@@ -1957,9 +1960,9 @@ function WalletView() {
               )}
             </div>
             <button
-              onClick={() => alert("Import transactions from CSV/PDF")}
+              onClick={() => exportToCSV(filtered, "My_Transactions.csv")}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-gold/30 bg-gold/8 text-gold text-xs hover:bg-gold/15 transition-colors">
-              <Download className="h-3.5 w-3.5" /> {t("app.userDashboard.import", "Import")}
+              <Download className="h-3.5 w-3.5" /> {t("app.userDashboard.downloadStatement", "Download Statement")}
             </button>
             <div className="relative flex-1 sm:flex-initial">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

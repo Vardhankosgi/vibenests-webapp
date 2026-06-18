@@ -5,6 +5,7 @@ import { AdminHeader } from "@/components/admin/AdminHeader";
 import { useAppData } from "@/components/admin/AppDataContext";
 import { useTranslation } from "react-i18next";
 import { reportsApi } from "@/lib/api";
+import { exportToCSV } from "@/lib/csvExport";
 
 
 
@@ -53,7 +54,7 @@ export default function CustomersPage() {
           >
             <ArrowLeft className="h-4 w-4" /> {t("app.admin.backToDashboard", "Back to Dashboard")}
           </button>
-          <button className="flex items-center gap-2 text-xs gold-btn px-4 py-2 rounded-lg font-medium">
+          <button onClick={() => exportToCSV(sorted, "Customers_Report.csv")} className="flex items-center gap-2 text-xs gold-btn px-4 py-2 rounded-lg font-medium">
             <Download className="h-3.5 w-3.5" /> {t("app.admin.exportReport", "Export Report")}
           </button>
         </div>

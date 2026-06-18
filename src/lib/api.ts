@@ -86,6 +86,8 @@ export const authApi = {
     request<{ message: string }>('/auth/reset-password', { method: 'POST', body: JSON.stringify({ token, password }) }),
   verifyResetToken: (token: string) =>
     request<{ valid: boolean; email?: string }>(`/auth/verify-reset-token/${token}`),
+  changePassword: (currentPassword: string, newPassword: string) =>
+    request<{ message: string }>('/auth/change-password', { method: 'POST', body: JSON.stringify({ currentPassword, newPassword }) }),
 };
 
 // ── Bookings ─────────────────────────────────────────────────────────────────
@@ -329,3 +331,9 @@ export const referralsApi = {
     request<any>(`/referrals/admin/rewards/${rewardId}/revoke`, { method: 'POST' }),
 };
 
+export const globalSettingsApi = {
+  getPublic: () => request<Record<string, any>>('/global-settings/public'),
+  getAll: () => request<Record<string, any>>('/global-settings'),
+  updateBulk: (settingsMap: Record<string, any>) =>
+    request<{ message: string }>('/global-settings', { method: 'POST', body: JSON.stringify(settingsMap) }),
+};

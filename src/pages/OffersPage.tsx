@@ -376,7 +376,7 @@ export default function OffersPage() {
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <AdminHeader title="Offers & Refund Configuration" />
+      <AdminHeader title="Offers & Coupon Configurations" />
       {loading ? (
         <div className="flex flex-col items-center justify-center min-h-[400px]">
           <div className="relative w-16 h-16">

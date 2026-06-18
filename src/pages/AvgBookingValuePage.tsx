@@ -4,6 +4,7 @@ import { ArrowLeft, Download, TrendingUp, TrendingDown, IndianRupee, BarChart2 }
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { useTranslation } from "react-i18next";
 import { useAppData, parseAmount } from "@/components/admin/AppDataContext";
+import { exportToCSV } from "@/lib/csvExport";
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Cell, PieChart, Pie,
@@ -134,7 +135,7 @@ export default function AvgBookingValuePage() {
           <button onClick={() => navigate("/dashboard")} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-gold transition">
             <ArrowLeft className="h-4 w-4" /> {t("app.admin.backToDashboard", "Back to Dashboard")}
           </button>
-          <button className="flex items-center gap-2 text-xs gold-btn px-4 py-2 rounded-lg font-medium">
+          <button onClick={() => exportToCSV(sorted, "AvgBookingValue_Report.csv")} className="flex items-center gap-2 text-xs gold-btn px-4 py-2 rounded-lg font-medium">
             <Download className="h-3.5 w-3.5" /> {t("app.admin.exportReport", "Export Report")}
           </button>
         </div>

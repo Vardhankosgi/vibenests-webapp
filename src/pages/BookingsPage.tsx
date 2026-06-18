@@ -6,6 +6,7 @@ import { DateRangePicker } from "@/components/admin/DateRangePicker";
 import { useAppData } from "@/components/admin/AppDataContext";
 import { suitesApi, addonsApi, bookingsApi, refundsApi } from "@/lib/api";
 import { useTranslation } from "react-i18next";
+import { exportToCSV } from "@/lib/csvExport";
 
 const statusStyle: Record<string, string> = {
   Confirmed: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
@@ -657,7 +658,7 @@ export default function BookingsPage() {
           )}
           <button onClick={() => { setSearch(""); setStatusFilter("All"); setOccasionFilter("All"); setSuiteFilter("All"); setDateFilter(""); }}
             className="text-xs text-muted-foreground hover:text-gold transition px-3 py-2 rounded-lg border border-white/10 hover:border-[var(--gold)]/30">{t("app.admin.clear", "Clear")}</button>
-          <button className="flex items-center gap-2 text-xs gold-btn px-3 py-2 rounded-lg font-medium ml-auto">
+          <button onClick={() => exportToCSV(filtered, "Bookings_Export.csv")} className="flex items-center gap-2 text-xs gold-btn px-3 py-2 rounded-lg font-medium ml-auto">
             <Download className="h-3.5 w-3.5" /> {t("app.admin.export", "Export")}
           </button>
         </div>

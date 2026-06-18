@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { Save, X, Building2, Bell, Palette, Shield, Plug, Upload } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { globalSettingsApi, authApi } from "@/lib/api";
 
 function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
   return (
@@ -83,8 +84,74 @@ export default function SettingsPage() {
   const [whatsappEnabled, setWhatsappEnabled] = useState(true);
   const [whatsappNumber, setWhatsappNumber] = useState("+91 98765 43210");
   const [analyticsId, setAnalyticsId] = useState("G-XXXXXXXXXX");
+  const [passwordUpdating, setPasswordUpdating] = useState(false);
 
-  function handleSave() { setSaved(true); setTimeout(() => setSaved(false), 3000); }
+  useEffect(() => {
+    globalSettingsApi.getAll().then(data => {
+      if (data.businessName !== undefined) setBusinessName(data.businessName);
+      if (data.email !== undefined) setEmail(data.email);
+      if (data.phone !== undefined) setPhone(data.phone);
+      if (data.address !== undefined) setAddress(data.address);
+      if (data.currency !== undefined) setCurrency(data.currency);
+      if (data.timezone !== undefined) setTimezone(data.timezone);
+      if (data.language !== undefined) setLanguage(data.language);
+      if (data.emailBooking !== undefined) setEmailBooking(data.emailBooking);
+      if (data.emailCancellation !== undefined) setEmailCancellation(data.emailCancellation);
+      if (data.emailPayment !== undefined) setEmailPayment(data.emailPayment);
+      if (data.smsBooking !== undefined) setSmsBooking(data.smsBooking);
+      if (data.pushAlerts !== undefined) setPushAlerts(data.pushAlerts);
+      if (data.dailyReport !== undefined) setDailyReport(data.dailyReport);
+      if (data.theme !== undefined) setTheme(data.theme);
+      if (data.accentColor !== undefined) setAccentColor(data.accentColor);
+      if (data.compactMode !== undefined) setCompactMode(data.compactMode);
+      if (data.animationsEnabled !== undefined) setAnimationsEnabled(data.animationsEnabled);
+      if (data.twoFactor !== undefined) setTwoFactor(data.twoFactor);
+      if (data.sessionTimeout !== undefined) setSessionTimeout(data.sessionTimeout);
+      if (data.loginAlerts !== undefined) setLoginAlerts(data.loginAlerts);
+      if (data.razorpayKey !== undefined) setRazorpayKey(data.razorpayKey);
+      if (data.razorpayEnabled !== undefined) setRazorpayEnabled(data.razorpayEnabled);
+      if (data.whatsappEnabled !== undefined) setWhatsappEnabled(data.whatsappEnabled);
+      if (data.whatsappNumber !== undefined) setWhatsappNumber(data.whatsappNumber);
+      if (data.analyticsId !== undefined) setAnalyticsId(data.analyticsId);
+    }).catch(console.error);
+  }, []);
+
+  async function handleSave() {
+    try {
+      await globalSettingsApi.updateBulk({
+        businessName, email, phone, address, currency, timezone, language,
+        emailBooking, emailCancellation, emailPayment, smsBooking, pushAlerts, dailyReport,
+        theme, accentColor, compactMode, animationsEnabled,
+        twoFactor, loginAlerts, sessionTimeout,
+        razorpayKey, razorpayEnabled, whatsappEnabled, whatsappNumber, analyticsId
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+      
+      // Apply basic appearance settings locally
+      if (theme === 'Light') document.documentElement.classList.remove('dark');
+      else document.documentElement.classList.add('dark');
+    } catch (err: any) {
+      alert(err.message || "Failed to save settings");
+    }
+  }
+
+  async function handleUpdatePassword() {
+    if (!currentPassword || !newPassword || !confirmPassword) return alert("Please fill all password fields.");
+    if (newPassword !== confirmPassword) return alert("New passwords do not match.");
+    setPasswordUpdating(true);
+    try {
+      await authApi.changePassword(currentPassword, newPassword);
+      alert("Password updated successfully!");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (err: any) {
+      alert(err.message || "Failed to update password");
+    } finally {
+      setPasswordUpdating(false);
+    }
+  }
 
   return (
     <div className="flex-1 overflow-y-auto">
@@ -160,7 +227,9 @@ export default function SettingsPage() {
                   <Field label={t("app.admin.newPassword", "New Password")}><Input value={newPassword} onChange={setNewPassword} type="password" placeholder="••••••••" /></Field>
                   <Field label={t("app.admin.confirmNewPassword", "Confirm New Password")}><Input value={confirmPassword} onChange={setConfirmPassword} type="password" placeholder="••••••••" /></Field>
                 </div>
-                <button className="mt-3 px-4 py-2 rounded-lg text-sm border border-[var(--gold)]/30 text-gold hover:bg-[var(--gold)]/10 transition">{t("app.admin.updatePassword", "Update Password")}</button>
+                <button disabled={passwordUpdating} onClick={handleUpdatePassword} className="mt-3 px-4 py-2 rounded-lg text-sm border border-[var(--gold)]/30 text-gold hover:bg-[var(--gold)]/10 transition disabled:opacity-50">
+                  {passwordUpdating ? "Updating..." : t("app.admin.updatePassword", "Update Password")}
+                </button>
               </div>
             </div>
           </Card>

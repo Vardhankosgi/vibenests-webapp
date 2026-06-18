@@ -42,8 +42,19 @@ const POLICY_TIERS = [
 ];
 
 // ── Override modal ─────────────────────────────────────────────────────────────
-function OverrideModal({ refund, onClose, onDone }: { refund: any; onClose: () => void; onDone: () => void }) {
-  const [tab, setTab] = useState<'approve' | 'reject'>('approve');
+function OverrideModal({ refund, defaultTab, onClose, onDone }: { refund: any; defaultTab: 'approve' | 'reject' | 'complete'; onClose: () => void; onDone: () => void }) {
+  const isProcessing = refund.status === 'processing';
+  const isApproved = refund.status === 'approved';
+
+  const [tab, setTab] = useState<'approve' | 'reject' | 'complete'>(() => {
+    if (defaultTab === 'reject') return 'reject';
+    if (isProcessing) return 'complete';
+    if (isApproved) {
+      return defaultTab === 'approve' ? 'approve' : 'complete';
+    }
+    return 'approve';
+  });
+
   const [pct, setPct] = useState(refund.selectedPercentage ?? 100);
   const [notes, setNotes] = useState('');
   const [reason, setReason] = useState('');
@@ -77,9 +88,6 @@ function OverrideModal({ refund, onClose, onDone }: { refund: any; onClose: () =
     } catch (e: any) { setErr(e.message); } finally { setLoading(false); }
   };
 
-  const canComplete = refund.status === 'approved' || refund.status === 'processing';
-  const canOverride = ['pending', 'under_review'].includes(refund.status);
-
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
       <div className="glass-card rounded-2xl p-6 w-full max-w-md border border-[var(--gold)]/20 shadow-2xl relative">
@@ -96,7 +104,23 @@ function OverrideModal({ refund, onClose, onDone }: { refund: any; onClose: () =
           </div>
         </div>
 
-        {canComplete && (
+        <div className="flex gap-2 mb-4">
+          {(isProcessing || isApproved) && (
+            <button onClick={() => setTab('complete')} className={`flex-1 py-1.5 rounded-xl text-xs font-semibold border transition ${tab === 'complete' ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400' : 'border-white/10 text-muted-foreground hover:bg-white/5'}`}>
+              Complete
+            </button>
+          )}
+          {!isProcessing && (
+            <button onClick={() => setTab('approve')} className={`flex-1 py-1.5 rounded-xl text-xs font-semibold border transition ${tab === 'approve' ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400' : 'border-white/10 text-muted-foreground hover:bg-white/5'}`}>
+              {isApproved ? 'Adjust Amount' : 'Approve'}
+            </button>
+          )}
+          <button onClick={() => setTab('reject')} className={`flex-1 py-1.5 rounded-xl text-xs font-semibold border transition ${tab === 'reject' ? 'bg-rose-500/10 border-rose-500/25 text-rose-400' : 'border-white/10 text-muted-foreground hover:bg-white/5'}`}>
+            Reject
+          </button>
+        </div>
+
+        {tab === 'complete' && (isProcessing || isApproved) && (
           <div className="space-y-3">
             {refund.status === 'approved' && (
               <>
@@ -120,46 +144,34 @@ function OverrideModal({ refund, onClose, onDone }: { refund: any; onClose: () =
           </div>
         )}
 
-        {canOverride && (
-          <>
-            <div className="flex gap-2 mb-4">
-              <button onClick={() => setTab('approve')} className={`flex-1 py-1.5 rounded-xl text-xs font-semibold border transition ${tab === 'approve' ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400' : 'border-white/10 text-muted-foreground hover:bg-white/5'}`}>Approve</button>
-              <button onClick={() => setTab('reject')} className={`flex-1 py-1.5 rounded-xl text-xs font-semibold border transition ${tab === 'reject' ? 'bg-rose-500/10 border-rose-500/25 text-rose-400' : 'border-white/10 text-muted-foreground hover:bg-white/5'}`}>Reject</button>
+        {tab === 'approve' && !isProcessing && (
+          <div className="space-y-3">
+            <div>
+              <label className="text-[10px] uppercase tracking-wider text-muted-foreground block mb-1">Refund % to Award</label>
+              <input type="number" min={0} max={100} value={pct} onChange={e => setPct(+e.target.value)} className="luxury-input w-full rounded-xl px-3 py-2 text-sm bg-transparent" />
+              <p className="text-[10px] text-muted-foreground mt-0.5">= ₹{Math.round(Number(refund.originalAmount) * pct / 100).toLocaleString('en-IN')} of ₹{Number(refund.originalAmount).toLocaleString('en-IN')}</p>
             </div>
-            {tab === 'approve' && (
-              <div className="space-y-3">
-                <div>
-                  <label className="text-[10px] uppercase tracking-wider text-muted-foreground block mb-1">Refund % to Award</label>
-                  <input type="number" min={0} max={100} value={pct} onChange={e => setPct(+e.target.value)} className="luxury-input w-full rounded-xl px-3 py-2 text-sm bg-transparent" />
-                  <p className="text-[10px] text-muted-foreground mt-0.5">= ₹{Math.round(Number(refund.originalAmount) * pct / 100).toLocaleString('en-IN')} of ₹{Number(refund.originalAmount).toLocaleString('en-IN')}</p>
-                </div>
-                <div>
-                  <label className="text-[10px] uppercase tracking-wider text-muted-foreground block mb-1">Admin Notes (optional)</label>
-                  <textarea value={notes} onChange={e => setNotes(e.target.value)} className="luxury-input w-full rounded-xl px-3 py-2 text-sm bg-transparent h-16 resize-none" />
-                </div>
-                <button onClick={handleApprove} disabled={loading} className="w-full gold-btn py-2.5 rounded-xl text-xs font-semibold disabled:opacity-50">
-                  {loading ? 'Saving...' : `Approve ${pct}% Refund`}
-                </button>
-              </div>
-            )}
-            {tab === 'reject' && (
-              <div className="space-y-3">
-                <div>
-                  <label className="text-[10px] uppercase tracking-wider text-muted-foreground block mb-1">Rejection Reason *</label>
-                  <textarea value={reason} onChange={e => setReason(e.target.value)} placeholder="Explain why this request is being rejected..." className="luxury-input w-full rounded-xl px-3 py-2 text-sm bg-transparent h-20 resize-none" />
-                </div>
-                <button onClick={handleReject} disabled={loading} className="w-full py-2.5 rounded-xl bg-rose-500/10 border border-rose-500/25 text-rose-400 text-xs font-semibold hover:bg-rose-500/20 transition disabled:opacity-50">
-                  {loading ? 'Saving...' : 'Reject Refund'}
-                </button>
-              </div>
-            )}
-          </>
+            <div>
+              <label className="text-[10px] uppercase tracking-wider text-muted-foreground block mb-1">Admin Notes (optional)</label>
+              <textarea value={notes} onChange={e => setNotes(e.target.value)} className="luxury-input w-full rounded-xl px-3 py-2 text-sm bg-transparent h-16 resize-none" />
+            </div>
+            <button onClick={handleApprove} disabled={loading} className="w-full gold-btn py-2.5 rounded-xl text-xs font-semibold disabled:opacity-50">
+              {loading ? 'Saving...' : `Approve ${pct}% Refund`}
+            </button>
+          </div>
         )}
 
-        {!canComplete && !canOverride && (
-          <p className="text-xs text-muted-foreground text-center py-4">No override actions available for status: <span className="text-foreground font-semibold">{STATUS_LABEL[refund.status]}</span></p>
+        {tab === 'reject' && (
+          <div className="space-y-3">
+            <div>
+              <label className="text-[10px] uppercase tracking-wider text-muted-foreground block mb-1">Rejection Reason *</label>
+              <textarea value={reason} onChange={e => setReason(e.target.value)} placeholder="Explain why this request is being rejected..." className="luxury-input w-full rounded-xl px-3 py-2 text-sm bg-transparent h-20 resize-none" />
+            </div>
+            <button onClick={handleReject} disabled={loading} className="w-full py-2.5 rounded-xl bg-rose-500/10 border border-rose-500/25 text-rose-400 text-xs font-semibold hover:bg-rose-500/20 transition disabled:opacity-50">
+              {loading ? 'Saving...' : 'Reject Refund'}
+            </button>
+          </div>
         )}
-
         {err && (
           <div className="mt-3 text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-lg px-3 py-2 flex items-center gap-1.5">
             <AlertTriangle className="h-3.5 w-3.5 shrink-0" />{err}
@@ -181,6 +193,7 @@ export default function RefundsPage() {
   const [total, setTotal] = useState(0);
   const [selected, setSelected] = useState<any | null>(null);
   const [overrideTarget, setOverrideTarget] = useState<any | null>(null);
+  const [overrideTab, setOverrideTab] = useState<'approve' | 'reject' | 'complete'>('approve');
 
   // Policy management
   const [policyTiers, setPolicyTiers] = useState<any[]>([]);
@@ -601,20 +614,32 @@ export default function RefundsPage() {
                   {/* Actions */}
                   <div className="pt-1 space-y-2">
                     {selected.status === 'processing' && (
-                      <button onClick={() => setOverrideTarget(selected)}
-                        className="w-full py-2.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5 text-emerald-400 text-xs font-semibold hover:bg-emerald-500/10 transition flex items-center justify-center gap-2">
-                        <CheckCircle2 className="h-3.5 w-3.5" />Mark as Refunded
-                      </button>
+                      <div className="flex gap-2">
+                        <button onClick={() => { setOverrideTab('complete'); setOverrideTarget(selected); }}
+                          className="flex-1 py-2.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5 text-emerald-400 text-xs font-semibold hover:bg-emerald-500/10 transition flex items-center justify-center gap-2 cursor-pointer">
+                          <CheckCircle2 className="h-3.5 w-3.5" />Mark as Refunded
+                        </button>
+                        <button onClick={() => { setOverrideTab('reject'); setOverrideTarget(selected); }}
+                          className="flex-1 py-2.5 rounded-xl border border-rose-500/20 bg-rose-500/5 text-rose-400 text-xs font-semibold hover:bg-rose-500/10 transition flex items-center justify-center gap-2 cursor-pointer">
+                          <XCircle className="h-3.5 w-3.5" />Reject Refund
+                        </button>
+                      </div>
                     )}
                     {!selected.autoProcessed && ['pending', 'under_review', 'approved'].includes(selected.status) && (
-                      <button onClick={() => setOverrideTarget(selected)}
-                        className="w-full py-2.5 rounded-xl border border-[var(--gold)]/20 bg-[var(--gold)]/5 text-gold text-xs font-semibold hover:bg-[var(--gold)]/10 transition flex items-center justify-center gap-2">
-                        <AlertTriangle className="h-3.5 w-3.5" />Manual Override
-                      </button>
+                      <div className="flex gap-2">
+                        <button onClick={() => { setOverrideTab('approve'); setOverrideTarget(selected); }}
+                          className="flex-1 py-2.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5 text-emerald-400 text-xs font-semibold hover:bg-emerald-500/10 transition flex items-center justify-center gap-2 cursor-pointer">
+                          <CheckCircle2 className="h-3.5 w-3.5" />Approve Refund
+                        </button>
+                        <button onClick={() => { setOverrideTab('reject'); setOverrideTarget(selected); }}
+                          className="flex-1 py-2.5 rounded-xl border border-rose-500/20 bg-rose-500/5 text-rose-400 text-xs font-semibold hover:bg-rose-500/10 transition flex items-center justify-center gap-2 cursor-pointer">
+                          <XCircle className="h-3.5 w-3.5" />Reject Refund
+                        </button>
+                      </div>
                     )}
                     {!selected.autoProcessed && selected.status === 'pending' && (
                       <button onClick={() => { refundsApi.underReview(selected.id).then(load).catch(console.error); }}
-                        className="w-full py-2.5 rounded-xl border border-blue-500/20 bg-blue-500/5 text-blue-400 text-xs font-semibold hover:bg-blue-500/10 transition flex items-center justify-center gap-2">
+                        className="w-full py-2.5 rounded-xl border border-blue-500/20 bg-blue-500/5 text-blue-400 text-xs font-semibold hover:bg-blue-500/10 transition flex items-center justify-center gap-2 cursor-pointer">
                         <Eye className="h-3.5 w-3.5" />Mark Under Review
                       </button>
                     )}
@@ -633,7 +658,7 @@ export default function RefundsPage() {
 
       {/* Override modal */}
       {overrideTarget && (
-        <OverrideModal refund={overrideTarget} onClose={() => setOverrideTarget(null)} onDone={handleOverrideDone} />
+        <OverrideModal refund={overrideTarget} defaultTab={overrideTab} onClose={() => setOverrideTarget(null)} onDone={handleOverrideDone} />
       )}
     </div>
   );

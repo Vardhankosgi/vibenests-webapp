@@ -19,7 +19,7 @@ const navItemKeys: { [key: string]: string } = {
   "User Management": "userManagement",
   "Referral Management": "referralManagement",
   "Analytics": "analytics",
-  "Offers & Refund Configurations": "offersRefund",
+  "Offers & Coupon Configurations": "offersRefund",
   "Ratings & Reviews": "ratingsReviews",
   "Settings": "settings",
 };
@@ -35,7 +35,7 @@ const navItems = [
   { icon: Users, label: "User Management", to: "/customers" },
   { icon: Share2, label: "Referral Management", to: "/referrals" },
   { icon: BarChart2, label: "Analytics", to: "/analytics" },
-  { icon: Tag, label: "Offers & Refund Configurations", to: "/offers" },
+  { icon: Tag, label: "Offers & Coupon Configurations", to: "/offers" },
   { icon: Star, label: "Ratings & Reviews", to: "/reviews" },
   { icon: Settings, label: "Settings", to: "/settings" },
 ];

@@ -14,7 +14,7 @@ const titleKeys: { [key: string]: string } = {
   "Settings": "settings",
   "Revenue": "revenue",
   "Packages": "packages",
-  "Offers & Refund Configurations": "offersRefund",
+  "Offers & Coupon Configurations": "offersRefund",
   "Customers": "userManagement",
   "Celebration Memberships": "celebrationMembership",
   "Avg. Booking Value": "avgBookingValue",

@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import LoginPage from "@/pages/LoginPage";
 import RegisterPage from "@/pages/RegisterPage";
 import AdminRegisterPage from "@/pages/AdminRegisterPage";
@@ -36,11 +36,25 @@ import RazorpayProvider from "@/components/shared/RazorpayProvider";
 import { AppDataProvider } from "@/components/admin/AppDataContext";
 import FloatingWhatsAppBot from "@/components/shared/FloatingWhatsAppBot";
 
+function BotWrapper() {
+  const location = useLocation();
+  const adminPaths = [
+    '/dashboard', '/revenue', '/bookings', '/suites', '/booking-details',
+    '/users', '/settings', '/addons', '/analytics', '/offers', '/packages',
+    '/celebration-memberships', '/customers', '/avg-booking-value', '/reviews',
+    '/transactions', '/refunds', '/admin'
+  ];
+  const isAdmin = adminPaths.some(path => location.pathname.startsWith(path));
+  
+  if (isAdmin) return null;
+  return <FloatingWhatsAppBot />;
+}
+
 export default function App() {
   return (
     <AppDataProvider>
       <RazorpayProvider>
-        <FloatingWhatsAppBot />
+        <BotWrapper />
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/forgot-password" element={<ForgotPage />} />

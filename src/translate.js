@@ -432,7 +432,7 @@ const newStrings = {
     "celebrationMembership": "Celebration Membership",
     "userManagement": "User Management",
     "analytics": "Analytics",
-    "offersRefund": "Offers & Refund Configurations",
+    "offersRefund": "Offers & Coupon Configurations",
     "ratingsReviews": "Ratings & Reviews",
     "settings": "Settings",
     "logout": "Logout",
