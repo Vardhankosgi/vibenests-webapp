@@ -110,6 +110,7 @@ export const bookingsApi = {
 // ── Suites ───────────────────────────────────────────────────────────────────
 export const suitesApi = {
   getAll: () => request<any[]>('/suites'),
+  getById: (id: number | string) => request<any>(`/suites/${id}`),
   create: (body: any) => request<any>('/suites', { method: 'POST', body: JSON.stringify(body) }),
   update: (id: number, body: any) => request<any>(`/suites/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   remove: (id: number) => request<any>(`/suites/${id}`, { method: 'DELETE' }),

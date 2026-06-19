@@ -22,6 +22,7 @@ import RevenuePage from "@/pages/RevenuePage";
 import CustomersPage from "@/pages/CustomersPage";
 import AvgBookingValuePage from "@/pages/AvgBookingValuePage";
 import UserDashboardPage from "@/pages/UserDashboardPage";
+import ReschedulePage from "@/pages/ReschedulePage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import ForgotPage from "@/pages/ForgotPage";
 import WriteReviewPage from "@/pages/WriteReviewPage";
@@ -65,6 +66,7 @@ export default function App() {
           <Route element={<UserProtectedRoute />}>
             <Route path="/user/dashboard" element={<SuitesProvider><UserDashboardPage /></SuitesProvider>} />
             <Route path="/user/suite-booking" element={<SuitesProvider><SuiteBookingPage /></SuitesProvider>} />
+            <Route path="/user/reschedule/:id" element={<SuitesProvider><ReschedulePage /></SuitesProvider>} />
             <Route path="/user/write-review" element={<WriteReviewPage />} />
           </Route>
           <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
