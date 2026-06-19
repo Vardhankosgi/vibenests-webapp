@@ -30,7 +30,7 @@ export function TopSuites() {
     .map(([name, stats]) => ({
       name,
       bookings: stats.bookingsCount,
-      revenue: `₹${stats.revenue.toLocaleString()}`,
+      revenue: `₹${stats.revenue.toLocaleString("en-IN")}`,
       occupancy: Math.round((stats.bookingsCount / maxBookings) * 100),
     }))
     .sort((a, b) => b.bookings - a.bookings)

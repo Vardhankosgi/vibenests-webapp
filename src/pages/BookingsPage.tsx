@@ -254,7 +254,7 @@ function NewBookingModal({ onClose, onCreated }: { onClose: () => void; onCreate
                       <p className="text-[11px] text-muted-foreground">{s.themeType} · {s.capacity} guests</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm text-gold font-semibold">₹{Number(s.price).toLocaleString()}</p>
+                      <p className="text-sm text-gold font-semibold">₹{Number(s.price).toLocaleString("en-IN")}</p>
                       {selectedSuite?.id === s.id && <Check className="h-3.5 w-3.5 text-gold ml-auto mt-0.5" />}
                     </div>
                   </div>
@@ -330,7 +330,7 @@ function NewBookingModal({ onClose, onCreated }: { onClose: () => void; onCreate
                           ${sel ? "border-[var(--gold)] bg-[var(--gold)]/10" : "border-white/10 hover:border-[var(--gold)]/40 bg-white/[0.02]"}`}>
                         <div>
                           <p className="text-xs text-foreground font-medium">{a.name}</p>
-                          <p className="text-[11px] text-gold">₹{Number(a.price).toLocaleString()}</p>
+                          <p className="text-[11px] text-gold">₹{Number(a.price).toLocaleString("en-IN")}</p>
                         </div>
                         {sel && <Check className="h-3.5 w-3.5 text-gold shrink-0" />}
                       </div>
@@ -474,17 +474,17 @@ function NewBookingModal({ onClose, onCreated }: { onClose: () => void; onCreate
               <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">{t("app.admin.paymentBreakdown", "Payment Breakdown")}</p>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Suite ({selectedSuite?.name})</span>
-                <span>₹{suitePrice.toLocaleString()}</span>
+                <span>₹{suitePrice.toLocaleString("en-IN")}</span>
               </div>
               {selectedAddons.map((a) => (
                 <div key={a.id} className="flex justify-between">
                   <span className="text-muted-foreground">{a.name}</span>
-                  <span>₹{Number(a.price).toLocaleString()}</span>
+                  <span>₹{Number(a.price).toLocaleString("en-IN")}</span>
                 </div>
               ))}
               <div className="border-t border-[var(--gold)]/20 pt-2 flex justify-between font-semibold text-gold">
                 <span>{t("app.admin.total", "Total")}</span>
-                <span>₹{totalAmount.toLocaleString()}</span>
+                <span>₹{totalAmount.toLocaleString("en-IN")}</span>
               </div>
             </div>
           </div>
@@ -737,8 +737,8 @@ export default function BookingsPage() {
                           </td>
                           <td className="py-3 pr-4">
                             <div className="flex flex-col text-xs">
-                              <span className="text-gold font-semibold">₹{Number(r.refundableAmount).toLocaleString()}</span>
-                              <span className="text-muted-foreground text-[10px]">Paid: ₹{Number(r.originalAmount).toLocaleString()}</span>
+                              <span className="text-gold font-semibold">₹{Number(r.refundableAmount).toLocaleString("en-IN")}</span>
+                              <span className="text-muted-foreground text-[10px]">Paid: ₹{Number(r.originalAmount).toLocaleString("en-IN")}</span>
                             </div>
                           </td>
                           <td className="py-3 pr-4 max-w-xs truncate" title={r.cancellationReason}>

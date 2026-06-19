@@ -248,4 +248,16 @@
     border: 1px solid oklch(0.78 0.13 80 / 0.2);
     box-shadow: 0 0 0 1px oklch(1 0 0 / 0.04), 0 32px 80px -20px oklch(0 0 0 / 0.7), 0 0 60px -20px oklch(0.78 0.13 80 / 0.15);
   }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: #000000;
+    border-radius: 10px;
+  }
 }

@@ -495,7 +495,7 @@ export default function RefundsPage() {
                     </div>
                   </div>
                   {r.policyTier && <p className="text-[10px] text-muted-foreground mt-1.5 truncate">{r.policyTier}</p>}
-                  <p className="text-[10px] text-muted-foreground mt-0.5">{new Date(r.createdAt).toLocaleString()}</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">{new Date(r.createdAt).toLocaleString("en-IN")}</p>
                 </div>
               ))}
 
@@ -524,7 +524,7 @@ export default function RefundsPage() {
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-muted-foreground mt-0.5">{new Date(selected.createdAt).toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{new Date(selected.createdAt).toLocaleString("en-IN")}</p>
                     </div>
                     <span className={`px-3 py-1 rounded-full border text-[10px] font-bold uppercase tracking-wider shrink-0 ${STATUS_BADGE[selected.status]}`}>
                       {STATUS_LABEL[selected.status]}

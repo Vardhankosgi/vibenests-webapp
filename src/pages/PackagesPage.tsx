@@ -238,7 +238,7 @@ export default function PackagesPage() {
 
                       <div className="flex flex-wrap gap-3 mt-2.5 text-xs">
                         <span className="flex items-center gap-1 text-muted-foreground"><Users className="h-3 w-3" /> {p.minParties}–{p.maxParties} guests</span>
-                        <span className="flex items-center gap-1 text-gold font-medium"><IndianRupee className="h-3 w-3" />₹{p.amount.toLocaleString()}</span>
+                        <span className="flex items-center gap-1 text-gold font-medium"><IndianRupee className="h-3 w-3" />₹{p.amount.toLocaleString("en-IN")}</span>
                         <span className="text-muted-foreground">{p.occasion}</span>
                         <span className="text-muted-foreground">{p.bookings} bookings</span>
                       </div>

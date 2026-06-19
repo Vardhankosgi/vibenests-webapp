@@ -162,7 +162,7 @@ export default function RevenuePage() {
               <YAxis tick={{ fill: "oklch(0.72 0.02 90)", fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(v) => `₹${v / 1000}k`} />
               <Tooltip
                 contentStyle={{ background: "oklch(0.13 0.025 260)", border: "1px solid oklch(0.78 0.13 80 / 0.2)", borderRadius: "8px" }}
-                formatter={(v: number, name: string) => [`₹${v.toLocaleString()}`, name === "revenue" ? "Revenue" : "Expenses"]}
+                formatter={(v: number, name: string) => [`₹${v.toLocaleString("en-IN")}`, name === "revenue" ? "Revenue" : "Expenses"]}
               />
               <Area type="monotone" dataKey="revenue" stroke="oklch(0.78 0.13 80)" strokeWidth={2} fill="url(#revGrad)" />
               <Area type="monotone" dataKey="expenses" stroke="oklch(0.6 0.22 25)" strokeWidth={2} fill="url(#expGrad)" />
@@ -189,7 +189,7 @@ export default function RevenuePage() {
                 <YAxis type="category" dataKey="suite" tick={{ fill: "oklch(0.72 0.02 90)", fontSize: 11 }} axisLine={false} tickLine={false} width={120} />
                 <Tooltip
                   contentStyle={{ background: "oklch(0.13 0.025 260)", border: "1px solid oklch(0.78 0.13 80 / 0.2)", borderRadius: "8px" }}
-                  formatter={(v: number) => [`₹${v.toLocaleString()}`, "Revenue"]}
+                  formatter={(v: number) => [`₹${v.toLocaleString("en-IN")}`, "Revenue"]}
                 />
                 <Bar dataKey="revenue" radius={[0, 6, 6, 0]}>
                   {suiteRevenue.map((s, i) => <Cell key={i} fill={s.color} />)}
@@ -244,8 +244,8 @@ export default function RevenuePage() {
                   <tr key={s.suite} className="hover:bg-white/[0.02] transition">
                     <td className="py-3 pr-4 font-medium text-foreground">{s.suite}</td>
                     <td className="py-3 pr-4 text-muted-foreground">{s.bookings}</td>
-                    <td className="py-3 pr-4 text-gold font-medium">₹{s.revenue.toLocaleString()}</td>
-                    <td className="py-3 pr-4 text-muted-foreground">₹{Math.round(s.revenue / s.bookings).toLocaleString()}</td>
+                    <td className="py-3 pr-4 text-gold font-medium">₹{s.revenue.toLocaleString("en-IN")}</td>
+                    <td className="py-3 pr-4 text-muted-foreground">₹{Math.round(s.revenue / s.bookings).toLocaleString("en-IN")}</td>
                     <td className="py-3">
                       <div className="flex items-center gap-2">
                         <div className="h-1.5 w-24 rounded-full bg-white/[0.08] overflow-hidden">

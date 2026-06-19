@@ -26,15 +26,15 @@ const navItemKeys: { [key: string]: string } = {
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", to: "/dashboard" },
-  { icon: CalendarDays,  label: "Bookings",      to: "/bookings" },
-  { icon: BedDouble,     label: "Suites",        to: "/rooms" },
-  { icon: CreditCard,    label: "Transactions",  to: "/transactions" },
-  { icon: RotateCcw,     label: "Refunds",       to: "/refunds" },
+  { icon: CalendarDays, label: "Bookings", to: "/bookings" },
+  { icon: CreditCard, label: "Transactions", to: "/transactions" },
+  { icon: BarChart2, label: "Analytics", to: "/analytics" },
+  { icon: RotateCcw, label: "Refunds", to: "/refunds" },
+  { icon: Users, label: "User Management", to: "/customers" },
+  { icon: BedDouble, label: "Suites", to: "/rooms" },
   { icon: Package, label: "Add-on Management", to: "/addons" },
   { icon: Gift, label: "Celebration Packages", to: "/celebration-memberships" },
-  { icon: Users, label: "User Management", to: "/customers" },
   { icon: Share2, label: "Referral Management", to: "/referrals" },
-  { icon: BarChart2, label: "Analytics", to: "/analytics" },
   { icon: Tag, label: "Offers & Coupon Configurations", to: "/offers" },
   { icon: Star, label: "Ratings & Reviews", to: "/reviews" },
   { icon: Settings, label: "Settings", to: "/settings" },
@@ -76,7 +76,7 @@ export function AdminSidebar({ collapsed, onToggle }: AdminSidebarProps) {
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 px-2 py-4 space-y-1">
+        <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto custom-scrollbar">
           {navItems.map(({ icon: Icon, label, to }) => {
             const transKey = navItemKeys[label];
             const translatedLabel = transKey ? t("app.admin." + transKey, label) : label;

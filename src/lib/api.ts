@@ -313,20 +313,20 @@ export const referralsApi = {
     redeemedRewards: number;
     rewards: any[];
   }>('/referrals/stats'),
-  
+
   validateCode: (code: string) =>
     request<{ valid: boolean; message?: string }>(`/referrals/validate/${code}`),
-    
+
   adminGetAll: (params?: { page?: number; limit?: number }) => {
     const q = new URLSearchParams();
     if (params?.page) q.set('page', String(params.page));
     if (params?.limit) q.set('limit', String(params.limit));
     return request<{ data: any[]; total: number }>(`/referrals/admin/all?${q}`);
   },
-  
+
   adminApproveReward: (rewardId: number) =>
     request<any>(`/referrals/admin/rewards/${rewardId}/approve`, { method: 'POST' }),
-    
+
   adminRevokeReward: (rewardId: number) =>
     request<any>(`/referrals/admin/rewards/${rewardId}/revoke`, { method: 'POST' }),
 };

@@ -120,13 +120,13 @@ export default function AnalyticsPage() {
           const baseLabel = t("app.admin." + k.key, k.fallback);
           switch (k.key) {
             case "totalRevenueLabel":
-              return { ...k, label: baseLabel, value: `₹${totalRevenue.toLocaleString()}` };
+              return { ...k, label: baseLabel, value: `₹${totalRevenue.toLocaleString("en-IN")}` };
             case "totalBookings":
               return { ...k, label: baseLabel, value: String(totalBookings) };
             case "newCustomers":
               return { ...k, label: baseLabel, value: String(newRegistrations) };
             case "avgBookingValueLabel":
-              return { ...k, label: baseLabel, value: `₹${avgBookingValue.toLocaleString()}` };
+              return { ...k, label: baseLabel, value: `₹${avgBookingValue.toLocaleString("en-IN")}` };
             case "cancellationRate": {
               const rate = totalBookings ? (cancelled / totalBookings) * 100 : 0;
               return { ...k, label: baseLabel, value: `${rate.toFixed(1)}%`, up: rate < 10 };
@@ -228,7 +228,7 @@ export default function AnalyticsPage() {
               <CartesianGrid strokeDasharray="3 3" stroke="oklch(1 0 0 / 0.06)" />
               <XAxis dataKey="month" tick={axisStyle} axisLine={false} tickLine={false} />
               <YAxis tick={axisStyle} axisLine={false} tickLine={false} tickFormatter={(v) => `₹${v / 1000}k`} />
-              <Tooltip {...tooltipStyle} formatter={(v: number) => [`₹${v.toLocaleString()}`, ""]} />
+              <Tooltip {...tooltipStyle} formatter={(v: number) => [`₹${v.toLocaleString("en-IN")}`, ""]} />
               <Legend wrapperStyle={{ fontSize: "12px" }} />
               <Area type="monotone" dataKey="revenue" name={revenueLabel} stroke={GOLD} strokeWidth={2} fill="url(#revGrad)" />
               <Area type="monotone" dataKey="target" name={targetLabel} stroke={BLUE} strokeWidth={2} strokeDasharray="5 5" fill="url(#tgtGrad)" />

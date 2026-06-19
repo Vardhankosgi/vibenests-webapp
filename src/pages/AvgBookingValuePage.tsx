@@ -143,10 +143,10 @@ export default function AvgBookingValuePage() {
         {/* KPI Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
           {[
-            { label: t("app.admin.avgBookingValueLabel", "Avg. Booking Value"), value: `₹${overallAvg.toLocaleString()}`, sub: `+${growth}% YoY growth`, up: true, icon: IndianRupee, accent: "border-[var(--gold)]/30" },
-            { label: t("app.admin.highestMonth", "Highest Month"), value: `₹${highestMonth.avg.toLocaleString()}`, sub: highestMonth.month + " 2025", up: true, icon: TrendingUp, accent: "border-emerald-500/30" },
-            { label: t("app.admin.lowestMonth", "Lowest Month"), value: `₹${lowestMonth.avg.toLocaleString()}`, sub: lowestMonth.month + " 2025", up: false, icon: TrendingDown, accent: "border-amber-500/30" },
-            { label: t("app.admin.avgAddonValue", "Avg. Add-on Value"), value: `₹${avgAddon.toLocaleString()}`, sub: "Per booking avg", up: true, icon: BarChart2, accent: "border-[var(--gold)]/20" },
+            { label: t("app.admin.avgBookingValueLabel", "Avg. Booking Value"), value: `₹${overallAvg.toLocaleString("en-IN")}`, sub: `+${growth}% YoY growth`, up: true, icon: IndianRupee, accent: "border-[var(--gold)]/30" },
+            { label: t("app.admin.highestMonth", "Highest Month"), value: `₹${highestMonth.avg.toLocaleString("en-IN")}`, sub: highestMonth.month + " 2025", up: true, icon: TrendingUp, accent: "border-emerald-500/30" },
+            { label: t("app.admin.lowestMonth", "Lowest Month"), value: `₹${lowestMonth.avg.toLocaleString("en-IN")}`, sub: lowestMonth.month + " 2025", up: false, icon: TrendingDown, accent: "border-amber-500/30" },
+            { label: t("app.admin.avgAddonValue", "Avg. Add-on Value"), value: `₹${avgAddon.toLocaleString("en-IN")}`, sub: "Per booking avg", up: true, icon: BarChart2, accent: "border-[var(--gold)]/20" },
           ].map((c) => (
             <div key={c.label} className={`glass-card rounded-2xl p-5 border ${c.accent} flex items-start justify-between gap-4`}>
               <div>
@@ -172,7 +172,7 @@ export default function AvgBookingValuePage() {
                 <YAxis tick={{ fill: "oklch(0.72 0.02 90)", fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(v) => `₹${v / 1000}k`} />
                 <Tooltip
                   contentStyle={{ background: "oklch(0.13 0.025 260)", border: "1px solid oklch(0.78 0.13 80 / 0.2)", borderRadius: "8px" }}
-                  formatter={(v: number, name: string) => [name === "avg" ? `₹${v.toLocaleString()}` : v, name === "avg" ? "Avg Value" : "Bookings"]}
+                  formatter={(v: number, name: string) => [name === "avg" ? `₹${v.toLocaleString("en-IN")}` : v, name === "avg" ? "Avg Value" : "Bookings"]}
                 />
                 <Line type="monotone" dataKey="avg" stroke="oklch(0.78 0.13 80)" strokeWidth={2.5} dot={{ fill: "oklch(0.78 0.13 80)", r: 4 }} activeDot={{ r: 6 }} />
                 <Line type="monotone" dataKey="bookings" stroke="oklch(0.55 0.18 230)" strokeWidth={1.5} strokeDasharray="4 3" dot={false} />
@@ -228,7 +228,7 @@ export default function AvgBookingValuePage() {
                 <YAxis type="category" dataKey="suite" tick={{ fill: "oklch(0.72 0.02 90)", fontSize: 11 }} axisLine={false} tickLine={false} width={115} />
                 <Tooltip
                   contentStyle={{ background: "oklch(0.13 0.025 260)", border: "1px solid oklch(0.78 0.13 80 / 0.2)", borderRadius: "8px" }}
-                  formatter={(v: number) => [`₹${v.toLocaleString()}`, "Avg Value"]}
+                  formatter={(v: number) => [`₹${v.toLocaleString("en-IN")}`, "Avg Value"]}
                 />
                 <Bar dataKey="avg" radius={[0, 6, 6, 0]}>
                   {suiteAvg.map((s, i) => <Cell key={i} fill={s.color} />)}
@@ -246,7 +246,7 @@ export default function AvgBookingValuePage() {
                 <YAxis type="category" dataKey="occasion" tick={{ fill: "oklch(0.72 0.02 90)", fontSize: 11 }} axisLine={false} tickLine={false} width={100} />
                 <Tooltip
                   contentStyle={{ background: "oklch(0.13 0.025 260)", border: "1px solid oklch(0.78 0.13 80 / 0.2)", borderRadius: "8px" }}
-                  formatter={(v: number) => [`₹${v.toLocaleString()}`, "Avg Value"]}
+                  formatter={(v: number) => [`₹${v.toLocaleString("en-IN")}`, "Avg Value"]}
                 />
                 <Bar dataKey="avg" radius={[0, 6, 6, 0]}>
                   {occasionAvg.map((o, i) => <Cell key={i} fill={o.color} />)}
@@ -291,11 +291,11 @@ export default function AvgBookingValuePage() {
                     <td className="py-3 pr-4 text-muted-foreground text-xs">{b.occasion}</td>
                     <td className="py-3 pr-4 text-muted-foreground text-xs">{b.date}</td>
                     <td className="py-3 pr-4 text-xs">
-                      <span className="text-muted-foreground">₹{(b.amount - b.addons).toLocaleString()}</span>
+                      <span className="text-muted-foreground">₹{(b.amount - b.addons).toLocaleString("en-IN")}</span>
                       <span className="text-muted-foreground mx-1">+</span>
-                      <span className="text-[var(--gold-soft)]">₹{b.addons.toLocaleString()}</span>
+                      <span className="text-[var(--gold-soft)]">₹{b.addons.toLocaleString("en-IN")}</span>
                     </td>
-                    <td className="py-3 text-foreground font-semibold">₹{b.amount.toLocaleString()}</td>
+                    <td className="py-3 text-foreground font-semibold">₹{b.amount.toLocaleString("en-IN")}</td>
                   </tr>
                 ))}
               </tbody>

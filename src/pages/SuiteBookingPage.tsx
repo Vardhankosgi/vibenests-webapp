@@ -329,7 +329,7 @@ export default function SuiteBookingPage() {
       return {
         id: "0",
         name: passedPackage.name,
-        price: passedPackage.price ? `₹${Number(passedPackage.price).toLocaleString()}` : "₹0",
+        price: passedPackage.price ? `₹${Number(passedPackage.price).toLocaleString("en-IN")}` : "₹0",
         minCapacity: 1,
         capacity: parseInt(String(passedPackage.capacity)) || 2,
         ratePerExtraPerson: 0,
@@ -628,7 +628,7 @@ export default function SuiteBookingPage() {
                   <p className="text-xs text-muted-foreground">{bookingDate} · {startTime}{startTime ? ` – ${getEndTime(startTime, slotDuration)}` : ""}</p>
                 </>
               )}
-              <p className="text-gold font-semibold">₹{grandTotal.toLocaleString()}</p>
+              <p className="text-gold font-semibold">₹{grandTotal.toLocaleString("en-IN")}</p>
             </div>
             <button onClick={() => navigate("/user/dashboard")} className="gold-btn w-full rounded-2xl py-3 text-sm font-semibold">
               Back to Dashboard
@@ -901,25 +901,23 @@ export default function SuiteBookingPage() {
                                   type="button"
                                   disabled={isBlocked}
                                   onClick={() => setStartTime(slot)}
-                                  className={`flex items-center justify-between gap-3 px-4 py-3.5 rounded-2xl border text-sm font-medium transition-all ${
-                                    isBlocked
+                                  className={`flex items-center justify-between gap-3 px-4 py-3.5 rounded-2xl border text-sm font-medium transition-all ${isBlocked
                                       ? "border-white/5 bg-white/[0.01] text-muted-foreground/45 opacity-45 cursor-not-allowed"
                                       : active
-                                      ? "border-gold bg-gold/15 text-gold shadow-[0_0_16px_rgba(212,160,60,0.2)]"
-                                      : "border-white/10 bg-white/5 text-muted-foreground hover:border-gold/40 hover:text-foreground hover:bg-white/10"
-                                  }`}
+                                        ? "border-gold bg-gold/15 text-gold shadow-[0_0_16px_rgba(212,160,60,0.2)]"
+                                        : "border-white/10 bg-white/5 text-muted-foreground hover:border-gold/40 hover:text-foreground hover:bg-white/10"
+                                    }`}
                                 >
                                   <div className="flex items-center gap-2.5">
                                     <Clock className={`h-4 w-4 shrink-0 ${active ? "text-gold" : isBlocked ? "text-muted-foreground/35" : "text-gold/40"}`} />
                                     <span>{slot} – {end}</span>
                                   </div>
-                                  <span className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors ${
-                                    isBlocked
+                                  <span className={`text-[10px] px-2 py-0.5 rounded-full border transition-colors ${isBlocked
                                       ? "border-rose-500/20 bg-rose-500/10 text-rose-400 font-semibold"
                                       : active
-                                      ? "border-gold/40 bg-gold/10 text-gold"
-                                      : "border-white/10 bg-white/5 text-muted-foreground"
-                                  }`}>
+                                        ? "border-gold/40 bg-gold/10 text-gold"
+                                        : "border-white/10 bg-white/5 text-muted-foreground"
+                                    }`}>
                                     {isBlocked ? "Already Booked" : `${slotDuration} min`}
                                   </span>
                                 </button>
@@ -966,7 +964,7 @@ export default function SuiteBookingPage() {
                                 : t("app.userDashboard.selectSuiteFirst", "Select a suite first")}
                             </p>
                           </div>
-                          <p className="font-semibold text-gold shrink-0">₹{personsTotal.toLocaleString()}</p>
+                          <p className="font-semibold text-gold shrink-0">₹{personsTotal.toLocaleString("en-IN")}</p>
                         </div>
                         <div className="mt-3 flex items-center gap-3">
 
@@ -990,7 +988,7 @@ export default function SuiteBookingPage() {
                                 <h4 className="font-display text-base text-foreground">{addon.name}</h4>
                                 <p className="text-xs text-muted-foreground mt-0.5">{addon.description}</p>
                               </div>
-                              <p className="font-semibold text-gold shrink-0">₹{addon.price.toLocaleString()}</p>
+                              <p className="font-semibold text-gold shrink-0">₹{addon.price.toLocaleString("en-IN")}</p>
                             </div>
                             <div className="mt-3 flex items-center gap-3">
                               <div className="flex items-center gap-2 rounded-full border border-white/10 bg-black/40 px-3 py-1.5">
@@ -1039,7 +1037,7 @@ export default function SuiteBookingPage() {
                               <p className="text-base text-foreground font-semibold">{suite.name}</p>
                               <p className="text-xs text-muted-foreground">{t("app.userDashboard.capacityGuests", "Capacity: {{min}}–{{max}} guests", { min: suiteMinCap, max: suiteMaxCap })}</p>
                               <p className="text-xs text-gold">
-                                {passedPackage ? `₹${passedPackage.price.toLocaleString()}` : suite.price}
+                                {passedPackage ? `₹${passedPackage.price.toLocaleString("en-IN")}` : suite.price}
                               </p>
                             </div>
                           ) : <p className="text-xs text-muted-foreground mt-3">{t("app.userDashboard.noSuiteSelected", "No suite selected.")}</p>}
@@ -1053,12 +1051,12 @@ export default function SuiteBookingPage() {
                               ? t("app.userDashboard.personsExtraRate", "{{count}} persons ({{extra}} extra × ₹{{rate}})", { count: persons, extra: extraPersons, rate: rateExtra })
                               : t("app.userDashboard.guestsCount", "{{count}} guests", { count: persons })}
                           </span>
-                          <span className="text-gold">₹{personsTotal.toLocaleString()}</span>
+                          <span className="text-gold">₹{personsTotal.toLocaleString("en-IN")}</span>
                         </div>
                         {addons.filter((a) => (addonQty[String(a.id)] ?? 0) > 0).map((a) => (
                           <div key={a.id} className="flex justify-between text-sm py-1">
                             <span className="text-muted-foreground">{a.name} × {addonQty[a.id]}</span>
-                            <span className="text-gold">₹{(a.price * addonQty[a.id]).toLocaleString()}</span>
+                            <span className="text-gold">₹{(a.price * addonQty[a.id]).toLocaleString("en-IN")}</span>
                           </div>
                         ))}
                       </div>
@@ -1151,7 +1149,7 @@ export default function SuiteBookingPage() {
                                       Suggested Coupons
                                     </p>
                                     {filteredCoupons.map((c) => {
-                                      const discountText = c.discountType === 'percentage' ? `${c.discountValue}% OFF` : `₹${Number(c.discountValue).toLocaleString()} OFF`;
+                                      const discountText = c.discountType === 'percentage' ? `${c.discountValue}% OFF` : `₹${Number(c.discountValue).toLocaleString("en-IN")} OFF`;
                                       const expires = c.expiresAt ? new Date(c.expiresAt).toLocaleDateString() : '';
                                       const isApplicable = !c.minBookingAmount || subtotal >= Number(c.minBookingAmount);
 
@@ -1166,8 +1164,8 @@ export default function SuiteBookingPage() {
                                             }
                                           }}
                                           className={`flex items-center justify-between gap-3 text-left border rounded-xl px-3 py-2 text-xs transition select-none
-                                            ${isApplicable 
-                                              ? "bg-gold/5 border-gold/20 hover:border-gold/50 hover:bg-gold/10 cursor-pointer" 
+                                            ${isApplicable
+                                              ? "bg-gold/5 border-gold/20 hover:border-gold/50 hover:bg-gold/10 cursor-pointer"
                                               : "bg-white/5 border-white/5 opacity-55 cursor-not-allowed"
                                             }`}
                                         >
@@ -1183,7 +1181,7 @@ export default function SuiteBookingPage() {
                                             </p>
                                             <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-[9px] text-muted-foreground mt-1">
                                               {c.minBookingAmount && (
-                                                <span>Min spend: ₹{Number(c.minBookingAmount).toLocaleString()}</span>
+                                                <span>Min spend: ₹{Number(c.minBookingAmount).toLocaleString("en-IN")}</span>
                                               )}
                                               {expires && (
                                                 <span>Expires: {expires}</span>
@@ -1196,7 +1194,7 @@ export default function SuiteBookingPage() {
                                             </span>
                                           ) : (
                                             <span className="text-[9px] font-medium text-rose-400 bg-rose-500/5 border border-rose-500/10 rounded-lg px-2 py-1 shrink-0">
-                                              Min ₹{Number(c.minBookingAmount).toLocaleString()}
+                                              Min ₹{Number(c.minBookingAmount).toLocaleString("en-IN")}
                                             </span>
                                           )}
                                         </div>
@@ -1220,17 +1218,17 @@ export default function SuiteBookingPage() {
 
                               <tr>
                                 <td className="py-2 text-muted-foreground">{passedPackage ? "Package" : "Suite"}</td>
-                                <td className="py-2 text-right text-foreground">₹{basePrice.toLocaleString()}</td>
+                                <td className="py-2 text-right text-foreground">₹{basePrice.toLocaleString("en-IN")}</td>
                               </tr>
                               {!passedPackage && (
                                 <>
                                   <tr>
                                     <td className="py-2 text-muted-foreground">Persons</td>
-                                    <td className="py-2 text-right text-foreground">₹{(personsTotal).toLocaleString()}</td>
+                                    <td className="py-2 text-right text-foreground">₹{(personsTotal).toLocaleString("en-IN")}</td>
                                   </tr>
                                   <tr>
                                     <td className="py-2 text-muted-foreground">Add-ons</td>
-                                    <td className="py-2 text-right text-foreground">₹{(addonsTotal - personsTotal).toLocaleString()}</td>
+                                    <td className="py-2 text-right text-foreground">₹{(addonsTotal - personsTotal).toLocaleString("en-IN")}</td>
                                   </tr>
                                 </>
                               )}
@@ -1240,7 +1238,7 @@ export default function SuiteBookingPage() {
                                     <Tag className="h-3.5 w-3.5" />
                                     {couponCode} ({couponDiscount > 0 ? `${couponDiscount}% off` : `₹${Math.abs(couponDiscount)} off`})
                                   </td>
-                                  <td className="py-2 text-right text-emerald-400">− ₹{couponSavings.toLocaleString()}</td>
+                                  <td className="py-2 text-right text-emerald-400">− ₹{couponSavings.toLocaleString("en-IN")}</td>
                                 </tr>
                               )}
                               {offerSavings > 0 && bestOffer && (
@@ -1249,7 +1247,7 @@ export default function SuiteBookingPage() {
                                     <Tag className="h-3.5 w-3.5" />
                                     {bestOffer.title} ({bestOffer.discountType === "percentage" ? `${bestOffer.discountValue}% off` : `₹${bestOffer.discountValue} off`})
                                   </td>
-                                  <td className="py-2 text-right text-emerald-400">− ₹{offerSavings.toLocaleString()}</td>
+                                  <td className="py-2 text-right text-emerald-400">− ₹{offerSavings.toLocaleString("en-IN")}</td>
                                 </tr>
                               )}
                               {membershipSavings > 0 && (
@@ -1258,12 +1256,12 @@ export default function SuiteBookingPage() {
                                     <Award className="h-3.5 w-3.5" />
                                     {myMembership.planName} Membership ({membershipDiscount}% off)
                                   </td>
-                                  <td className="py-2 text-right text-emerald-400">− ₹{membershipSavings.toLocaleString()}</td>
+                                  <td className="py-2 text-right text-emerald-400">− ₹{membershipSavings.toLocaleString("en-IN")}</td>
                                 </tr>
                               )}
                               <tr className="border-t border-white/10">
                                 <td className="py-3 font-semibold">Total</td>
-                                <td className="py-3 text-right font-display text-lg text-gold">₹{grandTotal.toLocaleString()}</td>
+                                <td className="py-3 text-right font-display text-lg text-gold">₹{grandTotal.toLocaleString("en-IN")}</td>
                               </tr>
                             </tbody>
                           </table>
@@ -1277,7 +1275,7 @@ export default function SuiteBookingPage() {
                           >
                             <p className="font-display text-base text-foreground flex items-center justify-between gap-3">
                               <span>Pay Now</span>
-                              <span className="text-gold text-sm font-semibold">₹{payableNow.toLocaleString()}</span>
+                              <span className="text-gold text-sm font-semibold">₹{payableNow.toLocaleString("en-IN")}</span>
                             </p>
                             <p className="text-xs text-muted-foreground mt-1">Pay full amount now</p>
                           </button>
@@ -1290,7 +1288,7 @@ export default function SuiteBookingPage() {
                             >
                               <p className="font-display text-base text-foreground flex items-center justify-between gap-3">
                                 <span>Pay at Venue</span>
-                                <span className="text-gold text-sm font-semibold">₹{payableAtVenue.toLocaleString()}</span>
+                                <span className="text-gold text-sm font-semibold">₹{payableAtVenue.toLocaleString("en-IN")}</span>
                               </p>
                               <p className="text-xs text-muted-foreground mt-1">Pay 20% advance now, balance at venue</p>
                             </button>
@@ -1325,7 +1323,7 @@ export default function SuiteBookingPage() {
                             {paymentMethod === "package-credit" ? "Credits Used" : "You Pay"}
                           </p>
                           <p className="mt-1 text-base text-foreground font-semibold">
-                            {paymentMethod === "package-credit" ? "1 Booking Credit" : `₹${(paymentMethod === "pay-now" ? payableNow : payableAtVenue).toLocaleString()}`}
+                            {paymentMethod === "package-credit" ? "1 Booking Credit" : `₹${(paymentMethod === "pay-now" ? payableNow : payableAtVenue).toLocaleString("en-IN")}`}
                           </p>
                         </div>
 

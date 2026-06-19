@@ -96,9 +96,9 @@ export default function TransactionsPage() {
         {/* KPI cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
-            { label: t("app.admin.settledFilter", "Settled"), value: `₹${totalAmount.toLocaleString()}`,  color: "border-emerald-500/30 text-emerald-400", count: filtered.filter(p=>p.status==="success").length },
-            { label: t("app.admin.pendingFilter", "Pending"), value: `₹${totalPending.toLocaleString()}`, color: "border-amber-500/30 text-amber-400",   count: filtered.filter(p=>p.status==="pending").length },
-            { label: t("app.admin.refunds", "Refunded"),      value: `₹${totalRefunds.toLocaleString()}`, color: "border-sky-500/30 text-sky-400",        count: filtered.filter(p=>p.status==="refunded").length },
+            { label: t("app.admin.settledFilter", "Settled"), value: `₹${totalAmount.toLocaleString("en-IN")}`,  color: "border-emerald-500/30 text-emerald-400", count: filtered.filter(p=>p.status==="success").length },
+            { label: t("app.admin.pendingFilter", "Pending"), value: `₹${totalPending.toLocaleString("en-IN")}`, color: "border-amber-500/30 text-amber-400",   count: filtered.filter(p=>p.status==="pending").length },
+            { label: t("app.admin.refunds", "Refunded"),      value: `₹${totalRefunds.toLocaleString("en-IN")}`, color: "border-sky-500/30 text-sky-400",        count: filtered.filter(p=>p.status==="refunded").length },
           ].map((c) => (
             <div key={c.label} className={`glass-card rounded-2xl p-5 border ${c.color} flex items-center justify-between`}>
               <div>
@@ -207,7 +207,7 @@ export default function TransactionsPage() {
                       <td className="py-3 pr-4 text-muted-foreground text-xs">
                         {p.booking?.orderId ? `#${p.booking.orderId}` : (p.booking?.id ? `#VN${p.booking.id}` : "—")}
                       </td>
-                      <td className="py-3 pr-4 text-foreground font-semibold">₹{Number(p.amount || 0).toLocaleString()}</td>
+                      <td className="py-3 pr-4 text-foreground font-semibold">₹{Number(p.amount || 0).toLocaleString("en-IN")}</td>
                       <td className="py-3 pr-4">
                         <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
                           <MethodIcon method={p.method} /> {p.method || "—"}
@@ -216,7 +216,7 @@ export default function TransactionsPage() {
                       <td className="py-3 pr-4 text-xs text-muted-foreground font-mono truncate max-w-[120px]">{p.razorpayOrderId || p.providerOrderId || "—"}</td>
                       <td className="py-3 pr-4 text-xs text-muted-foreground font-mono truncate max-w-[120px]">{p.razorpayPaymentId || p.providerPaymentId || "—"}</td>
                       <td className="py-3 pr-4 text-xs text-muted-foreground whitespace-nowrap">
-                        {p.createdAt ? new Date(p.createdAt).toLocaleString() : "—"}
+                        {p.createdAt ? new Date(p.createdAt).toLocaleString("en-IN") : "—"}
                       </td>
                       <td className="py-3">
                         <span className={`px-2.5 py-1 rounded-full text-[11px] font-medium border capitalize ${STATUS_STYLE[p.status] || "bg-white/5 text-muted-foreground border-white/10"}`}>

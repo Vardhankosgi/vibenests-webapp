@@ -38,7 +38,7 @@ function mapApiSuite(s: any): Suite {
     name: s.name ?? "",
     minCapacity: s.minCapacity ?? 1,
     capacity: s.capacity ?? 0,
-    price: s.price ? `₹${Number(s.price).toLocaleString()}` : "₹0",
+    price: s.price ? `₹${Number(s.price).toLocaleString("en-IN")}` : "₹0",
     ratePerExtraPerson: Number(s.ratePerExtraPerson ?? 0),
     baseDiscount: Number(s.baseDiscount ?? 0),
     slotStartTime: s.slotStartTime ?? "09:00",

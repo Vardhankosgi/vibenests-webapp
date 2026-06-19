@@ -255,8 +255,8 @@ function ManageSuiteAvailabilityModal({ suite, onClose }: { suite: Suite; onClos
                         ${isBooked
                           ? "border-blue-500/20 bg-blue-500/[0.02]"
                           : isBlocked
-                          ? "border-amber-500/20 bg-amber-500/[0.02]"
-                          : "border-white/5 bg-white/[0.01]"
+                            ? "border-amber-500/20 bg-amber-500/[0.02]"
+                            : "border-white/5 bg-white/[0.01]"
                         }`}
                     >
                       <div className="flex items-center justify-between gap-3">
@@ -269,8 +269,8 @@ function ManageSuiteAvailabilityModal({ suite, onClose }: { suite: Suite; onClos
                           ${isBooked
                             ? "bg-blue-500/10 border-blue-500/20 text-blue-400"
                             : isBlocked
-                            ? "bg-amber-500/10 border-amber-500/20 text-amber-400"
-                            : "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                              ? "bg-amber-500/10 border-amber-500/20 text-amber-400"
+                              : "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
                           }`}
                         >
                           {isBooked ? "Booked" : isBlocked ? "Blocked" : "Available"}
@@ -590,7 +590,7 @@ export default function SuitesPage() {
                     const mm = cur % 60;
                     const period = hh >= 12 ? "PM" : "AM";
                     const dh = hh > 12 ? hh - 12 : hh === 0 ? 12 : hh;
-                    slots.push(`${String(dh).padStart(2,"0")}:${String(mm).padStart(2,"0")} ${period}`);
+                    slots.push(`${String(dh).padStart(2, "0")}:${String(mm).padStart(2, "0")} ${period}`);
                     cur += step;
                   }
                   return slots.length > 0 ? (

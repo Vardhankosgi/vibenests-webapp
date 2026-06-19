@@ -194,7 +194,7 @@ export default function CustomersPage() {
                     </td>
                     <td className="py-3 pr-4 text-xs text-muted-foreground">{u.joined}</td>
                     <td className="py-3 pr-4 text-foreground font-medium">{u.bookings}</td>
-                    <td className="py-3 pr-4 text-gold font-medium">₹{u.spent.toLocaleString()}</td>
+                    <td className="py-3 pr-4 text-gold font-medium">₹{u.spent.toLocaleString("en-IN")}</td>
                     <td className="py-3">
                       <span
                         className={`px-2.5 py-1 rounded-full text-[11px] font-medium border ${

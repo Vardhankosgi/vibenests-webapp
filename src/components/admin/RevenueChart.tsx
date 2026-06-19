@@ -45,7 +45,7 @@ export function RevenueChart() {
           <YAxis tick={{ fill: "oklch(0.72 0.02 90)", fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(v) => `₹${v / 1000}k`} />
           <Tooltip
             contentStyle={{ background: "oklch(0.13 0.025 260)", border: "1px solid oklch(0.78 0.13 80 / 0.2)", borderRadius: "8px", color: "#D4A03C" }}
-            formatter={(v: number) => [`₹${v.toLocaleString()}`, t("app.admin.revenue", "Revenue")]}
+            formatter={(v: number) => [`₹${v.toLocaleString("en-IN")}`, t("app.admin.revenue", "Revenue")]}
           />
           <Area type="monotone" dataKey="revenue" stroke="oklch(0.78 0.13 80)" strokeWidth={2} fill="url(#goldGrad)" />
         </AreaChart>

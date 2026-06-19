@@ -354,7 +354,7 @@ export default function CelebrationMembershipsPage() {
                       <div className="grid grid-cols-2 gap-4 border-y border-white/5 py-4 mb-6">
                         <div>
                           <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Package Price</p>
-                          <p className="font-display text-2xl font-bold text-gold mt-1">₹{Number(plan.price).toLocaleString()}</p>
+                          <p className="font-display text-2xl font-bold text-gold mt-1">₹{Number(plan.price).toLocaleString("en-IN")}</p>
                         </div>
                         <div>
                           <p className="text-[10px] uppercase tracking-widest text-muted-foreground">Free Bookings Limit</p>
@@ -523,7 +523,7 @@ export default function CelebrationMembershipsPage() {
 
                             {/* Payment details */}
                             <td className="py-4 px-6 leading-normal">
-                              <p className="font-mono text-gold font-bold">₹{Number(purchase.amountPaid).toLocaleString()}</p>
+                              <p className="font-mono text-gold font-bold">₹{Number(purchase.amountPaid).toLocaleString("en-IN")}</p>
                               <p className="text-[10px] text-muted-foreground font-mono mt-0.5">{purchase.paymentId || "N/A"}</p>
                               <span className={`inline-flex items-center text-[9px] font-semibold uppercase mt-0.5 ${
                                 purchase.paymentStatus === "success" ? "text-emerald-400" : "text-rose-400"

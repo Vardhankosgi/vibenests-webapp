@@ -165,7 +165,7 @@ function generateNotifications(bookingsList: any[], readIds: string[]): Notifica
         id: payId,
         type: 'payment',
         title: 'Payment Received',
-        message: `Initial payment of ₹${amt.toLocaleString()} for booking ${bookingId} was processed.`,
+        message: `Initial payment of ₹${amt.toLocaleString("en-IN")} for booking ${bookingId} was processed.`,
         time,
         read: readIds.includes(payId),
       });
@@ -380,7 +380,7 @@ function RequestCancellationModal({ bookingId, onClose, onSuccess }: { bookingId
                 <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4 space-y-2 text-xs">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Original Paid Amount:</span>
-                    <span className="text-foreground">₹{Number(breakdown.originalAmount).toLocaleString()}</span>
+                    <span className="text-foreground">₹{Number(breakdown.originalAmount).toLocaleString("en-IN")}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Hours Before Event:</span>
@@ -389,8 +389,8 @@ function RequestCancellationModal({ bookingId, onClose, onSuccess }: { bookingId
                   <div className="flex justify-between items-center border-t border-white/5 pt-2 mt-2">
                     <span className="text-muted-foreground">Policy Tier:</span>
                     <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${breakdown.isEligible
-                        ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
-                        : "bg-rose-500/10 border-rose-500/20 text-rose-400"
+                      ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                      : "bg-rose-500/10 border-rose-500/20 text-rose-400"
                       }`}>
                       {breakdown.tier}
                     </span>
@@ -400,20 +400,20 @@ function RequestCancellationModal({ bookingId, onClose, onSuccess }: { bookingId
                       {breakdown.gatewayChargeAmount > 0 && (
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Gateway Processing Fee (2%):</span>
-                          <span className="text-rose-400">-₹{Number(breakdown.gatewayChargeAmount).toLocaleString()}</span>
+                          <span className="text-rose-400">-₹{Number(breakdown.gatewayChargeAmount).toLocaleString("en-IN")}</span>
                         </div>
                       )}
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Cancellation Deduction:</span>
                         <span className="text-rose-400">
-                          -₹{Number(breakdown.originalAmount * (100 - breakdown.percentage) / 100).toLocaleString()}
+                          -₹{Number(breakdown.originalAmount * (100 - breakdown.percentage) / 100).toLocaleString("en-IN")}
                         </span>
                       </div>
                     </>
                   )}
                   <div className="flex justify-between border-t border-white/5 pt-2 text-sm font-semibold text-gold">
                     <span>Estimated Refund Amount:</span>
-                    <span>₹{Number(breakdown.estimatedRefundAmount).toLocaleString()}</span>
+                    <span>₹{Number(breakdown.estimatedRefundAmount).toLocaleString("en-IN")}</span>
                   </div>
                 </div>
 
@@ -686,7 +686,7 @@ function BookingDetailsDrawer({ booking, onClose }: { booking: Booking; onClose:
                         <span className="flex items-center gap-2 text-muted-foreground">
                           <Sparkles className="h-3 w-3 text-gold/60" />{a.name} {a.quantity > 1 ? `x${a.quantity}` : ""}
                         </span>
-                        <span className="text-foreground font-medium">₹{(Number(a.price) * Number(a.quantity)).toLocaleString()}</span>
+                        <span className="text-foreground font-medium">₹{(Number(a.price) * Number(a.quantity)).toLocaleString("en-IN")}</span>
                       </div>
                     ))}
                   </div>
@@ -706,29 +706,29 @@ function BookingDetailsDrawer({ booking, onClose }: { booking: Booking; onClose:
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Base Price</span>
-                    <span className="text-foreground">₹{Number(details?.basePrice || 0).toLocaleString()}</span>
+                    <span className="text-foreground">₹{Number(details?.basePrice || 0).toLocaleString("en-IN")}</span>
                   </div>
                   {Number(details?.addonsTotal || 0) > 0 && (
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Add-ons Total</span>
-                      <span className="text-foreground">₹{Number(details?.addonsTotal || 0).toLocaleString()}</span>
+                      <span className="text-foreground">₹{Number(details?.addonsTotal || 0).toLocaleString("en-IN")}</span>
                     </div>
                   )}
                   {Number(details?.savings || 0) > 0 && (
                     <div className="flex justify-between text-emerald-400">
                       <span>Discount / Savings</span>
-                      <span>-₹{Number(details?.savings || 0).toLocaleString()}</span>
+                      <span>-₹{Number(details?.savings || 0).toLocaleString("en-IN")}</span>
                     </div>
                   )}
                   {Number(details?.taxes || 0) > 0 && (
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Taxes & Fees</span>
-                      <span className="text-foreground">₹{Number(details?.taxes || 0).toLocaleString()}</span>
+                      <span className="text-foreground">₹{Number(details?.taxes || 0).toLocaleString("en-IN")}</span>
                     </div>
                   )}
                   <div className="flex justify-between border-t border-white/5 pt-2 text-sm font-semibold">
                     <span className="text-foreground">Grand Total</span>
-                    <span className="text-gold">₹{Number(details?.totalAmount || 0).toLocaleString()}</span>
+                    <span className="text-gold">₹{Number(details?.totalAmount || 0).toLocaleString("en-IN")}</span>
                   </div>
                 </div>
 
@@ -737,19 +737,19 @@ function BookingDetailsDrawer({ booking, onClose }: { booking: Booking; onClose:
                     <>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Advance Paid (20%)</span>
-                        <span className="text-emerald-400 font-medium">₹{Number(details?.advanceAmount || 0).toLocaleString()}</span>
+                        <span className="text-emerald-400 font-medium">₹{Number(details?.advanceAmount || 0).toLocaleString("en-IN")}</span>
                       </div>
                       <div className="flex justify-between text-sm font-semibold">
                         <span className="text-foreground font-semibold">Balance Amount (80%)</span>
                         <span className={details?.fullPaymentReceived ? "text-emerald-400 font-semibold" : "text-rose-400 font-semibold"}>
-                          ₹{details?.fullPaymentReceived ? "0" : Number(details?.totalAmount - details?.advanceAmount).toLocaleString()}
+                          ₹{details?.fullPaymentReceived ? "0" : Number(details?.totalAmount - details?.advanceAmount).toLocaleString("en-IN")}
                         </span>
                       </div>
                     </>
                   ) : (
                     <div className="flex justify-between text-emerald-400 text-sm font-semibold">
                       <span>Amount Paid</span>
-                      <span>₹{Number(details?.totalAmount || 0).toLocaleString()}</span>
+                      <span>₹{Number(details?.totalAmount || 0).toLocaleString("en-IN")}</span>
                     </div>
                   )}
 
@@ -823,27 +823,27 @@ function BookingDetailsDrawer({ booking, onClose }: { booking: Booking; onClose:
               {(
                 details?.status === "confirmed" || details?.status === "pending" || booking.status === "confirmed" || booking.status === "pending"
               ) && (
-                <div className="glass-card rounded-2xl p-4 space-y-3 border-gold/20">
-                  <div className="flex items-center gap-2">
-                    <CalendarDays className="h-4 w-4 text-gold" />
-                    <h4 className="text-sm font-semibold text-foreground">{t("app.userDashboard.rescheduleBooking", "Reschedule Booking")}</h4>
+                  <div className="glass-card rounded-2xl p-4 space-y-3 border-gold/20">
+                    <div className="flex items-center gap-2">
+                      <CalendarDays className="h-4 w-4 text-gold" />
+                      <h4 className="text-sm font-semibold text-foreground">{t("app.userDashboard.rescheduleBooking", "Reschedule Booking")}</h4>
+                    </div>
+
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      {t("app.userDashboard.rescheduleHint", "Change only the date and time slot. Payment remains the same.")}
+                    </p>
+
+                    <button
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl border border-gold/30 bg-gold/8 text-gold text-sm hover:bg-gold/15 transition-colors w-full justify-center"
+                      onClick={() => {
+                        setRescheduleOpen(true);
+                      }}
+                    >
+                      <CalendarDays className="h-4 w-4" /> {t("app.userDashboard.reschedule", "Reschedule")}
+                    </button>
+
                   </div>
-
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    {t("app.userDashboard.rescheduleHint", "Change only the date and time slot. Payment remains the same.")}
-                  </p>
-
-                  <button
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl border border-gold/30 bg-gold/8 text-gold text-sm hover:bg-gold/15 transition-colors w-full justify-center"
-                    onClick={() => {
-                      setRescheduleOpen(true);
-                    }}
-                  >
-                    <CalendarDays className="h-4 w-4" /> {t("app.userDashboard.reschedule", "Reschedule")}
-                  </button>
-
-                </div>
-              )}
+                )}
 
               {rescheduleOpen && rawId && (
                 <RescheduleBookingModal
@@ -878,6 +878,14 @@ function BookingDetailsDrawer({ booking, onClose }: { booking: Booking; onClose:
                   </div>
                   <p className="text-xs text-muted-foreground leading-relaxed">{extra.refundInfo}</p>
                 </div>
+                {details?.status === 'cancelled' && details?.cancellationReason && !details?.refundRequest && (
+                  <div className="mt-3 p-3 rounded-xl border border-rose-500/20 space-y-2 text-xs bg-rose-500/10">
+                    <p className="text-rose-300">
+                      <span className="font-semibold text-rose-100">Cancellation Reason:</span> {details.cancellationReason}
+                    </p>
+                  </div>
+                )}
+
                 {details?.refundRequest ? (
                   <div className="mt-3 p-3 rounded-xl border border-white/10 space-y-2 text-xs bg-white/[0.02]">
                     <div className="flex justify-between items-center">
@@ -899,7 +907,7 @@ function BookingDetailsDrawer({ booking, onClose }: { booking: Booking; onClose:
                     )}
                     {(details.refundRequest.status === 'approved' || details.refundRequest.status === 'processed') && (
                       <p className="text-emerald-400/90 bg-emerald-500/5 p-2 rounded-lg border border-emerald-500/10">
-                        Refund of <span className="font-semibold">₹{Number(details.refundRequest.refundableAmount).toLocaleString()}</span> processed.
+                        Refund of <span className="font-semibold">₹{Number(details.refundRequest.refundableAmount).toLocaleString("en-IN")}</span> processed.
                       </p>
                     )}
                   </div>
@@ -1118,7 +1126,7 @@ function TransactionModal({ txn, onClose }: { txn: Transaction; onClose: () => v
             <div className="glass rounded-xl p-3">
               <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">{t("app.userDashboard.amount", "Amount")}</p>
               <p className={`font-display text-2xl ${txn.type === "credit" ? "text-emerald-400" : "text-rose-400"}`}>
-                {txn.type === "credit" ? "+" : ""}₹{Math.abs(txn.amount).toLocaleString()}
+                {txn.type === "credit" ? "+" : ""}₹{Math.abs(txn.amount).toLocaleString("en-IN")}
               </p>
             </div>
             <div className="glass rounded-xl p-3">
@@ -1342,13 +1350,12 @@ function ReferralWidget({ referralStats, refreshReferrals }: { referralStats: an
                       ₹{rew.rewardValue}
                     </td>
                     <td className="px-4 py-3">
-                      <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-semibold border ${
-                        rew.status === 'redeemed'
-                          ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
-                          : rew.status === 'revoked'
-                            ? "bg-rose-500/10 border-rose-500/20 text-rose-400"
-                            : "bg-gold/10 border-gold/20 text-gold"
-                      }`}>
+                      <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-semibold border ${rew.status === 'redeemed'
+                        ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                        : rew.status === 'revoked'
+                          ? "bg-rose-500/10 border-rose-500/20 text-rose-400"
+                          : "bg-gold/10 border-gold/20 text-gold"
+                        }`}>
                         {rew.status === 'redeemed' ? 'Redeemed' : rew.status === 'revoked' ? 'Revoked' : 'Active'}
                       </span>
                     </td>
@@ -1800,7 +1807,7 @@ function WalletView() {
           <div className="flex items-start justify-between mb-4">
             <div>
               <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">{t("app.userDashboard.availableBalance", "Available Balance")}</p>
-              <p className="font-display text-5xl text-gold">₹{(12400 + totalCredit - totalDebit).toLocaleString()}</p>
+              <p className="font-display text-5xl text-gold">₹{(12400 + totalCredit - totalDebit).toLocaleString("en-IN")}</p>
               <p className="text-xs text-muted-foreground mt-2">{t("app.userDashboard.walletCreditsRefunds", "Wallet credits & refunds")}</p>
             </div>
             <Wallet className="h-8 w-8 text-gold/40" />
@@ -1852,21 +1859,21 @@ function WalletView() {
               <TrendingUp className="h-4 w-4 text-emerald-400" />
               <p className="text-xs text-muted-foreground uppercase tracking-wide">{t("app.userDashboard.totalCredits", "Total Credits")}</p>
             </div>
-            <p className="font-display text-2xl text-emerald-400">₹{totalCredit.toLocaleString()}</p>
+            <p className="font-display text-2xl text-emerald-400">₹{totalCredit.toLocaleString("en-IN")}</p>
           </div>
           <div className="glass rounded-xl p-4">
             <div className="flex items-center gap-2 mb-2">
               <TrendingDown className="h-4 w-4 text-rose-400" />
               <p className="text-xs text-muted-foreground uppercase tracking-wide">{t("app.userDashboard.totalDebits", "Total Debits")}</p>
             </div>
-            <p className="font-display text-2xl text-rose-400">₹{totalDebit.toLocaleString()}</p>
+            <p className="font-display text-2xl text-rose-400">₹{totalDebit.toLocaleString("en-IN")}</p>
           </div>
           <div className="glass rounded-xl p-4">
             <div className="flex items-center gap-2 mb-2">
               <DollarSign className="h-4 w-4 text-gold" />
               <p className="text-xs text-muted-foreground uppercase tracking-wide">{t("app.userDashboard.netFlow", "Net Flow")}</p>
             </div>
-            <p className="font-display text-2xl text-gold">₹{(totalCredit - totalDebit).toLocaleString()}</p>
+            <p className="font-display text-2xl text-gold">₹{(totalCredit - totalDebit).toLocaleString("en-IN")}</p>
           </div>
         </div>
       </motion.div> */}
@@ -2003,7 +2010,7 @@ function WalletView() {
                 <div className="flex items-center gap-3 shrink-0">
                   <div className="text-right">
                     <p className={`font-display text-lg ${tVal.type === "credit" ? "text-emerald-400" : "text-rose-400"}`}>
-                      {tVal.type === "credit" ? "+" : "-"}₹{Math.abs(tVal.amount).toLocaleString()}
+                      {tVal.type === "credit" ? "+" : "-"}₹{Math.abs(tVal.amount).toLocaleString("en-IN")}
                     </p>
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{tVal.category}</p>
                   </div>
@@ -2161,7 +2168,7 @@ function RefundRequestsView() {
                   </div>
                   <div className="text-left md:text-right">
                     <p className="text-xs text-muted-foreground">Refund Value</p>
-                    <p className="font-display text-xl text-gold font-bold">₹{refundableAmount.toLocaleString()}</p>
+                    <p className="font-display text-xl text-gold font-bold">₹{refundableAmount.toLocaleString("en-IN")}</p>
                   </div>
                 </div>
 
@@ -2180,23 +2187,23 @@ function RefundRequestsView() {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Original Paid:</span>
-                        <span className="text-foreground font-medium">₹{originalAmount.toLocaleString()}</span>
+                        <span className="text-foreground font-medium">₹{originalAmount.toLocaleString("en-IN")}</span>
                       </div>
                       {hasGatewayDeduction && (
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Gateway Charge (2%):</span>
-                          <span className="text-rose-400 font-medium">-₹{Number(r.gatewayChargeAmount).toLocaleString()}</span>
+                          <span className="text-rose-400 font-medium">-₹{Number(r.gatewayChargeAmount).toLocaleString("en-IN")}</span>
                         </div>
                       )}
                       {deductionAmount > 0 && (
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Cancellation Deduction:</span>
-                          <span className="text-rose-400 font-medium">-₹{deductionAmount.toLocaleString()}</span>
+                          <span className="text-rose-400 font-medium">-₹{deductionAmount.toLocaleString("en-IN")}</span>
                         </div>
                       )}
                       <div className="flex justify-between border-t border-white/5 pt-1.5 font-bold">
                         <span className="text-gold">Total Refund:</span>
-                        <span className="text-gold">₹{refundableAmount.toLocaleString()}</span>
+                        <span className="text-gold">₹{refundableAmount.toLocaleString("en-IN")}</span>
                       </div>
                     </div>
                   </div>
@@ -2519,7 +2526,7 @@ function CelebrationMembershipsView() {
 
                   {/* Pricing / Offer */}
                   <div className="flex items-baseline gap-2 mb-6">
-                    <span className="font-display text-4xl font-bold text-gold">₹{Number(plan.price).toLocaleString()}</span>
+                    <span className="font-display text-4xl font-bold text-gold">₹{Number(plan.price).toLocaleString("en-IN")}</span>
                     <span className="text-xs text-muted-foreground">/ {plan.validityDays} Days</span>
                   </div>
 
@@ -2649,7 +2656,7 @@ function OffersView() {
   const referralCode = (user?.fullName ? user.fullName.replace(/\s+/g, "").toUpperCase().slice(0, 5) : "VIBE") + (user?.id || "");
   const friendsCount = String((user?.id || 0) % 4);
   const bookingsCount = String(Math.max(0, ((user?.id || 0) % 4) - 1));
-  const rewardsEarned = `₹${(Math.max(0, ((user?.id || 0) % 4) - 1) * 500).toLocaleString()}`;
+  const rewardsEarned = `₹${(Math.max(0, ((user?.id || 0) % 4) - 1) * 500).toLocaleString("en-IN")}`;
 
   if (loading) {
     return (
@@ -2789,7 +2796,7 @@ function OffersView() {
               {coupons.map((c) => {
                 const discount = c.discountType === 'percentage' ? `${c.discountValue}% OFF` : `₹${c.discountValue} OFF`;
                 const expires = c.expiresAt ? formatDateStr(c.expiresAt) : '';
-                const minSpend = c.minBookingAmount ? `₹${Number(c.minBookingAmount).toLocaleString()}` : '0';
+                const minSpend = c.minBookingAmount ? `₹${Number(c.minBookingAmount).toLocaleString("en-IN")}` : '0';
                 return (
                   <div key={c.id} className="glass-card rounded-2xl p-5 hover:border-gold/30 transition-colors">
                     <div className="flex items-start justify-between gap-3 mb-3">
@@ -2880,9 +2887,9 @@ function ProfileView({ referralStats, refreshReferrals }: { referralStats: any; 
     }
     setSaving(true);
     try {
-      const payload = { 
+      const payload = {
         fullName: form.fullName.trim(),
-        marriageDate: form.marriageDate || undefined 
+        marriageDate: form.marriageDate || undefined
       };
       const updated = await usersApi.updateMe(payload);
 
@@ -2921,11 +2928,11 @@ function ProfileView({ referralStats, refreshReferrals }: { referralStats: any; 
         <div className="glass-card rounded-2xl p-6 space-y-5">
           <div className="space-y-1.5">
             <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">{t("app.auth.fullName", "Full Name")}</label>
-            <input 
-              type="text" 
-              value={form.fullName} 
-              onChange={(e) => setForm((f: any) => ({ ...f, fullName: e.target.value }))} 
-              className="luxury-input w-full rounded-xl px-4 py-2.5 text-sm text-foreground bg-transparent" 
+            <input
+              type="text"
+              value={form.fullName}
+              onChange={(e) => setForm((f: any) => ({ ...f, fullName: e.target.value }))}
+              className="luxury-input w-full rounded-xl px-4 py-2.5 text-sm text-foreground bg-transparent"
             />
           </div>
           <div className="space-y-1.5">
@@ -3258,13 +3265,12 @@ function RescheduleBookingModal({
                       type="button"
                       disabled={isBlocked}
                       onClick={() => setTimeSlot(s)}
-                      className={`px-3 py-2 rounded-xl border text-xs transition-colors text-left ${
-                        isBlocked
-                          ? 'border-white/5 bg-white/[0.01] text-muted-foreground/45 opacity-45 cursor-not-allowed'
-                          : active
-                            ? 'border-gold bg-gold/15 text-gold shadow-[0_0_16px_rgba(212,160,60,0.2)]'
-                            : 'border-white/10 bg-white/5 text-muted-foreground hover:border-gold/40 hover:text-foreground hover:bg-white/10'
-                      }`}
+                      className={`px-3 py-2 rounded-xl border text-xs transition-colors text-left ${isBlocked
+                        ? 'border-white/5 bg-white/[0.01] text-muted-foreground/45 opacity-45 cursor-not-allowed'
+                        : active
+                          ? 'border-gold bg-gold/15 text-gold shadow-[0_0_16px_rgba(212,160,60,0.2)]'
+                          : 'border-white/10 bg-white/5 text-muted-foreground hover:border-gold/40 hover:text-foreground hover:bg-white/10'
+                        }`}
                     >
                       <div className="flex items-center gap-2">
                         <Clock className={`h-3.5 w-3.5 ${active ? 'text-gold' : isBlocked ? 'text-muted-foreground/35' : 'text-gold/40'}`} />

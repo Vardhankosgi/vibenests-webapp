@@ -152,6 +152,17 @@ export default function BookingDetailsPage() {
               </div>
             </div>
 
+            {normalizedBookingStatus === 'cancelled' && booking.cancellationReason && !booking.refundRequest && (
+              <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-4 text-sm space-y-3 text-rose-200">
+                <h4 className="font-semibold text-sm flex items-center gap-2">
+                  ⚠️ Cancellation Details
+                </h4>
+                <p className="text-xs">
+                  <span className="font-medium text-white">Cancellation Reason:</span> <span className="italic">"{booking.cancellationReason}"</span>
+                </p>
+              </div>
+            )}
+
             {booking.refundRequest && (
               <div className={`rounded-xl border p-4 text-sm space-y-3 ${booking.refundRequest.status === 'pending'
                   ? 'border-amber-500/30 bg-amber-500/10 text-amber-200'
@@ -215,7 +226,7 @@ export default function BookingDetailsPage() {
                 </div>
                 <div className="space-y-1 text-xs">
                   <p><span className="font-medium text-white">Guest Reason for Cancellation:</span> <span className="italic">"{booking.refundRequest.cancellationReason || "No reason provided"}"</span></p>
-                  <p><span className="font-medium text-white">Estimated Refundable Amount:</span> ₹{Number(booking.refundRequest.refundableAmount).toLocaleString()}</p>
+                  <p><span className="font-medium text-white">Estimated Refundable Amount:</span> ₹{Number(booking.refundRequest.refundableAmount).toLocaleString("en-IN")}</p>
                   <p><span className="font-medium text-white">Policy Applied:</span> {booking.refundRequest.calculationBreakdown?.policyName || "Standard"}</p>
                   {booking.refundRequest.status === 'rejected' && booking.refundRequest.rejectionReason && (
                     <p><span className="font-medium text-rose-300">Rejection Reason:</span> {booking.refundRequest.rejectionReason}</p>
@@ -399,6 +410,32 @@ export default function BookingDetailsPage() {
                   <button
                     disabled={actionLoading}
                     onClick={async () => {
+                      const reason = window.prompt("Enter cancellation reason:");
+                      if (reason === null) return;
+                      if (!reason.trim()) {
+                        alert("Cancellation reason is required.");
+                        return;
+                      }
+
+                      try {
+                        setActionLoading(true);
+                        setActionError("");
+                        const resp = await bookingsApi.cancel(booking.id, { reason });
+                        setBooking(resp);
+                      } catch (e: any) {
+                        setActionError(e?.message || "Failed to cancel booking");
+                      } finally {
+                        setActionLoading(false);
+                      }
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm border border-white/10 text-muted-foreground hover:text-foreground transition disabled:opacity-50"
+                  >
+                    <XCircle className="h-4 w-4" /> Cancel
+                  </button>
+
+                  <button
+                    disabled={actionLoading}
+                    onClick={async () => {
                       try {
                         setActionLoading(true);
                         setActionError("");
@@ -423,6 +460,32 @@ export default function BookingDetailsPage() {
 
               {normalizedBookingStatus === "check-in" && (
                 <div className="flex flex-wrap items-center gap-3 pt-2">
+                  <button
+                    disabled={actionLoading}
+                    onClick={async () => {
+                      const reason = window.prompt("Enter cancellation reason:");
+                      if (reason === null) return;
+                      if (!reason.trim()) {
+                        alert("Cancellation reason is required.");
+                        return;
+                      }
+
+                      try {
+                        setActionLoading(true);
+                        setActionError("");
+                        const resp = await bookingsApi.cancel(booking.id, { reason });
+                        setBooking(resp);
+                      } catch (e: any) {
+                        setActionError(e?.message || "Failed to cancel booking");
+                      } finally {
+                        setActionLoading(false);
+                      }
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm border border-white/10 text-muted-foreground hover:text-foreground transition disabled:opacity-50"
+                  >
+                    <XCircle className="h-4 w-4" /> Cancel
+                  </button>
+
                   <button
                     disabled={actionLoading}
                     onClick={async () => {

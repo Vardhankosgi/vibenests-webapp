@@ -44,8 +44,8 @@ function mapApiBooking(b: any): Booking {
     endTime: b.endTimeSlot ?? '',
     guests: 0,
     amount: b.totalAmount && Number(b.totalAmount) > 0
-      ? `₹${Number(b.totalAmount).toLocaleString()}`
-      : (b.payment?.amount ? `₹${Number(b.payment.amount).toLocaleString()}` : '₹0'),
+      ? `₹${Number(b.totalAmount).toLocaleString("en-IN")}`
+      : (b.payment?.amount ? `₹${Number(b.payment.amount).toLocaleString("en-IN")}` : '₹0'),
     status: (b.status?.charAt(0).toUpperCase() + b.status?.slice(1)) as Booking['status'],
     basePrice: Number(b.basePrice || 0),
     addonsTotal: Number(b.addonsTotal || 0),
