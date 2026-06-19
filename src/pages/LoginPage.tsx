@@ -19,28 +19,28 @@ export default function LoginPage() {
 
       {/* Top-right buttons */}
       <div className="absolute top-5 right-5 z-20 flex items-center gap-2">
-        <LanguageSelector />
-        <button
+         <LanguageSelector />
+        {/* <button
           onClick={() => navigate("/user/dashboard")}
           className="flex items-center gap-2 px-4 py-2 rounded-xl border border-white/20 bg-black/40 backdrop-blur-sm text-white text-sm font-semibold hover:bg-white/10 hover:border-white/40 transition-all"
         >
           <User className="h-4 w-4" />
           {t("app.auth.userDashboardLink", "User Dashboard")}
-        </button>
-        <button
+        </button> */}
+        {/* <button
           onClick={() => navigate("/dashboard")}
           className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[var(--gold)]/40 bg-black/40 backdrop-blur-sm text-gold text-sm font-semibold hover:bg-[var(--gold)]/15 hover:border-[var(--gold)]/70 transition-all"
         >
           <Shield className="h-4 w-4" />
           {t("app.auth.adminLink", "Admin")}
-        </button>
-        <button
+        </button> */}
+        {/* <button
           onClick={() => navigate("/admin/register")}
           className="flex items-center gap-2 px-4 py-2 rounded-xl border border-[var(--gold)]/40 bg-black/40 backdrop-blur-sm text-gold text-sm font-semibold hover:bg-[var(--gold)]/15 hover:border-[var(--gold)]/70 transition-all"
         >
           <UserPlus className="h-4 w-4" />
           {t("app.auth.adminRegisterLink", "Admin Register")}
-        </button>
+        </button> */}
       </div>
 
       {/* Left - Hero Panel */}
