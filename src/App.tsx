@@ -5,6 +5,7 @@ import AdminRegisterPage from "@/pages/AdminRegisterPage";
 import AdminLayout from "@/pages/AdminLayout";
 import DashboardPage from "@/pages/DashboardPage";
 import { AdminProtectedRoute } from "@/components/auth/AdminProtectedRoute";
+import { UserProtectedRoute } from "@/components/auth/UserProtectedRoute";
 
 import BookingsPage from "@/pages/BookingsPage";
 import SuitesPage from "@/pages/SuitesPage";
@@ -61,9 +62,11 @@ export default function App() {
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/admin/register" element={<AdminRegisterPage />} />
-          <Route path="/user/dashboard" element={<SuitesProvider><UserDashboardPage /></SuitesProvider>} />
-          <Route path="/user/suite-booking" element={<SuitesProvider><SuiteBookingPage /></SuitesProvider>} />
-          <Route path="/user/write-review" element={<WriteReviewPage />} />
+          <Route element={<UserProtectedRoute />}>
+            <Route path="/user/dashboard" element={<SuitesProvider><UserDashboardPage /></SuitesProvider>} />
+            <Route path="/user/suite-booking" element={<SuitesProvider><SuiteBookingPage /></SuitesProvider>} />
+            <Route path="/user/write-review" element={<WriteReviewPage />} />
+          </Route>
           <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
           <Route path="/terms-of-use" element={<TermsOfUsePage />} />
           <Route path="/contact" element={<ContactUsPage />} />
