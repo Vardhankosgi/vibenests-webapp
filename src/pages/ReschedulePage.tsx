@@ -7,15 +7,33 @@ import { bookingsApi, suitesApi } from "@/lib/api";
 
 function generateSlots(startTime: string, endTime: string, durationMins: number, gapMins: number = 30): string[] {
   const slots: string[] = [];
-  const [sh, sm] = startTime.split(":").map(Number);
-  const [eh, em] = endTime.split(":").map(Number);
+  
+  // Extract only numbers from the string to handle formats like "09:00 AM" or "09:00:00"
+  const parseTime = (t: string) => {
+    const parts = t.replace(/[^0-9:]/g, "").split(":");
+    return [Number(parts[0] || 0), Number(parts[1] || 0)];
+  };
+
+  const [sh, sm] = parseTime(startTime);
+  const [eh, em] = parseTime(endTime);
+  
+  if (isNaN(sh) || isNaN(sm) || isNaN(eh) || isNaN(em)) return [];
+
   let cur = sh * 60 + sm;
   let end = eh * 60 + em;
+  
   if (end < cur) {
     end += 24 * 60;
   }
+  
   const step = durationMins + gapMins;
-  while (cur + durationMins <= end) {
+  // Prevent infinite loop if step is 0 or negative
+  if (step <= 0) return [];
+  
+  // Failsafe to prevent more than 100 slots in case of weird data
+  let count = 0;
+  
+  while (cur + durationMins <= end && count++ < 100) {
     const hh = Math.floor(cur / 60) % 24;
     const mm = cur % 60;
     const period = hh >= 12 ? "PM" : "AM";

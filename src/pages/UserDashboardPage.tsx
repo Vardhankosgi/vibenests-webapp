@@ -346,9 +346,9 @@ function RequestCancellationModal({ bookingId, onClose, onSuccess }: { bookingId
       setError("");
       const res = await refundsApi.initiate(bookingId, category, comments);
       if (res.status === "approved" || res.status === "refunded" || res.status === "processing") {
-        alert("your amount is refunded back to your account");
+        alert("Your refund request has been processed successfully.");
       } else if (res.status === "rejected") {
-        alert(`Refund Request Auto-Rejected\nReason: Submitted less than 24 hours before the event.`);
+        alert(`Refund Request Auto-Rejected\nReason: ${res.refundReason || res.rejectionReason || "Not eligible under current policy."}`);
       } else {
         alert(`Refund request submitted successfully! Status: ${res.status}`);
       }
@@ -424,7 +424,11 @@ function RequestCancellationModal({ bookingId, onClose, onSuccess }: { bookingId
                     <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
                     <div>
                       <p className="font-semibold mb-0.5">Not Refund Eligible</p>
-                      <p className="leading-relaxed">This request will be automatically rejected. Events commencing in less than 24 hours do not qualify for refunds under the VibeNests terms.</p>
+                      <p className="leading-relaxed">
+                        {breakdown.tier === 'Package Booking - Not Eligible for Refund' 
+                            ? "Package bookings are non-refundable and credits will not be restored upon cancellation."
+                            : "This request will be automatically rejected. Events commencing in less than 24 hours do not qualify for refunds under the VibeNests terms."}
+                      </p>
                     </div>
                   </div>
                 )}

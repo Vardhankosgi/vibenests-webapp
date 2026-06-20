@@ -8,7 +8,7 @@ interface MembershipPlanType {
   id: number;
   name: string;
   price: number;
-  validityType?: "monthly" | "yearly" | "custom";
+  validityType?: "monthly" | "quarterly" | "half-yearly" | "yearly" | "custom";
   validityDays: number;
   maxFreeBookings?: number;
   eligibleSuites?: string[];
@@ -65,7 +65,7 @@ export default function CelebrationMembershipsPage() {
   const [editName, setEditName] = useState<string>("Silver");
   const [editingPlan, setEditingPlan] = useState<MembershipPlanType | null>(null);
   const [editPrice, setEditPrice] = useState("");
-  const [editValidityType, setEditValidityType] = useState<"monthly" | "yearly" | "custom">("yearly");
+  const [editValidityType, setEditValidityType] = useState<"monthly" | "quarterly" | "half-yearly" | "yearly" | "custom">("yearly");
   const [editValidity, setEditValidity] = useState("");
   const [editMaxFreeBookings, setEditMaxFreeBookings] = useState("");
   const [editEligibleSuites, setEditEligibleSuites] = useState<string[]>([]);
@@ -626,10 +626,19 @@ export default function CelebrationMembershipsPage() {
                   <label className="text-muted-foreground uppercase tracking-widest text-[9px] font-semibold">Validity Period Type</label>
                   <select
                     value={editValidityType}
-                    onChange={(e) => setEditValidityType(e.target.value as "monthly" | "yearly" | "custom")}
+                    onChange={(e) => {
+                      const type = e.target.value as "monthly" | "quarterly" | "half-yearly" | "yearly" | "custom";
+                      setEditValidityType(type);
+                      if (type === "monthly") setEditValidity("30");
+                      if (type === "quarterly") setEditValidity("90");
+                      if (type === "half-yearly") setEditValidity("180");
+                      if (type === "yearly") setEditValidity("365");
+                    }}
                     className="luxury-input w-full px-3 py-2 bg-[oklch(0.12_0.02_260)]"
                   >
                     <option value="monthly">Monthly</option>
+                    <option value="quarterly">Quarter Year</option>
+                    <option value="half-yearly">Half Year</option>
                     <option value="yearly">Yearly</option>
                     <option value="custom">Custom Duration</option>
                   </select>
@@ -638,16 +647,18 @@ export default function CelebrationMembershipsPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 {/* Validity days */}
-                <div className="space-y-1.5">
-                  <label className="text-muted-foreground uppercase tracking-widest text-[9px] font-semibold">Validity Duration (Days)</label>
-                  <input
-                    type="number"
-                    required
-                    value={editValidity}
-                    onChange={(e) => setEditValidity(e.target.value)}
-                    className="luxury-input w-full px-3 py-2"
-                  />
-                </div>
+                {editValidityType === "custom" && (
+                  <div className="space-y-1.5">
+                    <label className="text-muted-foreground uppercase tracking-widest text-[9px] font-semibold">Validity Duration (Days)</label>
+                    <input
+                      type="number"
+                      required
+                      value={editValidity}
+                      onChange={(e) => setEditValidity(e.target.value)}
+                      className="luxury-input w-full px-3 py-2"
+                    />
+                  </div>
+                )}
 
                 {/* Max free bookings */}
                 <div className="space-y-1.5">

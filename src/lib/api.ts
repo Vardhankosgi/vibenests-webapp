@@ -10,25 +10,39 @@ function getRefreshToken() {
   return localStorage.getItem('refreshToken');
 }
 
+let apiRefreshPromise: Promise<string | null> | null = null;
+
 async function refreshAccessToken(): Promise<string | null> {
   const refreshToken = getRefreshToken();
   if (!refreshToken) return null;
-  try {
-    const res = await fetch(`${BASE}/auth/refresh`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken }),
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (data.accessToken) {
-      localStorage.setItem('accessToken', data.accessToken);
-      return data.accessToken;
-    }
-    return null;
-  } catch {
-    return null;
+  
+  if (!apiRefreshPromise) {
+    apiRefreshPromise = (async () => {
+      try {
+        const res = await fetch(`${BASE}/auth/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken }),
+        });
+        if (!res.ok) return null;
+        const data = await res.json();
+        if (data.accessToken) {
+          localStorage.setItem('accessToken', data.accessToken);
+          if (data.refreshToken) {
+            localStorage.setItem('refreshToken', data.refreshToken);
+          }
+          return data.accessToken;
+        }
+        return null;
+      } catch {
+        return null;
+      } finally {
+        apiRefreshPromise = null;
+      }
+    })();
   }
+  
+  return apiRefreshPromise;
 }
 
 async function request<T>(path: string, options: RequestInit = {}, retry = true): Promise<T> {

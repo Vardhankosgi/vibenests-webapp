@@ -148,10 +148,10 @@ export default function SuiteBookingPage() {
   }, [location.state]);
 
   const [step, setStep] = useState(passedPackage ? 4 : 0);
-  const [selectedOccasion, setSelectedOccasion] = useState(passedPackage ? "package:0" : "");
+  const [selectedOccasion, setSelectedOccasion] = useState(passedPackage ? `package:${passedPackage.id}` : "");
   const [customOccasion, setCustomOccasion] = useState("");
   const [bookingDate, setBookingDate] = useState(passedPackage ? new Date().toISOString().split('T')[0] : "");
-  const [startTime, setStartTime] = useState(passedPackage ? "09:00 AM" : "");
+  const [startTimes, setStartTimes] = useState<string[]>(passedPackage ? ["09:00 AM"] : []);
   const [selectedSuite, setSelectedSuite] = useState(passedPackage ? "0" : (passedSuiteId ?? ""));
   const [blockedSlots, setBlockedSlots] = useState<string[]>([]);
 
@@ -211,10 +211,10 @@ export default function SuiteBookingPage() {
   // NOTE: we intentionally don't auto-clear for expired time here, because suite-derived slot duration
   // is computed later in the component (avoids TS “used before declaration” issues).
   useEffect(() => {
-    if (!startTime) return;
-    const isBooked = blockedSlots.includes(startTime);
-    if (isBooked) setStartTime("");
-  }, [blockedSlots, startTime]);
+    if (startTimes.length === 0) return;
+    const valid = startTimes.filter(st => !blockedSlots.includes(st));
+    if (valid.length !== startTimes.length) setStartTimes(valid);
+  }, [blockedSlots, startTimes]);
 
   const [addonQty, setAddonQty] = useState<Record<string, number>>({});
   const [persons, setPersons] = useState(1);
@@ -414,8 +414,9 @@ export default function SuiteBookingPage() {
     };
   }, []);
 
-  const addonsTotal = addons.reduce((sum: number, a) => sum + Number(a.price) * (addonQty[String(a.id)] || 0), 0) + personsTotal;
-  const basePrice = passedPackage ? Number(passedPackage.price) : suiteBasePrice;
+  const numSlots = Math.max(1, startTimes.length);
+  const addonsTotal = (addons.reduce((sum: number, a) => sum + Number(a.price) * (addonQty[String(a.id)] || 0), 0) + personsTotal) * numSlots;
+  const basePrice = (passedPackage ? Number(passedPackage.price) : suiteBasePrice) * (passedPackage ? 1 : numSlots);
 
   // Pre-select suite passed from Book Now
   useEffect(() => {
@@ -509,7 +510,7 @@ export default function SuiteBookingPage() {
     if (remaining <= 0) return false;
     if (!suite || suite.id === "0") return false;
     const suitesList = myMembership.eligibleSuites || [];
-    return suitesList.includes(String(suite.id));
+    return suitesList.length === 0 || suitesList.includes(String(suite.id));
   }, [myMembership, suite]);
 
   const isPackageCreditSelected = paymentMethod === "package-credit";
@@ -523,10 +524,10 @@ export default function SuiteBookingPage() {
 
   const isStepValid = useMemo(() => {
     if (step === 0) return selectedOccasion === "other" ? !!customOccasion.trim() : !!selectedOccasion;
-    if (step === 1) return !!bookingDate && !!startTime;
+    if (step === 1) return !!bookingDate && startTimes.length > 0;
     if (step === 4) return !!paymentMethod;
     return true;
-  }, [step, selectedOccasion, customOccasion, bookingDate, startTime, selectedSuite, paymentMethod]);
+  }, [step, selectedOccasion, customOccasion, bookingDate, startTimes, selectedSuite, paymentMethod]);
 
   function handleNext() {
     if (!isStepValid) { setShowValidation(true); return; }
@@ -625,7 +626,7 @@ export default function SuiteBookingPage() {
                       : (OCCASIONS.find(o => o.id === selectedOccasion)?.label || "No Occasion")}
                   </p>
                   <p className="text-sm text-foreground font-medium">{suite?.name}</p>
-                  <p className="text-xs text-muted-foreground">{bookingDate} · {startTime}{startTime ? ` – ${getEndTime(startTime, slotDuration)}` : ""}</p>
+                  <p className="text-xs text-muted-foreground">{bookingDate} · {startTimes.length > 0 ? startTimes.join(', ') : ""}</p>
                 </>
               )}
               <p className="text-gold font-semibold">₹{grandTotal.toLocaleString("en-IN")}</p>
@@ -894,13 +895,19 @@ export default function SuiteBookingPage() {
                               const isPast = bookingDate ? isPastSlot(slot, bookingDate, slotDuration) : false;
                               const isBlocked = isBooked || isPast;
                               const end = getEndTime(slot, slotDuration);
-                              const active = startTime === slot;
+                              const active = startTimes.includes(slot);
                               return (
                                 <button
                                   key={slot}
                                   type="button"
                                   disabled={isBlocked}
-                                  onClick={() => setStartTime(slot)}
+                                  onClick={() => {
+                                    if (active) {
+                                      setStartTimes(prev => prev.filter(s => s !== slot));
+                                    } else {
+                                      setStartTimes(prev => [...prev, slot]);
+                                    }
+                                  }}
                                   className={`flex items-center justify-between gap-3 px-4 py-3.5 rounded-2xl border text-sm font-medium transition-all ${isBlocked
                                       ? "border-white/5 bg-white/[0.01] text-muted-foreground/45 opacity-45 cursor-not-allowed"
                                       : active
@@ -928,13 +935,21 @@ export default function SuiteBookingPage() {
                       </div>
 
                       {/* Selected slot badge */}
-                      {startTime && (
-                        <div className="flex items-center gap-2.5 px-4 py-3 rounded-2xl border border-gold/25 bg-gold/8">
-                          <Clock className="h-4 w-4 text-gold shrink-0" />
-                          <p className="text-sm text-foreground">
-                            {t("app.userDashboard.selectedSlot", "Selected: {{start}} – {{end}}", { start: startTime, end: getEndTime(startTime, slotDuration) })}
-                            <span className="text-muted-foreground ml-2 text-xs">· {slotDuration} mins</span>
-                          </p>
+                      {startTimes.length > 0 && (
+                        <div className="flex flex-col gap-2 px-4 py-3 rounded-2xl border border-gold/25 bg-gold/8">
+                          <div className="flex items-center gap-2.5">
+                            <Clock className="h-4 w-4 text-gold shrink-0" />
+                            <p className="text-sm text-foreground">
+                              {t("app.userDashboard.selectedSlot", "Selected slots:")}
+                            </p>
+                          </div>
+                          <div className="flex flex-wrap gap-2 mt-1">
+                            {startTimes.map(st => (
+                               <span key={st} className="text-xs bg-gold/15 text-gold border border-gold/30 px-2 py-1 rounded-full">
+                                  {st} – {getEndTime(st, slotDuration)}
+                               </span>
+                            ))}
+                          </div>
                         </div>
                       )}
                     </div>
@@ -1028,7 +1043,7 @@ export default function SuiteBookingPage() {
                               : (localizedOccasions.find((o) => o.id === selectedOccasion)?.label ?? t("app.userDashboard.noOccasion", "No occasion"))}
                           </p>
                           <p className="text-xs text-muted-foreground mt-1">{bookingDate ? new Date(bookingDate).toLocaleDateString() : t("app.userDashboard.noDate", "No date")}</p>
-                          <p className="text-xs text-muted-foreground">{startTime ? `${startTime} – ${getEndTime(startTime, slotDuration)}` : t("app.userDashboard.noTime", "No time")}</p>
+                          <p className="text-xs text-muted-foreground">{startTimes.length > 0 ? startTimes.map(st => `${st} – ${getEndTime(st, slotDuration)}`).join(', ') : t("app.userDashboard.noTime", "No time")}</p>
                         </div>
                         <div className="glass-card rounded-2xl border border-white/10 p-4">
                           <h4 className="text-xs uppercase tracking-[0.25em] text-muted-foreground">{passedPackage ? "Package" : t("app.userDashboard.suite", "Suite")}</h4>
@@ -1330,7 +1345,7 @@ export default function SuiteBookingPage() {
                         <button
                           type="button"
                           onClick={async () => {
-                            if (!suite || !selectedOccasion || !bookingDate || !startTime) return;
+                            if (!suite || !selectedOccasion || !bookingDate || startTimes.length === 0) return;
                             try {
                               setPayError("");
                               setPaying(true);
@@ -1345,14 +1360,13 @@ export default function SuiteBookingPage() {
                                 eventType: selectedOccasion === "other" ? customOccasion : selectedOccasion,
                                 addOns: Object.keys(addonQty).filter((k) => (addonQty[k] ?? 0) > 0),
                                 date: bookingDate,
-                                timeSlot: startTime,
-                                endTimeSlot: getEndTime(startTime, slotDuration),
+                                timeSlots: startTimes,
                                 persons,
                                 basePrice,
                                 addonsTotal,
                                 savings: couponSavings + membershipSavings + offerSavings,
                                 totalAmount: grandTotal,
-                                paymentMode: paymentMethod === "package-credit" ? "package_credit" : (paymentMethod === "pay-now" ? "pay_now" : "pay_at_venue"),
+                                paymentMode: passedPackage ? "package_purchase" : (paymentMethod === "package-credit" ? "package_credit" : (paymentMethod === "pay-now" ? "pay_now" : "pay_at_venue")),
                                 advanceAmount: paymentMethod === "package-credit" ? 0 : (paymentMethod === "pay-now" ? payableNow : payableAtVenue),
                                 couponCode: couponCode || undefined,
                               };
@@ -1409,6 +1423,17 @@ export default function SuiteBookingPage() {
                                     contact: "",
                                   },
                                   theme: { color: "#b8972a" },
+                                  modal: {
+                                    ondismiss: async function() {
+                                      try {
+                                        await bookingsApi.cancel(Number(createdBookingId), { reason: "Payment aborted by user" });
+                                      } catch (e) {
+                                        console.error("Failed to cancel aborted booking", e);
+                                      }
+                                      setPaying(false);
+                                      setPayError("Payment was cancelled. The slot has been freed.");
+                                    }
+                                  }
                                 };
 
                                 const rzp = new w.Razorpay(razorpayOptions);
