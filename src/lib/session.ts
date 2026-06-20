@@ -1,6 +1,5 @@
+import { usersApi } from './api';
 import i18n from "../i18n";
-
-const BASE = "http://localhost:4000";
 
 export function clearStoredAuth() {
   try {
@@ -12,28 +11,18 @@ export function clearStoredAuth() {
   }
 }
 
-export async function validateSessionWithBackend(accessToken: string): Promise<{ role: string } | null> {
-  const lang = i18n.language || localStorage.getItem("i18nextLng") || "en";
-  const shortLang = lang.split("-")[0].toLowerCase();
-
+export async function validateSessionWithBackend(): Promise<{ user: any; newAccessToken?: string } | 'network_error' | null> {
   try {
-    const res = await fetch(`${BASE}/users/me`, {
-      method: "GET",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-        "Accept-Language": shortLang,
-        "X-Locale": shortLang,
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
-
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (!data?.role) return null;
-    return { role: data.role };
-  } catch {
-    return null;
+    const data = await usersApi.me();
+    // api.ts automatically refreshes and stores the new access token if needed.
+    // It will be available in localStorage.
+    const newAccessToken = localStorage.getItem('accessToken') || undefined;
+    return { user: data, newAccessToken };
+  } catch (err: any) {
+    if (err.message === 'Session expired. Please log in again.' || err.message.includes('401')) {
+      return null;
+    }
+    return 'network_error';
   }
 }
 

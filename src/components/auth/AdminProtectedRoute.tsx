@@ -3,7 +3,15 @@ import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/components/auth/AuthContext";
 
 export function AdminProtectedRoute({ children }: { children?: React.ReactNode }) {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="w-8 h-8 border-4 border-gold border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   // During initial mount, AuthProvider validates session asynchronously.
   // Avoid redirecting to /login until validation has completed.

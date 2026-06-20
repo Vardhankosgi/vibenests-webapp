@@ -3,13 +3,6 @@ import { Calendar, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 
-const presets = [
-  { label: "Today", getDates: () => { const d = new Date(); return { from: d, to: d }; } },
-  { label: "Last 7 Days", getDates: () => { const to = new Date(); const from = new Date(); from.setDate(from.getDate() - 6); return { from, to }; } },
-  { label: "Last 30 Days", getDates: () => { const to = new Date(); const from = new Date(); from.setDate(from.getDate() - 29); return { from, to }; } },
-  { label: "This Month", getDates: () => { const now = new Date(); return { from: new Date(now.getFullYear(), now.getMonth(), 1), to: new Date(now.getFullYear(), now.getMonth() + 1, 0) }; } },
-  { label: "Last Month", getDates: () => { const now = new Date(); return { from: new Date(now.getFullYear(), now.getMonth() - 1, 1), to: new Date(now.getFullYear(), now.getMonth(), 0) }; } },
-];
 
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const DAYS = ["Su","Mo","Tu","We","Th","Fr","Sa"];
@@ -31,10 +24,13 @@ export function DateRangePicker({ value, onChange }: DateRangePickerProps = {}) 
   const { t } = useTranslation();
   const presets = [
     { labelKey: "today", label: "Today", getDates: () => { const d = new Date(); return { from: d, to: d }; } },
+    { labelKey: "tomorrow", label: "Tomorrow", getDates: () => { const d = new Date(); d.setDate(d.getDate() + 1); return { from: d, to: d }; } },
     { labelKey: "last7Days", label: "Last 7 Days", getDates: () => { const to = new Date(); const from = new Date(); from.setDate(from.getDate() - 6); return { from, to }; } },
+    { labelKey: "next7Days", label: "Next 7 Days", getDates: () => { const from = new Date(); const to = new Date(); to.setDate(to.getDate() + 6); return { from, to }; } },
     { labelKey: "last30Days", label: "Last 30 Days", getDates: () => { const to = new Date(); const from = new Date(); from.setDate(from.getDate() - 29); return { from, to }; } },
     { labelKey: "thisMonth", label: "This Month", getDates: () => { const now = new Date(); return { from: new Date(now.getFullYear(), now.getMonth(), 1), to: new Date(now.getFullYear(), now.getMonth() + 1, 0) }; } },
     { labelKey: "lastMonth", label: "Last Month", getDates: () => { const now = new Date(); return { from: new Date(now.getFullYear(), now.getMonth() - 1, 1), to: new Date(now.getFullYear(), now.getMonth(), 0) }; } },
+    { labelKey: "nextMonth", label: "Next Month", getDates: () => { const now = new Date(); return { from: new Date(now.getFullYear(), now.getMonth() + 1, 1), to: new Date(now.getFullYear(), now.getMonth() + 2, 0) }; } },
   ];
   const MONTHS_T = [
     t("app.admin.monthJan", "January"), t("app.admin.monthFeb", "February"), t("app.admin.monthMar", "March"),

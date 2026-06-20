@@ -13,6 +13,7 @@ export type AuthUser = {
 type AuthContextType = {
   user: AuthUser | null;
   isAuthenticated: boolean;
+  isLoading: boolean;
   saveSession: (accessToken: string, refreshToken: string, user: AuthUser) => void;
   clearSession: () => void;
 };
@@ -45,22 +46,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     async function validate() {
       const accessToken = getStoredAccessToken();
-      if (!accessToken || !user) {
+      const refreshToken = localStorage.getItem('refreshToken');
+
+      if (!accessToken && !refreshToken) {
+        clearStoredAuth();
+        setUser(null);
         setSessionValidated(true);
         return;
       }
 
-      const valid = await validateSessionWithBackend(accessToken);
+      const valid = await validateSessionWithBackend();
       if (cancelled) return;
 
-      if (!valid) {
+      if (valid === null) {
+        // Explicitly unauthorized or refresh failed
         clearStoredAuth();
         setUser(null);
+      } else if (valid === 'network_error') {
+        // Network issue, assume the stored user is still valid
+        // user state is already initialized from loadUser()
       } else {
-        // keep current user data, but ensure role matches the backend
-        if (user.role !== valid.role) {
-          setUser((prev) => (prev ? { ...prev, role: valid.role } : prev));
+        // Successfully validated and refreshed
+        if (valid.newAccessToken) {
+          localStorage.setItem('accessToken', valid.newAccessToken);
         }
+        // Save the latest user details from the server to local storage
+        localStorage.setItem('authUser', JSON.stringify(valid.user));
+        setUser(valid.user);
       }
 
       setSessionValidated(true);
@@ -96,7 +108,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [sessionValidated, user]);
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, saveSession, clearSession }}>
+    <AuthContext.Provider value={{ user, isAuthenticated, isLoading: !sessionValidated, saveSession, clearSession }}>
       {children}
     </AuthContext.Provider>
   );
@@ -107,4 +119,3 @@ export function useAuth() {
   if (!ctx) throw new Error('useAuth must be used within AuthProvider');
   return ctx;
 }
-

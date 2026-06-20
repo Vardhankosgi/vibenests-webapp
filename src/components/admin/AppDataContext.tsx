@@ -12,6 +12,7 @@ export type Booking = {
   totalAmount?: number;
   fullPaymentReceived?: boolean;
   paymentMode?: string;
+  rescheduleCount?: number;
 };
 
 export type UserType = {
@@ -52,6 +53,7 @@ function mapApiBooking(b: any): Booking {
     totalAmount: Number(b.totalAmount || 0),
     fullPaymentReceived: !!b.fullPaymentReceived,
     paymentMode: b.paymentMode || '',
+    rescheduleCount: b.rescheduleCount || 0,
   };
 }
 
