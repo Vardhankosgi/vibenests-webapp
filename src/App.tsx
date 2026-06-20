@@ -32,8 +32,10 @@ import ContactUsPage from "@/pages/ContactUsPage";
 import TransactionsPage from "@/pages/TransactionsPage";
 import RefundsPage from "@/pages/RefundsPage";
 import AdminReferralsPage from "@/pages/AdminReferralsPage";
+import RazorpayAdminLinkPage from "@/pages/RazorpayAdminLinkPage";
 import { SuitesProvider } from "@/components/admin/SuitesContext";
 import RazorpayProvider from "@/components/shared/RazorpayProvider";
+
 import { AppDataProvider } from "@/components/admin/AppDataContext";
 import FloatingWhatsAppBot from "@/components/shared/FloatingWhatsAppBot";
 
@@ -56,7 +58,9 @@ export default function App() {
     <AppDataProvider>
       <RazorpayProvider>
         <BotWrapper />
+        {/* AuthProvider validates session on app mount; protected routes must not redirect until that check completes. */}
         <Routes>
+
           <Route path="/login" element={<LoginPage />} />
           <Route path="/forgot-password" element={<ForgotPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
@@ -93,6 +97,8 @@ export default function App() {
               <Route path="/refunds" element={<RefundsPage />} />
               <Route path="/reviews" element={<ReviewsPage />} />
               <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/payments/razorpay-link/:orderId" element={<RazorpayAdminLinkPage />} />
+
             </Route>
           </Route>
 

@@ -4,7 +4,7 @@ import { Search, Filter, Download, Plus, X, Check, ChevronRight, ChevronLeft, Ey
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { DateRangePicker } from "@/components/admin/DateRangePicker";
 import { useAppData } from "@/components/admin/AppDataContext";
-import { suitesApi, addonsApi, bookingsApi, refundsApi } from "@/lib/api";
+import { suitesApi, addonsApi, bookingsApi, refundsApi, usersApi } from "@/lib/api";
 import { useTranslation } from "react-i18next";
 import { exportToCSV } from "@/lib/csvExport";
 
@@ -95,6 +95,10 @@ function NewBookingModal({ onClose, onCreated }: { onClose: () => void; onCreate
   const [step, setStep] = useState(0);
   const [userSearch, setUserSearch] = useState("");
   const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [selectedRegisteredUserId, setSelectedRegisteredUserId] = useState<number | null>(null);
+  const [userAutofillLoading, setUserAutofillLoading] = useState(false);
+  const [userAutofillError, setUserAutofillError] = useState<string>("");
+
   const [suites, setSuites] = useState<ApiSuite[]>([]);
   const [addons, setAddons] = useState<ApiAddon[]>([]);
   const [loading, setLoading] = useState(false);
@@ -108,6 +112,9 @@ function NewBookingModal({ onClose, onCreated }: { onClose: () => void; onCreate
   const [blockedSlots, setBlockedSlots] = useState<string[]>([]);
   const [selectedAddons, setSelectedAddons] = useState<ApiAddon[]>([]);
   const [occasion, setOccasion] = useState("Birthday");
+  const [paymentOption, setPaymentOption] = useState<'cash' | 'razorpay_link'>('cash');
+  const [paymentLink, setPaymentLink] = useState<string>('');
+
 
   useEffect(() => {
     if (selectedSuite && date) {
@@ -151,9 +158,15 @@ function NewBookingModal({ onClose, onCreated }: { onClose: () => void; onCreate
     setEndTime(getEndTime(slot, duration));
   }
 
-  const suitePrice = selectedSuite ? Number(selectedSuite.price) : 0;
+const suitePrice = selectedSuite ? Number(selectedSuite.price) : 0;
   const addonsTotal = selectedAddons.reduce((s, a) => s + Number(a.price), 0);
-  const totalAmount = suitePrice + addonsTotal;
+
+  // Admin persons (similar to user booking)
+  const [persons, setPersons] = useState<number>(1);
+  const personsCost = suitePrice * Math.max(0, Number(persons) - 1);
+
+  const totalAmount = suitePrice + personsCost + addonsTotal;
+
 
   function validateStep0() {
     if (!date) return t("app.admin.selectDate", "Please select a date.");
@@ -178,10 +191,34 @@ function NewBookingModal({ onClose, onCreated }: { onClose: () => void; onCreate
     setStep((s) => s + 1);
   }
 
-  async function handleConfirm() {
+async function handleConfirm() {
+
     setLoading(true);
+
     setError("");
     try {
+      if (paymentOption === 'razorpay_link') {
+        const res = await bookingsApi.adminCreateRazorpayLink({
+          suiteId: selectedSuite!.id,
+          eventType: occasion,
+          addOns: selectedAddons.map((a) => a.id),
+          date,
+          timeSlot: startTime,
+          endTimeSlot: endTime,
+          guestFirstName: guest.firstName,
+          guestLastName: guest.lastName,
+          guestEmail: guest.email,
+          guestPhone: guest.phone,
+          totalAmount,
+          persons,
+        });
+
+        setPaymentLink(res.paymentLink || '');
+        onCreated(res.booking);
+        onClose();
+        return;
+      }
+
       const booking = await bookingsApi.adminCreate({
         suiteId: selectedSuite!.id,
         eventType: occasion,
@@ -194,6 +231,7 @@ function NewBookingModal({ onClose, onCreated }: { onClose: () => void; onCreate
         guestEmail: guest.email,
         guestPhone: guest.phone,
         totalAmount,
+        persons,
       });
       onCreated(booking);
       onClose();
@@ -203,6 +241,7 @@ function NewBookingModal({ onClose, onCreated }: { onClose: () => void; onCreate
       setLoading(false);
     }
   }
+
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
@@ -363,17 +402,24 @@ function NewBookingModal({ onClose, onCreated }: { onClose: () => void; onCreate
                 {userSearch && (
                   <button
                     type="button"
-                    onClick={() => {
+                onClick={() => {
                       setUserSearch("");
                       setShowUserDropdown(false);
+                      setSelectedRegisteredUserId(null);
                       setGuest(emptyGuest);
                     }}
                     className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs"
                   >
                     ✕
-                  </button>
-                )}
-              </div>
+                   </button>
+                 )}
+                 {userAutofillError && (
+                   <div className="mt-1 text-[11px] text-rose-400">{userAutofillError}</div>
+                 )}
+                 {userAutofillLoading && (
+                   <div className="mt-1 text-[11px] text-muted-foreground">{t("app.admin.loadingUser", "Loading user details...")}</div>
+                 )}
+               </div>
               {showUserDropdown && (
                 <div className="absolute z-[10000] w-full mt-1 bg-[oklch(0.15_0.02_260)] border border-[var(--gold)]/20 rounded-lg shadow-xl max-h-48 overflow-y-auto divide-y divide-white/[0.04]">
                   {users
@@ -386,16 +432,27 @@ function NewBookingModal({ onClose, onCreated }: { onClose: () => void; onCreate
                     .map((u) => (
                       <div
                         key={u.id}
-                        onClick={() => {
-                          const [first, ...rest] = u.name.split(" ");
-                          setGuest({
-                            firstName: first || "",
-                            lastName: rest.join(" ") || "",
-                            email: u.email,
-                            phone: u.phone || "",
-                          });
-                          setUserSearch(`${u.name} (${u.email})`);
+                        onClick={async () => {
+                          setUserAutofillError("");
+                          setUserAutofillLoading(true);
+                          setSelectedRegisteredUserId(Number(u.id));
                           setShowUserDropdown(false);
+                          try {
+                            const userRes = await usersApi.getById(String(u.id));
+                            const fullName = userRes?.fullName || u.name;
+                            const [first, ...rest] = String(fullName).split(" ");
+                            setGuest({
+                              firstName: first || "",
+                              lastName: rest.join(" ") || "",
+                              email: userRes?.email ?? u.email,
+                              phone: userRes?.phone ?? u.phone ?? "",
+                            });
+                            setUserSearch(`${fullName} (${userRes?.email ?? u.email})`);
+                          } catch (e: any) {
+                            setUserAutofillError(e?.message || "Failed to load user details");
+                          } finally {
+                            setUserAutofillLoading(false);
+                          }
                         }}
                         className="px-3 py-2 text-xs hover:bg-[var(--gold)]/10 text-foreground cursor-pointer transition flex flex-col"
                       >
@@ -472,10 +529,61 @@ function NewBookingModal({ onClose, onCreated }: { onClose: () => void; onCreate
 
             <div className="rounded-xl border border-[var(--gold)]/20 bg-[var(--gold)]/5 p-4 space-y-1.5 text-sm">
               <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">{t("app.admin.paymentBreakdown", "Payment Breakdown")}</p>
+
+              <div className="pt-1">
+                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">{t("app.admin.paymentOption", "Payment Option")}</p>
+
+                <div className="flex flex-col gap-2">
+
+                  <label className="flex items-center gap-2 text-xs cursor-pointer">
+                    <input
+                      type="radio"
+                      name="paymentOption"
+                      checked={paymentOption === 'cash'}
+                      onChange={() => { setPaymentOption('cash'); setPaymentLink(''); }}
+                    />
+                    {t("app.admin.payOnCash", "Pay on Cash")}
+                  </label>
+                  <label className="flex items-center gap-2 text-xs cursor-pointer">
+                    <input
+                      type="radio"
+                      name="paymentOption"
+                      checked={paymentOption === 'razorpay_link'}
+                      onChange={() => setPaymentOption('razorpay_link')}
+                    />
+                    {t("app.admin.payOnlineLink", "Pay Online (Razorpay link)")}
+                  </label>
+                </div>
+              </div>
+
+              {paymentOption === 'razorpay_link' && paymentLink && (
+                <div className="border border-white/10 bg-white/[0.03] rounded-xl p-3 space-y-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Razorpay Payment Link</p>
+                    <button
+                      type="button"
+                      onClick={() => navigator.clipboard.writeText(paymentLink)}
+                      className="text-xs px-3 py-1.5 rounded-lg border border-[var(--gold)]/30 bg-[var(--gold)]/10 text-gold hover:bg-[var(--gold)]/15 transition"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                  <a
+                    href={paymentLink}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-xs text-gold underline underline-offset-2 break-all"
+                  >
+                    {paymentLink}
+                  </a>
+                </div>
+              )}
+
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Suite ({selectedSuite?.name})</span>
                 <span>₹{suitePrice.toLocaleString("en-IN")}</span>
               </div>
+
               {selectedAddons.map((a) => (
                 <div key={a.id} className="flex justify-between">
                   <span className="text-muted-foreground">{a.name}</span>

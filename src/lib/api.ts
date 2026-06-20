@@ -105,7 +105,10 @@ export const bookingsApi = {
   payCash: (id: number) => request<any>(`/bookings/${id}/pay-cash`, { method: 'POST' }),
   reschedule: (id: number, body: { date: string; timeSlot: string }) =>
     request<any>(`/bookings/${id}/reschedule`, { method: 'PATCH', body: JSON.stringify(body) }),
+  adminCreateRazorpayLink: (body: any) =>
+    request<any>(`/bookings/admin/create-razorpay-link`, { method: 'POST', body: JSON.stringify(body) }),
 };
+
 
 // ── Suites ───────────────────────────────────────────────────────────────────
 export const suitesApi = {
