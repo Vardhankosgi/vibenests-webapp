@@ -970,11 +970,11 @@ export default function SuiteBookingPage() {
                       <div className="glass-card rounded-2xl border border-white/10 p-4">
                         <div className="flex items-center justify-between gap-4">
                           <div>
-                            <h4 className="font-display text-base text-foreground">{t("app.userDashboard.numberOfPersons", "Number of Persons")}</h4>
+                            <h4 className="font-display text-base text-foreground">{t("app.userDashboard.numberOfPersons", "Number of People")}</h4>
                             <p className="text-xs text-muted-foreground mt-0.5">
                               {suite
                                 ? rateExtra > 0
-                                  ? t("app.userDashboard.personsLimitDesc", "Min {{min}} · Max {{max}} · ₹{{rate}}/extra person above min", { min: suiteMinCap, max: suiteMaxCap, rate: rateExtra })
+                                  ? t("app.userDashboard.personsLimitDesc", "Min {{min}} · Max {{max}} · ₹{{rate}}/extra people above min", { min: suiteMinCap, max: suiteMaxCap, rate: rateExtra })
                                   : t("app.userDashboard.personsLimitDescNoExtra", "Min {{min}} · Max {{max}}", { min: suiteMinCap, max: suiteMaxCap })
                                 : t("app.userDashboard.selectSuiteFirst", "Select a suite first")}
                             </p>
@@ -1063,7 +1063,7 @@ export default function SuiteBookingPage() {
                         <div className="flex justify-between text-sm py-1">
                           <span className="text-muted-foreground">
                             {extraPersons > 0
-                              ? t("app.userDashboard.personsExtraRate", "{{count}} persons ({{extra}} extra × ₹{{rate}})", { count: persons, extra: extraPersons, rate: rateExtra })
+                              ? t("app.userDashboard.personsExtraRate", "{{count}} people ({{extra}} extra × ₹{{rate}})", { count: persons, extra: extraPersons, rate: rateExtra })
                               : t("app.userDashboard.guestsCount", "{{count}} guests", { count: persons })}
                           </span>
                           <span className="text-gold">₹{personsTotal.toLocaleString("en-IN")}</span>
@@ -1238,7 +1238,7 @@ export default function SuiteBookingPage() {
                               {!passedPackage && (
                                 <>
                                   <tr>
-                                    <td className="py-2 text-muted-foreground">Persons</td>
+                                    <td className="py-2 text-muted-foreground">People</td>
                                     <td className="py-2 text-right text-foreground">₹{(personsTotal).toLocaleString("en-IN")}</td>
                                   </tr>
                                   <tr>
