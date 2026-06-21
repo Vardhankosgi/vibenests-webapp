@@ -100,7 +100,7 @@ export default function RazorpayAdminLinkPage() {
 
   useEffect(() => {
     if (status === 'success') {
-      const t = setTimeout(() => navigate('/login', { replace: true }), 1500);
+      const t = setTimeout(() => navigate('/user/dashboard', { replace: true }), 1500);
       return () => clearTimeout(t);
     }
   }, [status, navigate]);

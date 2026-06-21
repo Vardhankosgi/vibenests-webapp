@@ -35,13 +35,8 @@ export function MobileOtpForm() {
     }
     setLoading(true);
     try {
-      const res = await authApi.sendOtp(`${code}${mobile}`);
-      // In dev mode the OTP is returned in the response — auto-fill for convenience
-      if (res.otp) {
-        setOtp(res.otp.split(""));
-      } else {
-        setOtp(Array(6).fill(""));
-      }
+      await authApi.sendOtp(`${code}${mobile}`);
+      setOtp(Array(6).fill(""));
       setStage("otp");
       setTimer(30);
       setTimeout(() => inputsRef.current[0]?.focus(), 50);
@@ -145,7 +140,7 @@ export function MobileOtpForm() {
           </div>
           <div className="flex items-center justify-between text-xs">
             <span className="text-muted-foreground">
-              {t("app.auth.otpSent")} <span className="text-foreground">{code} {mobile}</span>
+              {t("app.auth.otpSent")} <span className="text-foreground">Your email id</span>
             </span>
             {timer > 0 ? (
               <span className="text-muted-foreground">{t("app.auth.resendIn", { timer })}</span>

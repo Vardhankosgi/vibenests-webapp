@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Eye, ArrowLeft, CheckCircle2, XCircle, CalendarDays, Wallet, User, Phone, Mail, Ticket } from "lucide-react";
+import { Eye, ArrowLeft, CheckCircle2, XCircle, CalendarDays, Wallet, User, Phone, Mail, Ticket, Copy, Link } from "lucide-react";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { bookingsApi, suitesApi, refundsApi } from "@/lib/api";
 // import { bookingsApi, refundsApi } from "@/lib/api";
@@ -12,6 +12,55 @@ const statusStyle: Record<string, string> = {
   Cancelled: "bg-destructive/10 text-destructive border-destructive/20",
   Completed: "bg-blue-500/10 text-blue-400 border-blue-500/20",
 };
+
+function formatDateTime(value: any) {
+  if (!value) return "";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString("en-IN");
+}
+
+function formatRecordValue(value: any) {
+  if (typeof value === "boolean") return value ? "Yes" : "No";
+  if (typeof value === "number") return String(value);
+  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}/.test(value)) return formatDateTime(value);
+  return String(value);
+}
+
+function getBookingRecordFields(booking: any) {
+  return [
+    ["ID", booking?.id],
+    ["Order ID", booking?.orderId],
+    ["User ID", booking?.userId],
+    ["Booked By", booking?.bookedBy],
+    ["Suite ID", booking?.suiteId],
+    ["Suite Name", booking?.suiteName],
+    ["Event Type", booking?.eventType],
+    ["Add-ons", Array.isArray(booking?.addOns) ? booking.addOns.join(", ") : booking?.addOns],
+    ["Date", booking?.date],
+    ["Time Slot", booking?.timeSlot],
+    ["End Time", booking?.endTimeSlot],
+    ["Guest First Name", booking?.guestFirstName],
+    ["Guest Last Name", booking?.guestLastName],
+    ["Guest Email", booking?.guestEmail],
+    ["Guest Phone", booking?.guestPhone],
+    ["Persons", booking?.persons],
+    ["Base Price", booking?.basePrice],
+    ["Add-ons Total", booking?.addonsTotal],
+    ["Savings", booking?.savings],
+    ["Service Fee", booking?.serviceFee],
+    ["Taxes", booking?.taxes],
+    ["Total Amount", booking?.totalAmount],
+    ["Payment Mode", booking?.paymentMode],
+    ["Advance Amount", booking?.advanceAmount],
+    ["Status", booking?.status],
+    ["Payment Status", booking?.paymentStatus],
+    ["Full Payment Received", booking?.fullPaymentReceived],
+    ["Coupon Code", booking?.couponCode],
+    ["Reschedule Count", booking?.rescheduleCount],
+    ["Created At", booking?.createdAt],
+  ].filter(([, value]) => value !== undefined && value !== null && value !== "");
+}
+
 
 export default function BookingDetailsPage() {
   const { id } = useParams();
@@ -27,8 +76,7 @@ export default function BookingDetailsPage() {
 
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState("");
-
-
+  const [copiedLink, setCopiedLink] = useState<string | null>(null);
 
 
 
@@ -87,6 +135,20 @@ export default function BookingDetailsPage() {
     return `₹${n.toLocaleString("en-IN")}`;
   }
 
+  async function copyPaymentLink(link: string) {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(link);
+      } else {
+        window.prompt("Copy payment link", link);
+      }
+      setCopiedLink(link);
+      window.setTimeout(() => setCopiedLink(null), 1600);
+    } catch {
+      window.prompt("Copy payment link", link);
+    }
+  }
+
   const status = booking?.status
     ? String(booking.status).charAt(0).toUpperCase() + String(booking.status).slice(1)
     : "";
@@ -95,8 +157,22 @@ export default function BookingDetailsPage() {
 
 
   const advancePaid = booking?.paymentMode === "pay_at_venue" ? Number(booking?.advanceAmount ?? 0) : 0;
-  const totalPaid = booking?.paymentMode === "pay_now" ? Number(booking?.totalAmount ?? 0) : advancePaid;
+  const payments = Array.isArray(booking?.payments) ? booking.payments : [];
+  const successfulPaymentsTotal = payments
+    .filter((payment: any) => payment.status === "success")
+    .reduce((sum: number, payment: any) => sum + Number(payment.amount || 0), 0);
+  const totalPaid = successfulPaymentsTotal > 0
+    ? successfulPaymentsTotal
+    : booking?.fullPaymentReceived
+      ? Number(booking?.totalAmount ?? 0)
+      : booking?.paymentMode === "pay_at_venue"
+        ? Number(booking?.advanceAmount ?? 0)
+        : booking?.paymentMode === "pay_now"
+          ? Number(booking?.totalAmount ?? 0)
+          : 0;
   const pendingAmount = Math.max(Number(booking?.totalAmount ?? 0) - totalPaid, 0);
+  const isBookedByAdmin = booking?.bookedBy === "admin";
+  const adminPaymentLink = booking?.adminPaymentLink || (isBookedByAdmin ? payments.find((payment: any) => payment.paymentLink)?.paymentLink || null : null);
 
   return (
     <div className="flex-1 overflow-y-auto">
@@ -315,6 +391,10 @@ export default function BookingDetailsPage() {
                   <span className="text-muted-foreground">Persons</span>
                   <span className="text-foreground">{booking.persons ?? ""}</span>
                 </div>
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-muted-foreground">Booked By</span>
+                  <span className="text-foreground capitalize">{booking.bookedBy || "guest"}</span>
+                </div>
               </div>
 
             </div>
@@ -338,6 +418,107 @@ export default function BookingDetailsPage() {
                     : "No add-ons"}
 
               </div>
+            </div>
+
+          
+
+            {isBookedByAdmin && (
+              <div className="rounded-xl border border-[var(--gold)]/20 bg-[var(--gold)]/5 p-4 text-sm space-y-3">
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide">Admin Payment Link</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {adminPaymentLink ? "Share this link with the guest to complete payment." : "No payment link found for this booking."}
+                    </p>
+                  </div>
+                  {adminPaymentLink && (
+                    <button
+                      type="button"
+                      onClick={() => copyPaymentLink(adminPaymentLink)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-[var(--gold)]/30 bg-[var(--gold)]/10 text-gold hover:bg-[var(--gold)]/15 transition"
+                    >
+                      <Copy className="h-3.5 w-3.5" /> {copiedLink === adminPaymentLink ? "Copied" : "Copy Link"}
+                    </button>
+                  )}
+                </div>
+                {adminPaymentLink && (
+                  <div className="space-y-2">
+                    <a
+                      href={adminPaymentLink}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="block text-xs text-gold underline underline-offset-2 break-all"
+                    >
+                      {adminPaymentLink}
+                    </a>
+                    <div className="flex items-center gap-2 text-xs text-emerald-400">
+                      <Link className="h-3.5 w-3.5" /> Payment link is ready to share
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4 text-sm space-y-3">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">Payment Records</p>
+              {payments.length === 0 ? (
+                <p className="text-muted-foreground">No payment records found.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="text-left text-[11px] text-muted-foreground uppercase tracking-wide border-b border-white/[0.06]">
+                        <th className="pb-2 pr-3">ID</th>
+                        <th className="pb-2 pr-3">Amount</th>
+                        <th className="pb-2 pr-3">Method</th>
+                        <th className="pb-2 pr-3">Provider</th>
+                        <th className="pb-2 pr-3">Status</th>
+                        <th className="pb-2 pr-3">Order ID</th>
+                        <th className="pb-2 pr-3">Payment ID</th>
+                        <th className="pb-2 pr-3">Payment Link</th>
+                        <th className="pb-2">Created At</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/[0.04]">
+                      {payments.map((payment: any) => (
+                        <tr key={payment.id} className="align-top">
+                          <td className="py-3 pr-3 text-gold">{payment.id}</td>
+                          <td className="py-3 pr-3">{formatMoney(payment.amount)}</td>
+                          <td className="py-3 pr-3">{payment.method}</td>
+                          <td className="py-3 pr-3">{payment.provider}</td>
+                          <td className="py-3 pr-3 capitalize">{payment.status}</td>
+                          <td className="py-3 pr-3 font-mono text-[10px]">{payment.providerOrderId || "—"}</td>
+                          <td className="py-3 pr-3 font-mono text-[10px]">{payment.providerPaymentId || "—"}</td>
+                          <td className="py-3 pr-3 min-w-48">
+                            {payment.paymentLink ? (
+                              <div className="space-y-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => copyPaymentLink(payment.paymentLink)}
+                                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-semibold border border-[var(--gold)]/30 bg-[var(--gold)]/10 text-gold hover:bg-[var(--gold)]/15 transition"
+                                >
+                                  <Copy className="h-3 w-3" /> {copiedLink === payment.paymentLink ? "Copied" : "Copy"}
+                                </button>
+                                <a
+                                  href={payment.paymentLink}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="block text-[10px] text-gold underline underline-offset-2 break-all"
+                                >
+                                  {payment.paymentLink}
+                                </a>
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </td>
+                          <td className="py-3 text-muted-foreground whitespace-nowrap">{formatDateTime(payment.createdAt)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
 
 

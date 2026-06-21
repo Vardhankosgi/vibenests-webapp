@@ -34,6 +34,7 @@ import TransactionsPage from "@/pages/TransactionsPage";
 import RefundsPage from "@/pages/RefundsPage";
 import AdminReferralsPage from "@/pages/AdminReferralsPage";
 import RazorpayAdminLinkPage from "@/pages/RazorpayAdminLinkPage";
+import RazorpayPaymentLinkSuccessPage from "@/pages/RazorpayPaymentLinkSuccessPage";
 import { SuitesProvider } from "@/components/admin/SuitesContext";
 import RazorpayProvider from "@/components/shared/RazorpayProvider";
 
@@ -46,7 +47,7 @@ function BotWrapper() {
     '/dashboard', '/revenue', '/bookings', '/suites', '/booking-details',
     '/users', '/settings', '/addons', '/analytics', '/offers', '/packages',
     '/celebration-memberships', '/customers', '/avg-booking-value', '/reviews',
-    '/transactions', '/refunds', '/admin'
+    '/transactions', '/refunds', '/admin', '/payments/razorpay-link', '/payments/razorpay-link-success'
   ];
   const isAdmin = adminPaths.some(path => location.pathname.startsWith(path));
   
@@ -99,10 +100,11 @@ export default function App() {
               <Route path="/refunds" element={<RefundsPage />} />
               <Route path="/reviews" element={<ReviewsPage />} />
               <Route path="/settings" element={<SettingsPage />} />
-              <Route path="/payments/razorpay-link/:orderId" element={<RazorpayAdminLinkPage />} />
 
             </Route>
           </Route>
+          <Route path="/payments/razorpay-link/:orderId" element={<RazorpayAdminLinkPage />} />
+          <Route path="/payments/razorpay-link-success" element={<RazorpayPaymentLinkSuccessPage />} />
 
         </Routes>
       </RazorpayProvider>
