@@ -1,6 +1,6 @@
 import i18n from '../i18n';
 
-const BASE = 'http://localhost:4000';
+const BASE = 'https://api.vibenests.in';
 
 function getToken() {
   return localStorage.getItem('accessToken');

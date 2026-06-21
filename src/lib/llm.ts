@@ -1,4 +1,4 @@
-const BASE = 'http://localhost:4000';
+const BASE = 'https://api.vibenests.in';
 
 function getContext(): any {
   // Keep it minimal; no tokens.
