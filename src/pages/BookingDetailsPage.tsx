@@ -178,7 +178,7 @@ export default function BookingDetailsPage() {
     <div className="flex-1 overflow-y-auto">
       <AdminHeader title="Booking Details" />
 
-      <div className="p-6 space-y-4">
+      <div className="p-4 sm:p-6 space-y-4">
         <button
           onClick={() => navigate("/bookings")}
           className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition border border-white/10 hover:border-[var(--gold)]/30 px-3 py-2 rounded-lg"

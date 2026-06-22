@@ -8,7 +8,6 @@ import {
   AlertCircle, ArrowLeft, Calendar, Heart,
 } from "lucide-react";
 import { BrandMark } from "@/components/auth/BrandMark";
-import { GoogleIcon } from "@/components/auth/GoogleIcon";
 import { LanguageSelector } from "@/components/shared/LanguageSelector";
 import { authApi } from "@/lib/api";
 import loginbg from "@/assets/loginbg.png";
@@ -65,7 +64,7 @@ function Field({
 }) {
   return (
     <div className="space-y-1.5">
-      <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
+      <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5 whitespace-nowrap">
         <Icon className="h-3 w-3 text-gold/70" />
         {label}
       </label>
@@ -154,8 +153,8 @@ export default function RegisterPage() {
 
   return (
     <main
-      className="min-h-screen grid lg:grid-cols-2 relative"
-      style={{ backgroundImage: `url(${loginbg})`, backgroundSize: "cover", backgroundPosition: "center", backgroundAttachment: "fixed" }}
+      className="min-h-screen grid lg:grid-cols-2 relative bg-scroll lg:bg-fixed"
+      style={{ backgroundImage: `url(${loginbg})`, backgroundSize: "cover", backgroundPosition: "center" }}
     >
       {/* Dark overlay */}
       <div className="absolute inset-0 bg-black/60 pointer-events-none" />
@@ -265,6 +264,10 @@ export default function RegisterPage() {
               <div className="pointer-events-none absolute -bottom-20 -left-20 h-48 w-48 rounded-full bg-gold/10 blur-3xl" />
 
               <div className="relative space-y-6">
+                {/* Logo on mobile/tablet */}
+                <div className="flex lg:hidden justify-center">
+                  <BrandMark />
+                </div>
                 {/* Header */}
                 <div className="flex items-start justify-between">
                   <div>
@@ -281,27 +284,11 @@ export default function RegisterPage() {
                   </button>
                 </div>
 
-                {/* Social login */}
-                <button
-                  type="button"
-                  className="w-full flex items-center justify-center gap-3 rounded-xl border border-white/12 bg-white/[0.03] py-2.5 text-sm font-medium text-muted-foreground hover:bg-white/[0.07] hover:border-gold/30 hover:text-foreground transition-all"
-                >
-                  <GoogleIcon className="h-4 w-4" />
-                  {t("app.auth.google", "Continue with Google")}
-                </button>
-
                 {errorMsg && (
                   <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs px-4 py-2.5 rounded-xl">
                     ✕ {errorMsg}
                   </div>
                 )}
-
-                {/* Divider */}
-                <div className="flex items-center gap-3 text-[11px] tracking-[0.3em] text-muted-foreground uppercase">
-                  <div className="h-px flex-1 bg-gradient-to-r from-transparent to-gold/30" />
-                  <span>{t("app.auth.orRegisterEmail", "or register with email")}</span>
-                  <div className="h-px flex-1 bg-gradient-to-l from-transparent to-gold/30" />
-                </div>
 
                 {/* Form fields */}
                 <form onSubmit={handleSubmit} noValidate className="space-y-4" autoComplete="off">
@@ -403,7 +390,7 @@ export default function RegisterPage() {
                   </Field>
 
                   {/* DOB and Marriage Date */}
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Field label={t("app.auth.dateOfBirth", "Date of Birth")} icon={Calendar} error={errors.dateOfBirth}>
                       <input
                         type="date"

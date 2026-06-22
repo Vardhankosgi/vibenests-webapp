@@ -32,7 +32,7 @@ export default function DashboardPage() {
   return (
     <div className="flex-1 overflow-y-auto">
       <AdminHeader title={t("app.admin.dashboard", "Dashboard")} />
-      <div className="p-6 space-y-6">
+      <div className="p-4 sm:p-6 space-y-6">
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">{t("app.admin.overviewPeriod", "Overview for selected period")}</p>
           <DateRangePicker value={dateRange} onChange={setDateRange} />

@@ -409,7 +409,7 @@ export default function SuitesPage() {
   return (
     <div className="flex-1 overflow-y-auto">
       <AdminHeader title="Rooms" />
-      <div className="p-6 space-y-5">
+      <div className="p-4 sm:p-6 space-y-5">
         <div className="flex flex-wrap gap-3">
           {[
             { label: t("app.admin.totalSuites", "Total Suites"), count: suites.length, color: "border-[var(--gold)]/30 text-gold" },

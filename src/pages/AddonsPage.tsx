@@ -161,7 +161,7 @@ export default function AddonsPage() {
   return (
     <div className="flex-1 overflow-y-auto">
       <AdminHeader title="Add-on Management" />
-      <div className="p-6 space-y-5">
+      <div className="p-4 sm:p-6 space-y-5">
         <div className="flex flex-wrap gap-3">
           {[
             { label: t("app.admin.totalAddons", "Total Add-ons"), count: addons.length, color: "border-[var(--gold)]/30 text-gold" },

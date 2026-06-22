@@ -115,7 +115,7 @@ export default function AdminReferralsPage() {
     <div className="flex-1 overflow-y-auto bg-[oklch(0.09_0.02_260)] text-foreground">
       <AdminHeader title="Referrals & Rewards" />
 
-      <div className="p-6 space-y-6">
+      <div className="p-4 sm:p-6 space-y-6">
         {/* Settings Panel */}
         <div className="glass-card rounded-3xl p-6 border border-gold/10 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 rounded-full bg-gold/10 blur-3xl pointer-events-none" />

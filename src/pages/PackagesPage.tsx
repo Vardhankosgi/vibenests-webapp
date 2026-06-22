@@ -168,7 +168,7 @@ export default function PackagesPage() {
     <div className="flex-1 overflow-y-auto">
       <AdminHeader title="Celebration Packages" />
 
-      <div className="p-6 space-y-5">
+      <div className="p-4 sm:p-6 space-y-5">
         {/* Header row */}
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>

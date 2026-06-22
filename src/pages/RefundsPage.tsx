@@ -302,7 +302,7 @@ export default function RefundsPage() {
     <div className="flex-1 flex flex-col overflow-auto min-h-0">
       <AdminHeader title="Refund Management" />
 
-      <div className="flex-1 p-6 space-y-5 overflow-auto">
+      <div className="flex-1 p-4 sm:p-6 space-y-5 overflow-auto">
         {/* Policy banner */}
         <div className="glass-card rounded-2xl border border-[var(--gold)]/15 p-5">
           <div className="flex items-center justify-between mb-3 flex-wrap gap-2">

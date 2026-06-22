@@ -18,7 +18,7 @@ export default function ContactUsPage() {
       icon: Mail,
       label: t("contact.cards.email"),
       value: "vibenestsmeetingpoint@gmail.com",
-      href: "mailto:vibenestsmeetingpoint@gmail.com",
+      href: "https://mail.google.com/mail/?view=cm&fs=1&to=vibenestsmeetingpoint@gmail.com",
       sub: t("app.userDashboard.emailSupportDesc", "We respond within 1–2 business days"),
     },
     {
@@ -58,19 +58,18 @@ export default function ContactUsPage() {
 
   return (
     <div
-      className="min-h-screen flex"
+      className="min-h-screen flex flex-col lg:flex-row bg-scroll lg:bg-fixed"
       style={{
         backgroundImage: `url(${loginbg})`,
         backgroundSize: "cover",
         backgroundPosition: "center",
-        backgroundAttachment: "fixed",
         backgroundColor: "oklch(0.08 0.015 260)",
       }}
     >
       <div className="fixed inset-0 pointer-events-none" style={{ background: "rgba(4,6,20,0.87)" }} />
 
-      {/* ── Left hero panel (desktop) ── */}
-      <div className="hidden lg:flex lg:w-[40%] xl:w-[36%] flex-col justify-between relative z-10 p-12 shrink-0">
+      {/* ── Left hero panel ── */}
+      <div className="flex lg:w-[40%] xl:w-[36%] flex-col justify-between relative z-10 p-8 lg:p-12 shrink-0 gap-8 lg:gap-0 pt-16 lg:pt-12">
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
           <BrandMark />
         </motion.div>
@@ -147,8 +146,7 @@ export default function ContactUsPage() {
           <div className="relative space-y-7">
 
             {/* Mobile header */}
-            <div className="flex items-center justify-between lg:hidden">
-              <BrandMark />
+            <div className="flex items-center justify-end lg:hidden">
               <div className="flex items-center gap-2">
                 <LanguageSelector />
                 <button
@@ -214,7 +212,7 @@ export default function ContactUsPage() {
                     transition={{ delay: 0.25 + i * 0.08, duration: 0.4 }}
                   >
                     {c.href
-                      ? <a href={c.href} className={`${cls} hover:border-gold/40 hover:bg-gold/5`}>{inner}</a>
+                      ? <a href={c.href} target={c.href.startsWith("http") ? "_blank" : undefined} rel={c.href.startsWith("http") ? "noopener noreferrer" : undefined} className={`${cls} hover:border-gold/40 hover:bg-gold/5`}>{inner}</a>
                       : <div className={cls}>{inner}</div>
                     }
                   </motion.div>

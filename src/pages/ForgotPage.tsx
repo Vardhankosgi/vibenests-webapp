@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Mail, ArrowLeft, CheckCircle, AlertCircle } from "lucide-react";
 import { authApi } from "@/lib/api";
 import { LanguageSelector } from "@/components/shared/LanguageSelector";
+import { BrandMark } from "@/components/auth/BrandMark";
 import loginbg from "@/assets/loginbg.png";
 
 export default function ForgotPage() {
@@ -38,8 +39,8 @@ export default function ForgotPage() {
 
   return (
     <main
-      className="min-h-screen flex items-center justify-center relative px-4 py-16"
-      style={{ backgroundImage: `url(${loginbg})`, backgroundSize: "cover", backgroundPosition: "center", backgroundAttachment: "fixed" }}
+      className="min-h-screen flex items-center justify-center relative px-4 py-16 bg-scroll lg:bg-fixed"
+      style={{ backgroundImage: `url(${loginbg})`, backgroundSize: "cover", backgroundPosition: "center" }}
     >
       <div className="absolute inset-0 bg-black/55 pointer-events-none" />
 
@@ -58,6 +59,10 @@ export default function ForgotPage() {
         <div className="pointer-events-none absolute -bottom-24 -left-24 h-56 w-56 rounded-full bg-[var(--gold)]/10 blur-3xl" />
 
         <div className="relative">
+          {/* Logo */}
+          <div className="flex justify-center mb-6">
+            <BrandMark />
+          </div>
           {/* Back button */}
           <button
             onClick={() => navigate("/login")}

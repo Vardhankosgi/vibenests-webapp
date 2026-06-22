@@ -156,7 +156,7 @@ export default function SettingsPage() {
   return (
     <div className="flex-1 overflow-y-auto">
       <AdminHeader title="Settings" />
-      <div className="p-6 space-y-6">
+      <div className="p-4 sm:p-6 space-y-6">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <p className="text-sm text-muted-foreground">{t("app.admin.settingsDesc", "Manage your business profile, preferences, and integrations.")}</p>
           <div className="flex gap-3">
@@ -191,7 +191,7 @@ export default function SettingsPage() {
             </div>
           </Card>
 
-          <Card title={t("app.admin.notifications", "Notifications")} icon={Bell}>
+          {/* <Card title={t("app.admin.notifications", "Notifications")} icon={Bell}>
             <div className="space-y-1 divide-y divide-white/[0.04]">
               <p className="text-[11px] text-muted-foreground uppercase tracking-wide pb-2">{t("app.admin.emailAlerts", "Email Alerts")}</p>
               <ToggleRow label={t("app.admin.newBookingNotif", "New Booking")} desc={t("app.admin.newBookingDesc", "Notify on every new booking")} checked={emailBooking} onChange={setEmailBooking} />
@@ -202,9 +202,9 @@ export default function SettingsPage() {
               <ToggleRow label={t("app.admin.pushNotifications", "Push Notifications")} checked={pushAlerts} onChange={setPushAlerts} />
               <ToggleRow label={t("app.admin.dailySummary", "Daily Summary Report")} checked={dailyReport} onChange={setDailyReport} />
             </div>
-          </Card>
+          </Card> */}
 
-          <Card title={t("app.admin.appearance", "Appearance")} icon={Palette}>
+          {/* <Card title={t("app.admin.appearance", "Appearance")} icon={Palette}>
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <Field label={t("app.admin.theme", "Theme")}><Select value={theme} onChange={setTheme} options={["Dark", "Light", "System"]} /></Field>
@@ -213,7 +213,7 @@ export default function SettingsPage() {
               <ToggleRow label={t("app.admin.compactMode", "Compact Mode")} desc={t("app.admin.compactModeDesc", "Reduce spacing for denser layout")} checked={compactMode} onChange={setCompactMode} />
               <ToggleRow label={t("app.admin.enableAnimations", "Enable Animations")} desc={t("app.admin.enableAnimationsDesc", "Smooth transitions and effects")} checked={animationsEnabled} onChange={setAnimationsEnabled} />
             </div>
-          </Card>
+          </Card> */}
 
           <Card title={t("app.admin.security", "Security")} icon={Shield}>
             <div className="space-y-3">
@@ -250,10 +250,10 @@ export default function SettingsPage() {
                 </div>
                 <Field label={t("app.admin.whatsappNumber", "WhatsApp Number")}><Input value={whatsappNumber} onChange={setWhatsappNumber} placeholder="+91 XXXXX XXXXX" /></Field>
               </div>
-              <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] space-y-2">
-                <p className="text-sm font-medium text-foreground">{t("app.admin.googleAnalytics", "Google Analytics")}</p>
-                <Field label={t("app.admin.measurementId", "Measurement ID")}><Input value={analyticsId} onChange={setAnalyticsId} placeholder="G-XXXXXXXXXX" /></Field>
-              </div>
+              {/* <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] space-y-2"> */}
+                {/* <p className="text-sm font-medium text-foreground">{t("app.admin.googleAnalytics", "Google Analytics")}</p> */}
+                {/* <Field label={t("app.admin.measurementId", "Measurement ID")}><Input value={analyticsId} onChange={setAnalyticsId} placeholder="G-XXXXXXXXXX" /></Field> */}
+              {/* </div> */}
             </div>
           </Card>
         </div>

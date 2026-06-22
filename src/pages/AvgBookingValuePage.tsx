@@ -128,7 +128,7 @@ export default function AvgBookingValuePage() {
   return (
     <div className="flex-1 overflow-y-auto">
       <AdminHeader title="Avg. Booking Value" />
-      <div className="p-6 space-y-6">
+      <div className="p-4 sm:p-6 space-y-6">
 
         {/* Back + Export */}
         <div className="flex items-center justify-between">

@@ -1718,12 +1718,14 @@ function BookingListView({ bookings, title, fetchFromApi, statusFilter }: { book
             <div className="flex flex-col gap-1">
               <label className="text-[10px] uppercase tracking-widest text-muted-foreground">{t("app.userDashboard.fromDate", "From")}</label>
               <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)}
-                className="luxury-input rounded-xl px-3 py-1.5 text-xs bg-black/40 text-foreground" />
+                className="luxury-input rounded-xl px-3 py-1.5 text-xs bg-black/40 text-foreground"
+                style={{ colorScheme: "dark" }} />
             </div>
             <div className="flex flex-col gap-1">
               <label className="text-[10px] uppercase tracking-widest text-muted-foreground">{t("app.userDashboard.toDate", "To")}</label>
               <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)}
-                className="luxury-input rounded-xl px-3 py-1.5 text-xs bg-black/40 text-foreground" />
+                className="luxury-input rounded-xl px-3 py-1.5 text-xs bg-black/40 text-foreground"
+                style={{ colorScheme: "dark" }} />
             </div>
           </div>
           <div className="flex gap-1 glass rounded-xl p-1">
@@ -2202,7 +2204,7 @@ function RefundRequestsView() {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs">
                   {/* Left Column: Details */}
-                  <div className="space-y-2.5 border-r border-white/5 pr-4">
+                  <div className="space-y-2.5 border-b border-white/5 pb-4 md:border-b-0 md:border-r md:pb-0 md:pr-4">
                     <h5 className="font-semibold text-muted-foreground uppercase tracking-wider text-[10px]">Policy & Calculation</h5>
                     <div className="space-y-1.5">
                       <div className="flex justify-between">
@@ -2237,7 +2239,7 @@ function RefundRequestsView() {
                   </div>
 
                   {/* Middle Column: Request Info */}
-                  <div className="space-y-2.5 border-r border-white/5 pr-4">
+                  <div className="space-y-2.5 border-b border-white/5 pb-4 md:border-b-0 md:border-r md:pb-0 md:pr-4">
                     <h5 className="font-semibold text-muted-foreground uppercase tracking-wider text-[10px]">Request Details</h5>
                     <div className="space-y-1.5">
                       <div className="flex justify-between">
@@ -2459,25 +2461,25 @@ function CelebrationMembershipsView() {
                     : "Book eligible luxury suites for free using your package credits."}
                 </p>
               </div>
-              <div className="flex flex-wrap items-center gap-4">
-                <div className="flex flex-wrap gap-4 text-xs font-mono text-muted-foreground bg-black/30 border border-white/5 p-4 rounded-2xl shrink-0">
+              <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 text-xs font-mono text-muted-foreground bg-black/30 border border-white/5 p-4 rounded-2xl w-full md:w-auto shrink-0">
                   <div>
                     <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-0.5">Activation Date</p>
                     <p className="text-foreground font-semibold">{new Date(myActive.activationDate).toLocaleDateString()}</p>
                   </div>
-                  <div className="border-l border-white/10 pl-4">
+                  <div>
                     <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-0.5">Expiry Date</p>
                     <p className={`font-semibold ${isExpired ? "text-rose-400 font-bold" : "text-foreground"}`}>{new Date(myActive.expiryDate).toLocaleDateString()}</p>
                   </div>
-                  <div className="border-l border-white/10 pl-4">
+                  <div>
                     <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-0.5">Total Bookings Allowed</p>
                     <p className="text-foreground font-semibold font-mono">{myActive.maxFreeBookings ?? 10}</p>
                   </div>
-                  <div className="border-l border-white/10 pl-4">
+                  <div>
                     <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-0.5">Bookings Used</p>
                     <p className="text-foreground font-semibold font-mono">{myActive.bookingsUsed ?? 0}</p>
                   </div>
-                  <div className="border-l border-white/10 pl-4">
+                  <div>
                     <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-0.5">Remaining Bookings</p>
                     <p className={`${isExpired ? "text-rose-400/70" : "text-emerald-400"} font-bold font-mono`}>
                       {Math.max(0, (myActive.maxFreeBookings ?? 10) - (myActive.bookingsUsed ?? 0))}
@@ -3010,7 +3012,7 @@ function HelpView() {
       label: t("app.userDashboard.emailSupport", "Email Support"),
       value: "vibenestsmeetingpoint@gmail.com",
       sub: t("app.userDashboard.emailSupportDesc", "We respond within 1–2 business days"),
-      href: "mailto:vibenestsmeetingpoint@gmail.com",
+      href: "https://mail.google.com/mail/?view=cm&fs=1&to=vibenestsmeetingpoint@gmail.com",
     },
     {
       icon: Phone,
@@ -3063,7 +3065,7 @@ function HelpView() {
               </>
             );
             return c.href ? (
-              <a key={c.label} href={c.href} className={`${cls} hover:border-gold/40 hover:bg-gold/5`}>{inner}</a>
+              <a key={c.label} href={c.href} target={c.href.startsWith("http") ? "_blank" : undefined} rel={c.href.startsWith("http") ? "noopener noreferrer" : undefined} className={`${cls} hover:border-gold/40 hover:bg-gold/5`}>{inner}</a>
             ) : (
               <div key={c.label} className={cls}>{inner}</div>
             );
@@ -3232,7 +3234,7 @@ export default function UserDashboardPage() {
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-[var(--background)]">
       {/* Top bar */}
-      <header className="sticky top-0 z-50 flex items-center justify-between px-6 py-4 border-b border-white/5 glass backdrop-blur-xl">
+      <header className="sticky top-0 z-50 flex items-center justify-between px-4 sm:px-6 py-3.5 border-b border-white/5 glass backdrop-blur-xl">
         <div className="flex items-center gap-4">
           {/* Mobile toggle */}
           <button onClick={() => setSidebarOpen((o) => !o)}
@@ -3395,7 +3397,7 @@ export default function UserDashboardPage() {
         </aside>
 
         {/* Page content */}
-        <main className="flex-1 p-6 lg:p-8 overflow-y-auto min-h-0">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto min-h-0">
           <AnimatePresence mode="wait">
             <motion.div key={activeNav} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }}>
               {renderContent()}

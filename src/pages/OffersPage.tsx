@@ -39,7 +39,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   return <div className="flex flex-col gap-1"><label className="text-[11px] text-muted-foreground uppercase tracking-wide">{label}</label>{children}</div>;
 }
 function Input({ value, onChange, type = "text", placeholder = "" }: { value: string | number; onChange: (v: string) => void; type?: string; placeholder?: string }) {
-  return <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="luxury-input rounded-lg px-3 py-2 text-sm w-full" />;
+  return <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="luxury-input rounded-lg px-3 py-2 text-sm w-full" style={type === "date" ? { colorScheme: "dark" } : undefined} />;
 }
 function Select({ value, onChange, options }: { value: string; onChange: (v: string) => void; options: string[] }) {
   return <select value={value} onChange={(e) => onChange(e.target.value)} className="luxury-input rounded-lg px-3 py-2 text-sm w-full bg-transparent cursor-pointer">{options.map((o) => <option key={o} value={o} className="bg-[oklch(0.13_0.025_260)]">{o}</option>)}</select>;
@@ -394,7 +394,7 @@ export default function OffersPage() {
           </p>
         </div>
       ) : (
-        <div className="p-6 space-y-6">
+        <div className="p-4 sm:p-6 space-y-6">
 
           <div className="flex gap-1 p-1 rounded-xl bg-white/[0.04] border border-[var(--gold)]/15 w-fit">
             <button onClick={() => setTab("config")} className={tabBtn(tab === "config")}><Settings2 className="h-4 w-4" /> {t("app.admin.addOffer", "Add Offer")}</button>

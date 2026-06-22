@@ -191,7 +191,7 @@ export default function UsersPage() {
   return (
     <div className="flex-1 overflow-y-auto">
       <AdminHeader title="Customer Management" />
-      <div className="p-6 space-y-5">
+      <div className="p-4 sm:p-6 space-y-5">
 
         {/* Stats */}
         <div className="flex flex-wrap gap-3">
@@ -432,11 +432,11 @@ export default function UsersPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-[11px] text-muted-foreground uppercase tracking-wide">DOB</label>
-                  <input type="date" value={editForm.dateOfBirth} onChange={(e) => setEditForm((f) => ({ ...f, dateOfBirth: e.target.value }))} className="luxury-input w-full rounded-lg px-3 py-2.5 text-sm mt-0.5" />
+                  <input type="date" value={editForm.dateOfBirth} onChange={(e) => setEditForm((f) => ({ ...f, dateOfBirth: e.target.value }))} className="luxury-input w-full rounded-lg px-3 py-2.5 text-sm mt-0.5" style={{ colorScheme: "dark" }} />
                 </div>
                 <div>
                   <label className="text-[11px] text-muted-foreground uppercase tracking-wide">Marriage Date</label>
-                  <input type="date" value={editForm.marriageDate} onChange={(e) => setEditForm((f) => ({ ...f, marriageDate: e.target.value }))} className="luxury-input w-full rounded-lg px-3 py-2.5 text-sm mt-0.5" />
+                  <input type="date" value={editForm.marriageDate} onChange={(e) => setEditForm((f) => ({ ...f, marriageDate: e.target.value }))} className="luxury-input w-full rounded-lg px-3 py-2.5 text-sm mt-0.5" style={{ colorScheme: "dark" }} />
                 </div>
               </div>
 

@@ -124,7 +124,7 @@ export default function ReviewsPage() {
     <div className="flex-1 overflow-y-auto bg-[oklch(0.09_0.02_260)] text-foreground">
       <AdminHeader title="Guest Ratings & Reviews" />
       
-      <div className="p-6 space-y-6">
+      <div className="p-4 sm:p-6 space-y-6">
         
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3 text-muted-foreground">

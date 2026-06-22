@@ -718,7 +718,7 @@ export default function SuiteBookingPage() {
 
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto">
-          <div className="p-5 space-y-5">
+          <div className="p-4 sm:p-5 space-y-5">
 
             {/* Page title */}
             <div className="glass-card rounded-2xl border border-gold/15 px-6 py-5">

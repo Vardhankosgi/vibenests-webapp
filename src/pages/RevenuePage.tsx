@@ -99,7 +99,7 @@ export default function RevenuePage() {
   return (
     <div className="flex-1 overflow-y-auto">
       <AdminHeader title="Revenue" />
-      <div className="p-6 space-y-6">
+      <div className="p-4 sm:p-6 space-y-6">
 
         {/* Back + actions */}
         <div className="flex items-center justify-between">

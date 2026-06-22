@@ -137,6 +137,31 @@
     font-family: var(--font-display);
     letter-spacing: -0.01em;
   }
+
+  input[type="date"] {
+    color-scheme: dark;
+    display: inline-flex;
+    align-items: center;
+    min-height: 42px;
+  }
+
+  input[type="date"]::-webkit-datetime-edit {
+    display: inline-flex;
+    align-items: center;
+    padding: 0;
+  }
+
+  input[type="date"]::-webkit-datetime-edit-fields-wrapper {
+    display: inline-flex;
+    align-items: center;
+    padding: 0;
+  }
+
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    margin: 0;
+    padding: 0;
+  }
 }
 
 @layer utilities {
@@ -201,7 +226,11 @@
     border: 1px solid oklch(0.78 0.13 80 / 0.25);
     outline: none;
     color: oklch(0.96 0.005 90);
+    color-scheme: dark;
     transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  }
+  input.luxury-input {
+    height: 42px;
   }
   .luxury-input:focus {
     background: rgb(18, 20, 40);

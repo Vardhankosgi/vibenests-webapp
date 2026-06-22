@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { Bell, Search, ChevronDown, User, Settings, LogOut } from "lucide-react";
+import { Bell, Search, ChevronDown, User, Settings, LogOut, Menu } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { createPortal } from "react-dom";
 import { NotificationPanel, type Notification } from "./NotificationPanel";
 import { LanguageSelector } from "@/components/shared/LanguageSelector";
 import { useTranslation } from "react-i18next";
+import { useSidebar } from "@/components/admin/SidebarContext";
 
 const titleKeys: { [key: string]: string } = {
   "Transactions": "transactions",
@@ -52,14 +53,25 @@ export function AdminHeader({ title }: AdminHeaderProps) {
   // Derive unread count from controlled state (falls back to mock count = 3)
   const unreadCount = notifications ? notifications.filter((n) => !n.read).length : 3;
 
+  const { setMobileOpen } = useSidebar();
+
   const transKey = titleKeys[title];
   const translatedTitle = transKey ? t("app.admin." + transKey, title) : title;
 
   return (
     <>
-      <header className="flex items-center justify-between px-6 py-4 border-b border-[var(--gold)]/10 bg-[oklch(0.11_0.025_260)]">
-        {/* Left: Page Title */}
-        <h1 className="font-display text-2xl font-medium text-foreground">{translatedTitle}</h1>
+      <header className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-[var(--gold)]/10 bg-[oklch(0.11_0.025_260)]">
+        {/* Left: Page Title & Mobile Drawer toggle */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setMobileOpen(true)}
+            className="lg:hidden h-9 w-9 flex items-center justify-center rounded-lg border border-[var(--gold)]/20 text-muted-foreground hover:text-foreground hover:border-[var(--gold)]/50 transition cursor-pointer"
+            aria-label="Open menu"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+          <h1 className="font-display text-2xl font-medium text-foreground">{translatedTitle}</h1>
+        </div>
 
         <div className="flex items-center gap-3">
           {/* Search */}

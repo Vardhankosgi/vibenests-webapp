@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { GoogleIcon } from "./GoogleIcon";
 import { EmailLoginForm } from "./EmailLoginForm";
 import { MobileOtpForm } from "./MobileOtpForm";
 import { useTranslation } from "react-i18next";
+import { BrandMark } from "./BrandMark";
 
 type Tab = "email" | "otp";
 
@@ -24,6 +24,7 @@ export function AuthCard() {
       <div className="pointer-events-none absolute -bottom-24 -left-24 h-56 w-56 rounded-full bg-[var(--gold)]/10 blur-3xl" />
 
       <div className="relative">
+
         <div className="px-4 py-4 mb-5">
           <h2 className="font-display text-3xl sm:text-4xl font-medium text-foreground">
             {t("app.auth.welcomeBack", "Welcome Back!")}

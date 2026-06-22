@@ -132,12 +132,11 @@ export default function AdminRegisterPage() {
 
   return (
     <div
-      className="min-h-screen flex"
+      className="min-h-screen flex bg-scroll lg:bg-fixed"
       style={{
         backgroundImage: `url(${loginbg})`,
         backgroundSize: "cover",
         backgroundPosition: "center",
-        backgroundAttachment: "fixed",
         backgroundColor: "oklch(0.08 0.015 260)",
       }}
     >
@@ -266,6 +265,10 @@ export default function AdminRegisterPage() {
               <div className="pointer-events-none absolute -bottom-20 -left-20 h-52 w-52 rounded-full bg-gold/8 blur-3xl" />
 
               <div className="relative space-y-5">
+                {/* Logo on mobile/tablet */}
+                <div className="flex lg:hidden justify-center">
+                  <BrandMark />
+                </div>
 
                 {/* ── Card header ── */}
                 <div>

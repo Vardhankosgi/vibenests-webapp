@@ -4,6 +4,7 @@ import { Eye, EyeOff, Lock, CheckCircle2, AlertTriangle, Loader2 } from "lucide-
 import { useTranslation } from "react-i18next";
 import { authApi } from "@/lib/api";
 import { LanguageSelector } from "@/components/shared/LanguageSelector";
+import { BrandMark } from "@/components/auth/BrandMark";
 import loginbg from "@/assets/loginbg.png";
 
 export default function ResetPasswordPage() {
@@ -86,8 +87,8 @@ export default function ResetPasswordPage() {
 
   return (
     <main
-      className="min-h-screen flex items-center justify-center px-4 relative"
-      style={{ backgroundImage: `url(${loginbg})`, backgroundSize: "cover", backgroundPosition: "center", backgroundAttachment: "fixed" }}
+      className="min-h-screen flex items-center justify-center px-4 relative bg-scroll lg:bg-fixed"
+      style={{ backgroundImage: `url(${loginbg})`, backgroundSize: "cover", backgroundPosition: "center" }}
     >
       <div className="absolute inset-0 bg-black/60 pointer-events-none" />
 
@@ -97,6 +98,10 @@ export default function ResetPasswordPage() {
       </div>
 
       <div className="relative z-10 glass-card rounded-2xl p-8 w-full max-w-md border border-[var(--gold)]/20">
+        {/* Logo */}
+        <div className="flex justify-center mb-6">
+          <BrandMark />
+        </div>
         {verifying ? (
           <div className="text-center py-12 space-y-4 flex flex-col items-center justify-center">
             <Loader2 className="h-10 w-10 text-gold animate-spin" />

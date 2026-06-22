@@ -12,8 +12,8 @@ export default function LoginPage() {
 
   return (
     <main
-      className="min-h-screen grid lg:grid-cols-2 relative"
-      style={{ backgroundImage: `url(${loginbg})`, backgroundSize: "cover", backgroundPosition: "center", backgroundAttachment: "fixed" }}
+      className="min-h-screen grid lg:grid-cols-2 relative bg-scroll lg:bg-fixed"
+      style={{ backgroundImage: `url(${loginbg})`, backgroundSize: "cover", backgroundPosition: "center" }}
     >
       <div className="absolute inset-0 bg-black/55 pointer-events-none" />
 
@@ -44,7 +44,7 @@ export default function LoginPage() {
       </div>
 
       {/* Left - Hero Panel */}
-      <div className="hidden lg:flex items-center relative z-10">
+      <div className="flex items-center relative z-10 py-8 lg:py-0">
         <HeroPanel onSignUp={() => navigate("/register")} />
       </div>
 

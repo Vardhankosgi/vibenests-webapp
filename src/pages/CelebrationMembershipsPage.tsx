@@ -247,7 +247,7 @@ export default function CelebrationMembershipsPage() {
     <div className="flex-1 flex flex-col min-h-screen bg-[oklch(0.08_0.015_260)] text-foreground">
       <AdminHeader title="Celebration Package Management" />
 
-      <main className="flex-1 p-6 space-y-6">
+      <main className="flex-1 p-4 sm:p-6 space-y-6">
         <div className="flex justify-between items-center flex-wrap gap-4">
           {/* Navigation Tabs */}
           <div className="flex gap-1.5 p-1 glass-card border border-white/5 rounded-2xl w-fit">

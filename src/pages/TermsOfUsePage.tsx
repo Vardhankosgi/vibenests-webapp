@@ -68,12 +68,11 @@ export default function TermsOfUsePage() {
 
   return (
     <div
-      className="min-h-screen flex flex-col"
+      className="min-h-screen flex flex-col bg-scroll lg:bg-fixed"
       style={{
         backgroundImage: `url(${loginbg})`,
         backgroundSize: "cover",
         backgroundPosition: "center",
-        backgroundAttachment: "fixed",
         backgroundColor: "oklch(0.08 0.015 260)",
       }}
     >

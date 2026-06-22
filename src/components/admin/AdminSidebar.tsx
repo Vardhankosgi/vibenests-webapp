@@ -6,6 +6,7 @@ import { authApi } from "@/lib/api";
 import { LayoutDashboard, CalendarDays, BedDouble, BarChart2, Settings, LogOut, Menu, Tag, Package, Users, Gift, CreditCard, Star, RotateCcw, Share2 } from "lucide-react";
 import { LogoPopover } from "@/components/shared/LogoPopover";
 import { useTranslation } from "react-i18next";
+import { useSidebar } from "@/components/admin/SidebarContext";
 
 const navItemKeys: { [key: string]: string } = {
   "Refunds": "refunds",
@@ -40,25 +41,30 @@ const navItems = [
   { icon: Settings, label: "Settings", to: "/settings" },
 ];
 
-interface AdminSidebarProps {
-  collapsed: boolean;
-  onToggle: () => void;
-}
-
-export function AdminSidebar({ collapsed, onToggle }: AdminSidebarProps) {
+export function AdminSidebar() {
+  const { collapsed, setCollapsed, mobileOpen, setMobileOpen } = useSidebar();
   const [showConfirm, setShowConfirm] = useState(false);
   const navigate = useNavigate();
   const { clearSession } = useAuth();
   const { t } = useTranslation();
   return (
     <>
+      {/* Mobile Backdrop Overlay */}
+      {mobileOpen && (
+        <div
+          onClick={() => setMobileOpen(false)}
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
+        />
+      )}
+
       <aside
-        className={`flex flex-col h-screen sticky top-0 bg-[oklch(0.11_0.025_260)] border-r border-[var(--gold)]/10 transition-all duration-300 ${collapsed ? "w-16" : "w-64"
-          }`}
+        className={`flex flex-col h-screen fixed lg:sticky top-0 bg-[oklch(0.11_0.025_260)] border-r border-[var(--gold)]/10 transition-all duration-300 z-50
+          ${mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
+          ${collapsed ? "lg:w-16" : "lg:w-64"} w-64`}
       >
         {/* Brand + Toggle */}
         <div className="flex items-center justify-between px-3 py-4 border-b border-[var(--gold)]/10 min-h-[64px]">
-          {!collapsed && (
+          {(!collapsed || mobileOpen) && (
             <div className="flex items-center gap-3 overflow-hidden">
               <LogoPopover className="h-16 w-16 object-contain shrink-0" />
               <div className="leading-tight">
@@ -68,8 +74,15 @@ export function AdminSidebar({ collapsed, onToggle }: AdminSidebarProps) {
             </div>
           )}
           <button
-            onClick={(e) => { e.stopPropagation(); onToggle(); }}
-            className={`h-8 w-8 flex items-center justify-center rounded-lg hover:bg-white/[0.07] text-muted-foreground hover:text-gold transition shrink-0 cursor-pointer ${collapsed ? "mx-auto" : ""}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (window.innerWidth < 1024) {
+                setMobileOpen(false);
+              } else {
+                setCollapsed((c) => !c);
+              }
+            }}
+            className={`h-8 w-8 flex items-center justify-center rounded-lg hover:bg-white/[0.07] text-muted-foreground hover:text-gold transition shrink-0 cursor-pointer ${collapsed && !mobileOpen ? "mx-auto" : ""}`}
           >
             <Menu className="h-4 w-4" />
           </button>
@@ -80,13 +93,15 @@ export function AdminSidebar({ collapsed, onToggle }: AdminSidebarProps) {
           {navItems.map(({ icon: Icon, label, to }) => {
             const transKey = navItemKeys[label];
             const translatedLabel = transKey ? t("app.admin." + transKey, label) : label;
+            const isCollapsedStyle = collapsed && !mobileOpen;
             return (
               <NavLink
                 key={to}
                 to={to}
-                title={collapsed ? translatedLabel : undefined}
+                onClick={() => setMobileOpen(false)}
+                title={isCollapsedStyle ? translatedLabel : undefined}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-2.5 py-2.5 rounded-lg text-sm transition-all ${collapsed ? "justify-center" : ""
+                  `flex items-center gap-3 px-2.5 py-2.5 rounded-lg text-sm transition-all ${isCollapsedStyle ? "justify-center" : ""
                   } ${isActive
                     ? "bg-[var(--gold)]/10 text-gold border border-[var(--gold)]/20"
                     : "text-muted-foreground hover:text-foreground hover:bg-white/[0.05]"
@@ -94,7 +109,7 @@ export function AdminSidebar({ collapsed, onToggle }: AdminSidebarProps) {
                 }
               >
                 <Icon className="h-4 w-4 shrink-0" />
-                {!collapsed && <span>{translatedLabel}</span>}
+                {!isCollapsedStyle && <span>{translatedLabel}</span>}
               </NavLink>
             );
           })}
@@ -104,12 +119,12 @@ export function AdminSidebar({ collapsed, onToggle }: AdminSidebarProps) {
         <div className="px-2 py-4 border-t border-[var(--gold)]/10">
           <button
             onClick={() => setShowConfirm(true)}
-            title={collapsed ? t("app.admin.logout", "Logout") : undefined}
-            className={`flex items-center gap-3 px-2.5 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all w-full ${collapsed ? "justify-center" : ""
+            title={collapsed && !mobileOpen ? t("app.admin.logout", "Logout") : undefined}
+            className={`flex items-center gap-3 px-2.5 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all w-full ${collapsed && !mobileOpen ? "justify-center" : ""
               }`}
           >
             <LogOut className="h-4 w-4 shrink-0" />
-            {!collapsed && <span>{t("app.admin.logout", "Logout")}</span>}
+            {(!collapsed || mobileOpen) && <span>{t("app.admin.logout", "Logout")}</span>}
           </button>
         </div>
       </aside>
@@ -147,3 +162,4 @@ export function AdminSidebar({ collapsed, onToggle }: AdminSidebarProps) {
     </>
   );
 }
+

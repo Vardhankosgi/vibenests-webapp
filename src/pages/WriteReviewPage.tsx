@@ -118,7 +118,7 @@ export default function WriteReviewPage() {
     <div className="h-screen flex flex-col overflow-hidden bg-[var(--background)]">
 
       {/* ── Top bar ── */}
-      <header className="sticky top-0 z-50 flex items-center justify-between px-6 py-4 border-b border-white/5 glass backdrop-blur-xl">
+      <header className="sticky top-0 z-50 flex items-center justify-between px-4 sm:px-6 py-3.5 border-b border-white/5 glass backdrop-blur-xl">
         <div className="flex items-center gap-4">
           <button onClick={() => setSidebarOpen((o) => !o)}
             className="flex lg:hidden flex-col justify-center items-center gap-[5px] p-2 rounded-lg hover:bg-white/5 transition-colors group"
@@ -234,7 +234,7 @@ export default function WriteReviewPage() {
               </button>
             </motion.div>
           ) : (
-            <div className="max-w-5xl mx-auto px-6 py-8 space-y-6">
+            <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
 
               {/* Breadcrumb */}
               <motion.nav initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}

@@ -265,7 +265,8 @@ async function handleConfirm() {
                 <label className="text-xs text-muted-foreground uppercase tracking-wide">{t("app.admin.selectDate", "Date")}</label>
                 <input type="date" value={date} onChange={(e) => setDate(e.target.value)}
                   min={new Date().toISOString().split("T")[0]}
-                  className="luxury-input w-full rounded-lg px-3 py-1.5 text-sm mt-0.5" />
+                  className="luxury-input w-full rounded-lg px-3 py-1.5 text-sm mt-0.5"
+                  style={{ colorScheme: "dark" }} />
               </div>
               <div>
                 <label className="text-xs text-muted-foreground uppercase tracking-wide">{t("app.admin.occasion", "Occasion")}</label>
@@ -719,7 +720,7 @@ export default function BookingsPage() {
   return (
     <div className="flex-1 overflow-y-auto">
       <AdminHeader title="Bookings" />
-      <div className="p-6 space-y-5">
+      <div className="p-4 sm:p-6 space-y-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap gap-3">
             {[
