@@ -1090,7 +1090,7 @@ function SuiteCard({ suite, index, onBookNow }: { suite: ReturnType<typeof useSu
       )}
       <div className="p-5 flex flex-col gap-3 flex-1">
         <div>
-          <p className="text-[10px] font-mono text-muted-foreground tracking-wider">{suite.id}</p>
+          {/* <p className="text-[10px] font-mono text-muted-foreground tracking-wider">{suite.id}</p> */}
           <h4 className="font-display text-lg text-foreground leading-tight mt-0.5">{suite.name}</h4>
           {suite.occasions && <p className="text-xs text-gold/80 mt-0.5">{suite.occasions}</p>}
         </div>

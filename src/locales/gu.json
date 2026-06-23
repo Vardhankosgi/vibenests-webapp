@@ -1046,7 +1046,7 @@
       "selectDate": "તારીખ પસંદ કરો",
       "selectTimeSlot": "ટાઇમ સ્લોટ પસંદ કરો",
       "slotDuration": "સ્લોટ દીઠ 2h 30m",
-      "selectedSlot": "પસંદ કરેલ: {{start}} – {{end}}",
+      "selectedSlot": "પસંદ કરેલ",
       "durationShort": "· 2 કલાક 30 મિનિટ",
       "priceBase": "આધાર",
       "numberOfPersons": "વ્યક્તિઓની સંખ્યા",

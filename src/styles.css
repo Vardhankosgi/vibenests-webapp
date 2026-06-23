@@ -117,8 +117,19 @@
     src: url("https://fonts.gstatic.com/s/inter/v19/UcCO3FwrK3iLTeHuS_nVMrMxCp50ojIa1ZL7.woff2") format("woff2");
   }
 
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
   * {
     border-color: var(--color-border);
+  }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    overflow-x: hidden;
   }
 
   html {
@@ -131,6 +142,11 @@
     color: var(--color-foreground);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
+  }
+
+  img {
+    max-width: 100%;
+    height: auto;
   }
 
   h1, h2, h3, h4 {

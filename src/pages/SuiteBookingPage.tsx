@@ -882,7 +882,7 @@ export default function SuiteBookingPage() {
                       <div className="space-y-3">
                         <div className="flex items-center gap-2">
                           <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground">{t("app.userDashboard.selectTimeSlot", "Select Time Slot")}</p>
-                          <span className="px-2 py-0.5 rounded-full bg-gold/10 border border-gold/25 text-[10px] text-gold font-semibold">{slotDuration} min per slot · {slotGap} min gap</span>
+                          {/* <span className="px-2 py-0.5 rounded-full bg-gold/10 border border-gold/25 text-[10px] text-gold font-semibold">{slotDuration} min per slot · {slotGap} min gap</span> */}
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           {timeSlots.length === 0 ? (

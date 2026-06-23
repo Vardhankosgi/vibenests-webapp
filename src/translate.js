@@ -30,6 +30,7 @@ const newStrings = {
     "resendIn": "Resend in {{timer}}s",
     "resendOtp": "Resend OTP",
     "sendOtp": "Send OTP",
+    "sending": "Sending",
     "verifyOtp": "Verify OTP",
     "verified": "Verified",
     "welcomeBackRedirect": "Welcome back to VIBENESTS. Redirecting you...",
@@ -73,6 +74,12 @@ const newStrings = {
     "setBtn": "Set Password & Activate Account",
     "resetSuccessTitle": "Password Set!",
     "resetSuccessDesc": "Your account is now active. Redirecting to login..."
+  },
+  "hero": {
+    "feat_perfectOccasion": "Perfect Occasion",
+    "feat_luxuryAmbience": "luxury Ambience",
+    "feat_privateSecure": "Private secure",
+    "feat_support247": "Support 24/7"
   },
   "userDashboard": {
     "welcome": "Welcome back",
