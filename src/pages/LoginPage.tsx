@@ -12,14 +12,14 @@ export default function LoginPage() {
 
   return (
     <main
-      className="min-h-screen grid lg:grid-cols-2 relative bg-scroll lg:bg-fixed"
-      style={{ backgroundImage: `url(${loginbg})`, backgroundSize: "cover", backgroundPosition: "center" }}
+      className="h-screen w-full grid lg:grid-cols-2 relative overflow-auto bg-cover bg-center auth-scrollbar-none"
+      style={{ backgroundImage: `url(${loginbg})` }}
     >
       <div className="absolute inset-0 bg-black/55 pointer-events-none" />
 
       {/* Top-right buttons */}
       <div className="absolute top-5 right-5 z-20 flex items-center gap-2">
-         <LanguageSelector />
+        <LanguageSelector />
         {/* <button
           onClick={() => navigate("/user/dashboard")}
           className="flex items-center gap-2 px-4 py-2 rounded-xl border border-white/20 bg-black/40 backdrop-blur-sm text-white text-sm font-semibold hover:bg-white/10 hover:border-white/40 transition-all"
@@ -57,3 +57,4 @@ export default function LoginPage() {
     </main>
   );
 }
+

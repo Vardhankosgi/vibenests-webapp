@@ -14,7 +14,7 @@ export function HeroPanel({ onSignUp }: { onSignUp: () => void }) {
   const { t } = useTranslation();
 
   return (
-    <div className="relative isolate flex h-full min-h-[640px] flex-col justify-between overflow-hidden p-8 lg:p-12">
+    <div className="relative isolate flex h-full min-h-[50vh] sm:min-h-[640px] flex-col justify-between overflow-hidden p-8 lg:p-12">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
         <BrandMark />
       </motion.div>

@@ -151,9 +151,10 @@ export default function RegisterPage() {
     }
   }
 
-  return (
-    <main
-      className="min-h-screen grid lg:grid-cols-2 relative bg-scroll lg:bg-fixed"
+return (
+<main
+      className="h-screen w-full grid lg:grid-cols-2 relative overflow-auto bg-scroll lg:bg-fixed auth-scrollbar-none"
+
       style={{ backgroundImage: `url(${loginbg})`, backgroundSize: "cover", backgroundPosition: "center" }}
     >
       {/* Dark overlay */}
@@ -228,7 +229,7 @@ export default function RegisterPage() {
       </div>
 
       {/* ── Right form panel ── */}
-      <div className="flex items-center justify-center px-4 py-10 relative z-10">
+      <div className="flex items-start lg:items-center justify-center px-4 py-10 relative z-10">
         <AnimatePresence mode="wait">
           {success ? (
             /* Success state */

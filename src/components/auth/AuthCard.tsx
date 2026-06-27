@@ -18,7 +18,7 @@ export function AuthCard() {
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.7, delay: 0.1 }}
-      className="glass-card relative w-full max-w-md rounded-3xl p-7 sm:p-9 transition-transform duration-500 hover:-translate-y-0.5"
+className="glass-card relative w-full max-w-md rounded-3xl p-7 sm:p-9"
     >
       <div className="pointer-events-none absolute -top-24 -right-24 h-56 w-56 rounded-full bg-[var(--gold)]/15 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-24 -left-24 h-56 w-56 rounded-full bg-[var(--gold)]/10 blur-3xl" />

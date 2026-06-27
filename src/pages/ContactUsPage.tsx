@@ -56,13 +56,11 @@ export default function ContactUsPage() {
     else window.close();
   }
 
-  return (
+return (
     <div
-      className="min-h-screen flex flex-col lg:flex-row bg-scroll lg:bg-fixed"
+      className="min-h-screen flex bg-cover bg-center"
       style={{
         backgroundImage: `url(${loginbg})`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
         backgroundColor: "oklch(0.08 0.015 260)",
       }}
     >

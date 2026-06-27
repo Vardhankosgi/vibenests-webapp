@@ -5,6 +5,7 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -130,6 +131,7 @@
     padding: 0;
     width: 100%;
     overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
   }
 
   html {
@@ -138,10 +140,17 @@
 
   body {
     background: var(--gradient-bg);
-    background-attachment: fixed;
+    background-attachment: scroll;
     color: var(--color-foreground);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
+    overscroll-behavior-y: auto;
+  }
+
+  @media (min-width: 1024px) {
+    body {
+      background-attachment: fixed;
+    }
   }
 
   img {
@@ -206,8 +215,8 @@
 
   .glass {
     background: linear-gradient(180deg, oklch(1 0 0 / 0.04), oklch(1 0 0 / 0.015));
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     border: 1px solid oklch(1 0 0 / 0.08);
   }
 
@@ -278,6 +287,7 @@
     box-shadow: 0 14px 50px -10px oklch(0.78 0.13 80 / 0.6);
   }
 
+
   .scrollbar-none {
     scrollbar-width: none;
     -ms-overflow-style: none;
@@ -286,12 +296,18 @@
     display: none;
   }
 
+  /* Hide scrollbar/gutter area for auth screens */
+  .auth-scrollbar-none {
+    overflow-x: hidden;
+  }
+
+
   .glass-card {
     background: linear-gradient(160deg, oklch(0.16 0.03 260 / 0.92), oklch(0.12 0.025 260 / 0.88));
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border: 1px solid oklch(0.78 0.13 80 / 0.2);
-    box-shadow: 0 0 0 1px oklch(1 0 0 / 0.04), 0 32px 80px -20px oklch(0 0 0 / 0.7), 0 0 60px -20px oklch(0.78 0.13 80 / 0.15);
+    box-shadow: 0 0 0 1px oklch(1 0 0 / 0.04), 0 24px 48px -12px oklch(0 0 0 / 0.4);
   }
 
   .custom-scrollbar::-webkit-scrollbar {
@@ -306,3 +322,4 @@
     border-radius: 10px;
   }
 }
+

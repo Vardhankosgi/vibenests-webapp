@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { loadRazorpayCheckoutScript } from '@/lib/razorpay';
-import { Loader2, Check, AlertCircle } from 'lucide-react';
 
 type Status = 'loading' | 'ready' | 'success' | 'failed' | 'error';
 
@@ -107,46 +106,22 @@ export default function RazorpayAdminLinkPage() {
   }, [status, navigate]);
 
   return (
-    <div className="min-h-screen bg-[oklch(0.08_0.015_260)] flex flex-col items-center justify-center p-6 text-white">
-      <div className="max-w-md w-full glass-card rounded-3xl p-6 text-center border border-gold/20 space-y-6">
-        <h2 className="font-display text-2xl font-semibold text-gradient-gold">VibeNests Payment</h2>
-        
-        <div className="py-4">
-          {status === 'loading' && (
-            <div className="flex flex-col items-center gap-3">
-              <Loader2 className="h-8 w-8 animate-spin text-gold" />
-              <p className="text-sm text-muted-foreground">Please wait…</p>
-            </div>
-          )}
-          {status === 'ready' && (
-            <div className="flex flex-col items-center gap-3">
-              <Loader2 className="h-8 w-8 animate-spin text-gold" />
-              <p className="text-sm text-muted-foreground">Opening Razorpay checkout…</p>
-            </div>
-          )}
-          {status === 'success' && (
-            <div className="flex flex-col items-center gap-3 text-emerald-400">
-              <div className="h-12 w-12 rounded-full bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center">
-                <Check className="h-6 w-6 text-emerald-400" />
-              </div>
-              <p className="text-sm font-medium">Payment received. Booking will be confirmed shortly.</p>
-            </div>
-          )}
-          {(status === 'failed' || status === 'error') && (
-            <div className="flex flex-col items-center gap-3 text-rose-400">
-              <div className="h-12 w-12 rounded-full bg-rose-500/10 border border-rose-500/25 flex items-center justify-center">
-                <AlertCircle className="h-6 w-6 text-rose-400" />
-              </div>
-              <p className="text-sm font-medium">Something went wrong.</p>
-              {errorMsg && <p className="text-xs text-muted-foreground bg-rose-500/5 px-3 py-1.5 rounded-xl border border-rose-500/10 break-words w-full">{errorMsg}</p>}
-            </div>
-          )}
-        </div>
+    <div style={{ padding: 24, maxWidth: 720, margin: '0 auto' }}>
+      <h2>VibeNests Payment</h2>
+      {status === 'loading' && <p>Please wait…</p>}
+      {status === 'ready' && <p>Opening Razorpay checkout…</p>}
+      {status === 'success' && <p>Payment received. Booking will be confirmed shortly.</p>}
 
-        <p className="text-[11px] text-muted-foreground leading-relaxed border-t border-white/5 pt-4">
-          Closing this page won’t cancel the payment. Final status updates are handled via Razorpay webhook.
-        </p>
-      </div>
+      {(status === 'failed' || status === 'error') && (
+        <div>
+          <p style={{ color: 'crimson' }}>Something went wrong.</p>
+          {errorMsg && <p>{errorMsg}</p>}
+        </div>
+      )}
+
+      <p style={{ marginTop: 18, color: '#666', fontSize: 12 }}>
+        Closing this page won’t cancel the payment. Final status updates are handled via Razorpay webhook.
+      </p>
     </div>
   );
 }

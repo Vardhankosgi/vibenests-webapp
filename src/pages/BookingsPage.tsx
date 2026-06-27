@@ -179,7 +179,9 @@ const suitePrice = selectedSuite ? Number(selectedSuite.price) : 0;
   function validateStep1() {
     if (!guest.firstName.trim()) return t("app.admin.firstName", "First name is required.");
     if (!guest.lastName.trim()) return t("app.admin.lastName", "Last name is required.");
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guest.email)) return t("app.admin.email", "Valid email is required.");
+    if (guest.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guest.email.trim())) {
+      return t("app.admin.email", "Valid email is required.");
+    }
     if (guest.phone.length < 6) return t("app.admin.phone", "Valid phone number is required.");
     return "";
   }
@@ -433,24 +435,38 @@ async function handleConfirm() {
                     .map((u) => (
                       <div
                         key={u.id}
-                        onClick={async () => {
+                        onMouseDown={async (e) => {
+                          e.preventDefault(); // Prevents input onBlur from closing the dropdown before selection completes
                           setUserAutofillError("");
-                          setUserAutofillLoading(true);
                           setSelectedRegisteredUserId(Number(u.id));
                           setShowUserDropdown(false);
+
+                          // Autofill instantly from the local user object for responsive UX
+                          const fullName = u.name;
+                          const [first, ...rest] = String(fullName).split(" ");
+                          setGuest({
+                            firstName: first || "",
+                            lastName: rest.join(" ") || "",
+                            email: u.email || "",
+                            phone: u.phone || "",
+                          });
+                          setUserSearch(`${fullName} (${u.email})`);
+
+                          // Fetch fresh details in the background
                           try {
+                            setUserAutofillLoading(true);
                             const userRes = await usersApi.getById(String(u.id));
-                            const fullName = userRes?.fullName || u.name;
-                            const [first, ...rest] = String(fullName).split(" ");
+                            const freshFullName = userRes?.fullName || u.name;
+                            const [freshFirst, ...freshRest] = String(freshFullName).split(" ");
                             setGuest({
-                              firstName: first || "",
-                              lastName: rest.join(" ") || "",
+                              firstName: freshFirst || "",
+                              lastName: freshRest.join(" ") || "",
                               email: userRes?.email ?? u.email,
                               phone: userRes?.phone ?? u.phone ?? "",
                             });
-                            setUserSearch(`${fullName} (${userRes?.email ?? u.email})`);
-                          } catch (e: any) {
-                            setUserAutofillError(e?.message || "Failed to load user details");
+                            setUserSearch(`${freshFullName} (${userRes?.email ?? u.email})`);
+                          } catch (err: any) {
+                            console.warn("Background user fetch failed, using local user data:", err);
                           } finally {
                             setUserAutofillLoading(false);
                           }
@@ -487,7 +503,7 @@ async function handleConfirm() {
               ))}
             </div>
             <div>
-              <label className="text-xs text-muted-foreground uppercase tracking-wide">{t("app.admin.email", "Email")}</label>
+              <label className="text-xs text-muted-foreground uppercase tracking-wide">{t("app.admin.emailOptional", "Email (Optional)")}</label>
               <input type="email" placeholder="guest@example.com"
                 value={guest.email} onChange={(e) => setGuest((g) => ({ ...g, email: e.target.value }))}
                 className="luxury-input w-full rounded-lg px-3 py-1.5 text-sm mt-0.5" />
