@@ -8,6 +8,10 @@ export default defineConfig({
   // Workaround for EPERM when Vite tries to write its temp/bundled config into node_modules.
   // Using a dedicated writable cache folder avoids the blocked .vite-temp path.
   cacheDir: 'tmp/vite-cache',
+  build: {
+    outDir: 'dist-new', // Outputs to a new folder instead of the locked 'dist'
+    emptyOutDir: true,
+  },
   server: {
     port: 5174,
     proxy: {

@@ -1,0 +1,4 @@
+- [x] Update `pdfGenerator.ts` to implement logo loader and premium headers/footers
+- [x] Revamp `generateBookingInvoicePDF` with customer details, booking/suite cards, and payment breakdown logic
+- [x] Revamp `generateTransactionInvoicePDF` to display customer details, transaction info, and related booking details
+- [x] Modify `UserDashboardPage.tsx` to retrieve auth `user` in drawer and modal components, bind booking to transactions, and pass them to invoice generation triggers

@@ -62,6 +62,7 @@ export default function AnalyticsPage() {
   const [bookingTrend, setBookingTrend] = React.useState<BookingTrendPoint[]>([]);
   const [occasionData, setOccasionData] = React.useState<OccasionPoint[]>([]);
   const [customerGrowth, setCustomerGrowth] = React.useState<CustomerGrowthPoint[]>([]);
+  const [suitePerformance, setSuitePerformance] = React.useState<any[]>([]);
   const [kpis, setKpis] = React.useState(kpisBase.map((k) => ({
     ...k,
     label: t("app.admin." + k.key, k.fallback),
@@ -110,6 +111,18 @@ export default function AnalyticsPage() {
         // Customers (count new registrations)
         const customersRow = await reportsApi.customers(startISO, endISO);
         const newRegistrations = Number(customersRow?.new_registrations ?? 0);
+
+        // Fetch suite performance radar data
+        const token = localStorage.getItem('accessToken');
+        const backendBase = window.location.origin.includes('localhost') ? 'http://localhost:4000' : 'https://api.vibenests.in';
+        const perfRes = await fetch(`${backendBase}/reports/suite-performance?start=${startISO}&end=${endISO}`, {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          }
+        });
+        const perfData = perfRes.ok ? await perfRes.json() : [];
+        setSuitePerformance(perfData);
 
         // KPIs: minimal reliable set from available endpoints
         const totalBookings = (confirmed + pending + cancelled) || 0;
@@ -169,25 +182,63 @@ export default function AnalyticsPage() {
   }, [t]);
 
 
-  const suitePerformance = RADAR_METRICS.map((metric, mi) => {
+  const hassuites = suites.length > 0 && suitePerformance.length > 0;
+
+  // Map backend raw data to scores out of 100 for the radar rendering
+  const radarData = RADAR_METRICS.map((metric) => {
     const row: Record<string, string | number> = { metric };
-    suites.forEach((s) => { row[s.id] = Math.min(100, Math.max(40, RADAR_BASE[mi] + seedOffset(s.id, mi))); });
+    
+    suitePerformance.forEach((sp) => {
+      const suiteKey = String(sp.suiteId);
+      let rawVal = 0;
+      let score = 0;
+      
+      if (metric === "Bookings") {
+        rawVal = sp.bookings || 0;
+        score = Math.min(100, Math.round((rawVal / 50) * 100));
+      } else if (metric === "Revenue") {
+        rawVal = sp.revenue || 0;
+        score = Math.min(100, Math.round((rawVal / 100000) * 100));
+      } else if (metric === "Rating") {
+        rawVal = sp.rating || 0;
+        score = Math.round(rawVal * 20); // 1-5 scale to 0-100
+      } else if (metric === "Occupancy") {
+        rawVal = sp.occupancy || 0;
+        score = Math.min(100, Math.round(rawVal));
+      } else if (metric === "Repeat") {
+        rawVal = sp.repeat || 0;
+        score = Math.min(100, Math.round((rawVal / 10) * 100));
+      }
+      
+      row[suiteKey] = score;
+      row[`${suiteKey}_raw`] = rawVal;
+    });
+    
     return row;
   });
-
-  const hassuites = suites.length > 0;
 
   // Static fallback radar data used when no suites are loaded from API
   const FALLBACK_RADAR = RADAR_METRICS.map((metric, mi) => ({
     metric,
     "Suite A": RADAR_BASE[mi],
+    "Suite A_raw": RADAR_BASE[mi],
     "Suite B": Math.min(100, Math.max(40, RADAR_BASE[mi] + 8)),
+    "Suite B_raw": Math.min(100, Math.max(40, RADAR_BASE[mi] + 8)),
   }));
-  const radarData    = hassuites ? suitePerformance : FALLBACK_RADAR;
-  const radarSeries  = hassuites
-    ? suites.map((s, i) => ({ id: s.id,   name: s.name,  color: [GOLD, BLUE, GREEN, PURPLE, RED][i % 5], opacity: i === 0 ? 0.15 : 0.1 }))
-    : [{ id: "Suite A", name: "Suite A", color: GOLD,  opacity: 0.15 },
-       { id: "Suite B", name: "Suite B", color: BLUE,  opacity: 0.1  }];
+
+  const finalRadarData = hassuites ? radarData : FALLBACK_RADAR;
+
+  const radarSeries = hassuites
+    ? suites.map((s, i) => ({
+        id: String(s.id),
+        name: s.name,
+        color: [GOLD, BLUE, GREEN, PURPLE, RED][i % 5],
+        opacity: i === 0 ? 0.15 : 0.1
+      }))
+    : [
+        { id: "Suite A", name: "Suite A", color: GOLD, opacity: 0.15 },
+        { id: "Suite B", name: "Suite B", color: BLUE, opacity: 0.1 }
+      ];
 
   return (
     <div className="flex-1 overflow-y-auto">
@@ -271,14 +322,34 @@ export default function AnalyticsPage() {
             <h3 className="font-display text-lg font-medium text-foreground mb-1">{t("app.admin.suitePerformanceRadar", "Suite Performance Radar")}</h3>
             <p className="text-xs text-muted-foreground mb-4">{suites.length !== 1 ? t("app.admin.suiteRadarDescPlural", "Score out of 100 across key metrics — {{count}} suites", { count: suites.length }) : t("app.admin.suiteRadarDesc", "Score out of 100 across key metrics — {{count}} suite", { count: suites.length })}</p>
             <ResponsiveContainer width="100%" height={280}>
-              <RadarChart data={radarData} cx="50%" cy="50%" outerRadius={90}>
+              <RadarChart data={finalRadarData} cx="50%" cy="50%" outerRadius={90}>
                 <PolarGrid stroke="oklch(1 0 0 / 0.08)" />
                 <PolarAngleAxis dataKey="metric" tick={{ fill: "oklch(0.72 0.02 90)", fontSize: 11 }} />
                 {radarSeries.map((s) => (
                   <Radar key={s.id} name={s.name} dataKey={s.id} stroke={s.color} fill={s.color} fillOpacity={s.opacity} strokeWidth={2} />
                 ))}
                 <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: "11px", color: "oklch(0.72 0.02 90)" }} />
-                <Tooltip {...tooltipStyle} formatter={(value: number, name: string) => [`${value}/100`, name]} />
+                <Tooltip
+                  {...tooltipStyle}
+                  formatter={(value: number, name: string, entry: any) => {
+                    const suiteId = entry.dataKey;
+                    const rawValue = entry.payload[`${suiteId}_raw`] ?? value;
+                    const metric = entry.payload.metric;
+                    if (metric === "Revenue") {
+                      return [`₹${rawValue.toLocaleString("en-IN")}`, name];
+                    }
+                    if (metric === "Rating") {
+                      return [`${rawValue} ★`, name];
+                    }
+                    if (metric === "Occupancy") {
+                      return [`${rawValue}%`, name];
+                    }
+                    if (metric === "Bookings" || metric === "Repeat") {
+                      return [`${rawValue}`, name];
+                    }
+                    return [`${value}/100`, name];
+                  }}
+                />
               </RadarChart>
             </ResponsiveContainer>
           </div>

@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VibeNests PDF Invoice Tester</title>
+  <!-- Load jsPDF and jspdf-autotable from CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+  <style>
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0f1016;
+      color: #f3f4f6;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+    }
+    .card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(184, 151, 42, 0.2);
+      border-radius: 24px;
+      padding: 40px;
+      max-width: 500px;
+      width: 100%;
+      text-align: center;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+    }
+    .logo {
+      color: #b8972a;
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: 4px;
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      color: #9ca3af;
+      font-size: 11px;
+      letter-spacing: 6px;
+      text-transform: uppercase;
+      margin-bottom: 40px;
+    }
+    h1 {
+      font-size: 20px;
+      margin-bottom: 24px;
+      font-weight: 600;
+    }
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #d4af37, #b8972a);
+      color: #0f1016;
+      border: none;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-bottom: 16px;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      box-shadow: 0 4px 15px rgba(184, 151, 42, 0.2);
+    }
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(184, 151, 42, 0.4);
+    }
+    .btn-secondary {
+      background: transparent;
+      color: #b8972a;
+      border: 1px solid #b8972a;
+      box-shadow: none;
+    }
+    .btn-secondary:hover {
+      background: rgba(184, 151, 42, 0.1);
+      box-shadow: none;
+    }
+    .info {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 30px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <div class="logo">VIBENESTS</div>
+    <div class="subtitle">Private Luxury Suites</div>
+    <h1>Premium Invoice Generators</h1>
+    
+    <button class="btn" onclick="testBookingInvoice()">Download Booking Invoice PDF</button>
+    <button class="btn btn-secondary" onclick="testTransactionReceipt()">Download Transaction Receipt PDF</button>
+    
+    <p class="info">
+      These buttons trigger the exact same PDF layout engines as defined in <code>pdfGenerator.ts</code>.<br>
+      Open this file directly in your web browser to test.
+    </p>
+  </div>
+
+  <script>
+    const { jsPDF } = window.jspdf;
+    
+    // Copy of getLogoImage from pdfGenerator
+    const getLogoImage = () => {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.src = './public/logo.png'; // relative to public dir if opened from root
+        img.crossOrigin = 'anonymous';
+        const timeout = setTimeout(() => {
+          resolve(null);
+        }, 1000);
+        img.onload = () => {
+          clearTimeout(timeout);
+          resolve(img);
+        };
+        img.onerror = () => {
+          clearTimeout(timeout);
+          // Try loading fallback relative path
+          const fallbackImg = new Image();
+          fallbackImg.src = 'public/logo.png';
+          fallbackImg.onload = () => resolve(fallbackImg);
+          fallbackImg.onerror = () => resolve(null);
+        };
+      });
+    };
+
+    // Draw header copy
+    function drawBrandHeader(doc, logoImg, titleText, docIdText, dateText, statusText) {
+      if (logoImg) {
+        doc.addImage(logoImg, 'PNG', 14, 14, 18, 18);
+      } else {
+        doc.setFillColor(184, 151, 42);
+        doc.circle(23, 23, 9, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(12);
+        doc.text('V', 21.2, 26.5);
+      }
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(18);
+      doc.setTextColor(184, 151, 42);
+      doc.text('VIBENESTS', 36, 21);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(100);
+      doc.text('PRIVATE LUXURY SUITES', 36, 26);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(16);
+      doc.setTextColor(31, 41, 55);
+      doc.text(titleText, 196, 21, { align: 'right' });
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(107, 114, 128);
+      doc.text(docIdText, 196, 26, { align: 'right' });
+      doc.text(`Issued: ${dateText}`, 196, 31, { align: 'right' });
+      doc.text(`Status: ${statusText}`, 196, 36, { align: 'right' });
+
+      doc.setDrawColor(184, 151, 42);
+      doc.setLineWidth(0.5);
+      doc.line(14, 39, 196, 39);
+    }
+
+    // Draw footer copy
+    function drawFooter(doc) {
+      const pageHeight = doc.internal.pageSize.height;
+      doc.setDrawColor(229, 231, 235);
+      doc.setLineWidth(0.2);
+      doc.line(14, pageHeight - 24, 196, pageHeight - 24);
+
+      doc.setFont('helvetica', 'italic');
+      doc.setFontSize(8.5);
+      doc.setTextColor(107, 114, 128);
+      doc.text('Thank you for choosing VibeNests! Your luxury private experience awaits.', 14, pageHeight - 18);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(156, 163, 175);
+      doc.text('© 2026 VibeNests Private Luxury Suites. All rights reserved. | Support: support@vibenests.com', 14, pageHeight - 12);
+      doc.text(`Page 1`, 196, pageHeight - 12, { align: 'right' });
+    }
+
+    // Generate Booking Invoice
+    async function testBookingInvoice() {
+      const doc = new jsPDF();
+      const logoImg = await getLogoImage();
+
+      // Sample booking and user data representing "pay_at_venue" (Advance + Balance)
+      const booking = {
+        id: '5821',
+        createdAt: '2026-07-10T10:14:00Z',
+        checkIn: '2026-07-15',
+        checkInTime: '06:00 PM - 09:00 PM',
+        guests: 4,
+        suiteName: 'Royal Penthouse Suite',
+        location: 'Mumbai Landmark, India',
+        basePrice: 12500.00,
+        discountAmount: 1000.00,
+        taxAmount: 2250.00,
+        totalAmount: 15250.00,
+        advanceAmount: 3050.00,
+        paymentMode: 'pay_at_venue',
+        fullPaymentReceived: false,
+        status: 'confirmed'
+      };
+
+      const user = {
+        fullName: 'Adithya Kosgi',
+        email: 'adithya@vibenests.com',
+        phone: '+91 98765 43210'
+      };
+
+      const addons = [
+        { name: 'Premium Room Decoration', quantity: 1, price: 1000.00 },
+        { name: 'Anniversary Special Chocolate Cake', quantity: 1, price: 500.00 }
+      ];
+
+      // Format parameters
+      const invoiceId = `INV-${booking.id}`;
+      const invoiceDate = new Date(booking.createdAt).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+      const statusStr = booking.status.toUpperCase();
+
+      drawBrandHeader(doc, logoImg, 'BOOKING INVOICE', `Invoice #: ${invoiceId}`, invoiceDate, statusStr);
+
+      // Customer Card
+      doc.setDrawColor(229, 231, 235);
+      doc.setLineWidth(0.25);
+      doc.setFillColor(249, 250, 251);
+      doc.roundedRect(14, 44, 88, 38, 3, 3, 'FD');
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8.5);
+      doc.setTextColor(184, 151, 42);
+      doc.text('BILLED TO', 18, 50);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9.5);
+      doc.setTextColor(31, 41, 55);
+      doc.text(user.fullName, 18, 56);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(75, 85, 99);
+      doc.text(`Email: ${user.email}`, 18, 62);
+      doc.text(`Phone: ${user.phone}`, 18, 68);
+      doc.text(`Booked On: ${invoiceDate}`, 18, 74);
+
+      // Reservation Card
+      doc.setDrawColor(229, 231, 235);
+      doc.setLineWidth(0.25);
+      doc.setFillColor(249, 250, 251);
+      doc.roundedRect(108, 44, 88, 38, 3, 3, 'FD');
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8.5);
+      doc.setTextColor(184, 151, 42);
+      doc.text('RESERVATION DETAILS', 112, 50);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9.5);
+      doc.setTextColor(31, 41, 55);
+      doc.text(booking.suiteName, 112, 56);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(75, 85, 99);
+      doc.text(`Location: ${booking.location}`, 112, 62);
+      const stayDate = new Date(booking.checkIn).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+      doc.text(`Stay Date: ${stayDate}`, 112, 68);
+      doc.text(`Slot: ${booking.checkInTime}  |  Guests: ${booking.guests}`, 112, 74);
+
+      // Table Setup
+      const tableData = [];
+      tableData.push([`Suite Booking - ${booking.suiteName}`, '1', `Rs. ${booking.basePrice.toFixed(2)}`, `Rs. ${booking.basePrice.toFixed(2)}`]);
+      let addonsTotal = 0;
+      addons.forEach(a => {
+        const total = a.quantity * a.price;
+        addonsTotal += total;
+        tableData.push([`Addon: ${a.name}`, a.quantity.toString(), `Rs. ${a.price.toFixed(2)}`, `Rs. ${total.toFixed(2)}`]);
+      });
+
+      doc.autoTable({
+        startY: 88,
+        head: [['Description', 'Qty', 'Unit Price', 'Total']],
+        body: tableData,
+        theme: 'striped',
+        headStyles: { fillColor: [184, 151, 42], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
+        bodyStyles: { textColor: [31, 41, 55], fontSize: 8 },
+        columnStyles: {
+          0: { cellWidth: 'auto' },
+          1: { cellWidth: 15, halign: 'center' },
+          2: { cellWidth: 30, halign: 'right' },
+          3: { cellWidth: 30, halign: 'right' }
+        },
+        margin: { left: 14, right: 14 }
+      });
+
+      const finalY = doc.lastAutoTable.finalY || 115;
+      const subtotal = booking.basePrice + addonsTotal;
+      const discount = booking.discountAmount;
+      const tax = booking.taxAmount;
+      const totalAmount = booking.totalAmount;
+      const advancePaid = booking.advanceAmount;
+      const balanceDue = totalAmount - advancePaid;
+
+      // Draw payment info on the left side
+      let leftY = finalY + 12;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8.5);
+      doc.setTextColor(184, 151, 42);
+      doc.text('PAYMENT DETAILS', 14, leftY);
+      leftY += 6;
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(75, 85, 99);
+      doc.text('Method: Pay at Venue (20% Advance Online)', 14, leftY);
+      leftY += 5;
+      doc.text('Status: Advance Paid / Balance Pending', 14, leftY);
+      leftY += 5;
+      doc.text(`Booking Reference ID: #VN${booking.id}`, 14, leftY);
+      leftY += 6;
+      doc.setFont('helvetica', 'italic');
+      doc.setFontSize(7.5);
+      doc.setTextColor(120);
+      doc.text('Notes: Standard ID proofs are required during check-in.', 14, leftY);
+
+      // Financials card on the right side
+      let currentY = finalY + 8;
+      doc.setDrawColor(229, 231, 235);
+      doc.setFillColor(249, 250, 251);
+      doc.roundedRect(118, currentY, 78, 50, 3, 3, 'FD');
+
+      currentY += 6;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(75, 85, 99);
+
+      doc.text('Subtotal:', 122, currentY);
+      doc.text(`Rs. ${subtotal.toFixed(2)}`, 192, currentY, { align: 'right' });
+      currentY += 6;
+
+      if (discount > 0) {
+        doc.setTextColor(16, 124, 65);
+        doc.text('Discount:', 122, currentY);
+        doc.text(`- Rs. ${discount.toFixed(2)}`, 192, currentY, { align: 'right' });
+        doc.setTextColor(75, 85, 99);
+        currentY += 6;
+      }
+
+      if (tax > 0) {
+        doc.text('Tax & Services:', 122, currentY);
+        doc.text(`Rs. ${tax.toFixed(2)}`, 192, currentY, { align: 'right' });
+        currentY += 6;
+      }
+
+      doc.setDrawColor(229, 231, 235);
+      doc.line(122, currentY, 192, currentY);
+      currentY += 5;
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9.5);
+      doc.setTextColor(31, 41, 55);
+      doc.text('Grand Total:', 122, currentY);
+      doc.text(`Rs. ${totalAmount.toFixed(2)}`, 192, currentY, { align: 'right' });
+
+      currentY += 6;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(75, 85, 99);
+      doc.text('Advance Paid:', 122, currentY);
+      doc.setTextColor(16, 124, 65);
+      doc.text(`Rs. ${advancePaid.toFixed(2)}`, 192, currentY, { align: 'right' });
+
+      currentY += 6;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9.5);
+      doc.setTextColor(185, 28, 28);
+      doc.text('Remaining Balance:', 122, currentY);
+      doc.text(`Rs. ${balanceDue.toFixed(2)}`, 192, currentY, { align: 'right' });
+
+      drawFooter(doc);
+      doc.save(`VibeNests_Booking_Invoice_${booking.id}.pdf`);
+    }
+
+    // Generate Transaction Receipt
+    async function testTransactionReceipt() {
+      const doc = new jsPDF();
+      const logoImg = await getLogoImage();
+
+      // Sample transaction data with associated booking
+      const transaction = {
+        id: 'TXN-98412',
+        invoice: 'INV-5821',
+        amount: 3050.00,
+        date: '2026-07-10',
+        status: 'completed',
+        category: 'booking',
+        method: 'UPI (Razorpay)',
+        desc: 'Advance Payment - Royal Penthouse Suite #VN5821',
+        booking: {
+          id: '5821',
+          suiteName: 'Royal Penthouse Suite',
+          location: 'Mumbai Landmark, India',
+          checkIn: '2026-07-15',
+          totalAmount: 15250.00,
+          advanceAmount: 3050.00,
+          paymentMode: 'pay_at_venue',
+          fullPaymentReceived: false
+        }
+      };
+
+      const user = {
+        fullName: 'Adithya Kosgi',
+        email: 'adithya@vibenests.com',
+        phone: '+91 98765 43210'
+      };
+
+      const receiptId = transaction.id;
+      const receiptDate = new Date(transaction.date).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+      const statusStr = transaction.status.toUpperCase();
+
+      drawBrandHeader(doc, logoImg, 'PAYMENT RECEIPT', `Receipt #: ${receiptId}`, receiptDate, statusStr);
+
+      const booking = transaction.booking;
+
+      // Customer Card
+      doc.setDrawColor(229, 231, 235);
+      doc.setLineWidth(0.25);
+      doc.setFillColor(249, 250, 251);
+      doc.roundedRect(14, 44, 88, 38, 3, 3, 'FD');
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8.5);
+      doc.setTextColor(184, 151, 42);
+      doc.text('CUSTOMER DETAILS', 18, 50);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9.5);
+      doc.setTextColor(31, 41, 55);
+      doc.text(user.fullName, 18, 56);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(75, 85, 99);
+      doc.text(`Email: ${user.email}`, 18, 62);
+      doc.text(`Phone: ${user.phone}`, 18, 68);
+      doc.text(`Transaction On: ${receiptDate}`, 18, 74);
+
+      // Transaction Card
+      doc.setDrawColor(229, 231, 235);
+      doc.setLineWidth(0.25);
+      doc.setFillColor(249, 250, 251);
+      doc.roundedRect(108, 44, 88, 38, 3, 3, 'FD');
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8.5);
+      doc.setTextColor(184, 151, 42);
+      doc.text('TRANSACTION SUMMARY', 112, 50);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9.5);
+      doc.setTextColor(31, 41, 55);
+      doc.text(`Category: ${transaction.category.toUpperCase()}`, 112, 56);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(75, 85, 99);
+      doc.text(`Payment Method: ${transaction.method}`, 112, 62);
+      doc.text(`Suite: ${booking.suiteName}`, 112, 68);
+      const stayDate = new Date(booking.checkIn).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+      doc.text(`Stay Date: ${stayDate}`, 112, 74);
+
+      // Table Setup
+      const tableData = [];
+      tableData.push([`Payment towards Booking - ${booking.suiteName} (#VN${booking.id})`, '1', `Rs. ${transaction.amount.toFixed(2)}`, `Rs. ${transaction.amount.toFixed(2)}`]);
+
+      doc.autoTable({
+        startY: 88,
+        head: [['Description', 'Qty', 'Paid Amount', 'Total']],
+        body: tableData,
+        theme: 'striped',
+        headStyles: { fillColor: [184, 151, 42], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 9 },
+        bodyStyles: { textColor: [31, 41, 55], fontSize: 8 },
+        columnStyles: {
+          0: { cellWidth: 'auto' },
+          1: { cellWidth: 15, halign: 'center' },
+          2: { cellWidth: 30, halign: 'right' },
+          3: { cellWidth: 30, halign: 'right' }
+        },
+        margin: { left: 14, right: 14 }
+      });
+
+      const finalY = doc.lastAutoTable.finalY || 115;
+      const bookingTotal = booking.totalAmount;
+      const advancePaid = booking.advanceAmount;
+      const balanceDue = bookingTotal - advancePaid;
+
+      // Draw payment details on the left side
+      let leftY = finalY + 12;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8.5);
+      doc.setTextColor(184, 151, 42);
+      doc.text('TRANSACTION DETAILS', 14, leftY);
+      leftY += 6;
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(75, 85, 99);
+      doc.text(`Reference ID: ${receiptId}`, 14, leftY);
+      leftY += 5;
+      doc.text(`Payment Channel: ${transaction.method}`, 14, leftY);
+      leftY += 5;
+      doc.text(`Status: SUCCESSFUL`, 14, leftY);
+
+      // Financials card on the right side
+      let currentY = finalY + 8;
+      doc.setDrawColor(229, 231, 235);
+      doc.setFillColor(249, 250, 251);
+      doc.roundedRect(118, currentY, 78, 44, 3, 3, 'FD');
+
+      currentY += 6;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(75, 85, 99);
+
+      doc.text('Booking Grand Total:', 122, currentY);
+      doc.text(`Rs. ${bookingTotal.toFixed(2)}`, 192, currentY, { align: 'right' });
+      currentY += 6;
+
+      doc.text('Advance Amount Paid:', 122, currentY);
+      doc.setTextColor(16, 124, 65);
+      doc.text(`Rs. ${advancePaid.toFixed(2)}`, 192, currentY, { align: 'right' });
+      doc.setTextColor(75, 85, 99);
+      currentY += 6;
+
+      doc.setDrawColor(229, 231, 235);
+      doc.line(122, currentY, 192, currentY);
+      currentY += 5;
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9.5);
+      doc.setTextColor(185, 28, 28);
+      doc.text('Remaining Balance:', 122, currentY);
+      doc.text(`Rs. ${balanceDue.toFixed(2)}`, 192, currentY, { align: 'right' });
+
+      drawFooter(doc);
+      doc.save(`VibeNests_Payment_Receipt_${receiptId}.pdf`);
+    }
+  </script>
+</body>
+</html>

@@ -23,6 +23,7 @@ import {
   Briefcase,
   Sliders,
   Grid,
+  MessageSquare,
 } from "lucide-react";
 import { LogoPopover } from "@/components/shared/LogoPopover";
 import { useTranslation } from "react-i18next";
@@ -45,6 +46,7 @@ const navItemKeys: { [key: string]: string } = {
   "Offers & Coupon Configurations": "offersRefund",
   "Ratings & Reviews": "ratingsReviews",
   "Settings": "settings",
+  "Communication Center": "communicationCenter",
 };
 
 const navSections = [
@@ -65,6 +67,7 @@ const navSections = [
       { icon: Users, label: "User Management", to: "/customers" },
       { icon: Share2, label: "Referral Management", to: "/referrals" },
       { icon: Star, label: "Ratings & Reviews", to: "/reviews" },
+      { icon: MessageSquare, label: "Communication Center", to: "/communication" },
     ],
   },
   {

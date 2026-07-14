@@ -27,6 +27,7 @@ import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import ForgotPage from "@/pages/ForgotPage";
 import WriteReviewPage from "@/pages/WriteReviewPage";
 import ReviewsPage from "@/pages/ReviewsPage";
+import CommunicationPage from "@/pages/CommunicationPage";
 import PrivacyPolicyPage from "@/pages/PrivacyPolicyPage";
 import TermsOfUsePage from "@/pages/TermsOfUsePage";
 import ContactUsPage from "@/pages/ContactUsPage";
@@ -99,6 +100,7 @@ export default function App() {
               <Route path="/transactions" element={<TransactionsPage />} />
               <Route path="/refunds" element={<RefundsPage />} />
               <Route path="/reviews" element={<ReviewsPage />} />
+              <Route path="/communication" element={<CommunicationPage />} />
               <Route path="/settings" element={<SettingsPage />} />
 
             </Route>

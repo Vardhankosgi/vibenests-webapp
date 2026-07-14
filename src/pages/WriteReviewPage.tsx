@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -10,7 +10,7 @@ import {
 import { LanguageSelector } from "@/components/shared/LanguageSelector";
 import { useAuth } from "@/components/auth/AuthContext";
 import { useTranslation } from "react-i18next";
-import { reviewsApi } from "@/lib/api";
+import { reviewsApi, bookingsApi } from "@/lib/api";
 
 /* ─── Types ──────────────────────────────────────────── */
 type CategoryKey = "ambience" | "cleanliness" | "service" | "decoration" | "value";
@@ -73,6 +73,16 @@ export default function WriteReviewPage() {
   const displayName = user?.fullName || t("app.userDashboard.welcome_back_name", "Guest");
   const displayLetter = displayName ? displayName.charAt(0).toUpperCase() : "U";
   const displayEmail = user?.email || "";
+  
+  const [bookings, setBookings] = useState<any[]>([]);
+  const [loadingBookings, setLoadingBookings] = useState(true);
+  const [selectedBookingId, setSelectedBookingId] = useState<number | null>(null);
+  
+  const completedBookings = bookings.filter((b) => b.status === "completed" && !b.hasReview);
+  const isGeneralReview = completedBookings.length === 0;
+  const selectedBooking = bookings.find((b) => b.id === selectedBookingId);
+  const showForm = !loadingBookings && (selectedBookingId !== null || isGeneralReview);
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [ratings, setRatings] = useState<Record<CategoryKey, number>>({
     ambience: 0, cleanliness: 0, service: 0, decoration: 0, value: 0,
@@ -85,7 +95,27 @@ export default function WriteReviewPage() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const MAX_CHARS = 1000;
 
+  useEffect(() => {
+    fetchBookings();
+  }, []);
+
+  async function fetchBookings() {
+    setLoadingBookings(true);
+    try {
+      const data = await bookingsApi.getAll();
+      setBookings(data);
+    } catch (err: any) {
+      console.error("Failed to load bookings", err);
+    } finally {
+      setLoadingBookings(false);
+    }
+  }
+
   async function handleSubmit() {
+    if (!isGeneralReview && !selectedBookingId) {
+      setSubmitError("Please select a booking to review.");
+      return;
+    }
     if (!overall) { setShowError(true); return; }
     setShowError(false);
     setSubmitting(true);
@@ -99,6 +129,7 @@ export default function WriteReviewPage() {
         decoration: ratings.decoration,
         value: ratings.value,
         comment: review,
+        bookingId: selectedBookingId || undefined,
       });
       setSubmitted(true);
     } catch (err: any) {
@@ -228,10 +259,23 @@ export default function WriteReviewPage() {
                   {t("app.userDashboard.reviewSubmittedDesc", "Your review has been submitted. It helps us craft better experiences for every guest.")}
                 </p>
               </div>
-              <button onClick={() => navigate("/user/dashboard")}
-                className="gold-btn rounded-xl px-6 py-2.5 text-sm font-semibold flex items-center gap-2">
-                {t("app.userDashboard.backToDashboard", "Back to Dashboard")} <ChevronRight className="h-4 w-4" />
-              </button>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button onClick={() => navigate("/user/dashboard")}
+                  className="glass rounded-xl px-6 py-2.5 text-sm text-muted-foreground border border-white/10 hover:text-foreground hover:border-white/20 transition-all">
+                  {t("app.userDashboard.backToDashboard", "Back to Dashboard")}
+                </button>
+                <button onClick={() => {
+                  setSubmitted(false);
+                  setSelectedBookingId(null);
+                  setOverall(0);
+                  setRatings({ ambience: 0, cleanliness: 0, service: 0, decoration: 0, value: 0 });
+                  setReview("");
+                  fetchBookings();
+                }}
+                  className="gold-btn rounded-xl px-6 py-2.5 text-sm font-semibold flex items-center justify-center gap-2">
+                  {t("app.userDashboard.reviewAnotherStay", "Review Another Stay")} <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
             </motion.div>
           ) : (
             <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
@@ -281,149 +325,265 @@ export default function WriteReviewPage() {
               <div className="grid lg:grid-cols-[1fr_300px] gap-6 items-start">
                 <div className="space-y-5">
 
-                  {/* Booking Details */}
-                  {/* <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-                    className="glass-card rounded-2xl overflow-hidden">
-                    <div className="flex flex-col sm:flex-row">
-                      <div className="relative sm:w-40 h-36 sm:h-auto shrink-0"> */}
-                        {/* Image removed from My Bookings/booking flow; suite images now come from backend */}
-                        {/* <div className="w-full h-full bg-white/[0.03] flex items-center justify-center">
-                          <BedDouble className="h-12 w-12 text-gold/20" />
+                  {/* Completed Bookings Selection Section */}
+                  {(loadingBookings || completedBookings.length > 0) && (
+                    <div className="glass-card rounded-2xl p-6 space-y-4">
+                      <h3 className="font-display text-xl text-foreground flex items-center gap-2">
+                        <History className="h-5 w-5 text-gold" />
+                        {t("app.userDashboard.yourCompletedBookings", "Your Completed Bookings")}
+                      </h3>
+                      {loadingBookings ? (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
+                          <motion.div
+                            animate={{ rotate: 360 }}
+                            transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+                            className="h-4 w-4 border-2 border-gold border-t-transparent rounded-full"
+                          />
+                          {t("app.userDashboard.loadingBookings", "Loading bookings...")}
                         </div>
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent to-black/30 sm:bg-gradient-to-b" />
-                      </div>
-                      <div className="flex-1 p-5 space-y-3">
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <p className="text-[10px] font-mono text-muted-foreground tracking-widest">VN-2841</p>
-                            <h3 className="font-display text-lg text-foreground mt-0.5">Royal Penthouse Suite</h3>
-                            <p className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                              <MapPin className="h-3 w-3 text-gold/60" /> Mumbai, India
-                            </p>
-                          </div>
-                          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border bg-sky-400/10 border-sky-400/25 text-sky-400 text-[11px] font-semibold shrink-0">
-                            <CheckCircle2 className="h-3 w-3" /> {t("app.userDashboard.status_completed", "Completed")}
-                          </span>
-                        </div>
-                        <div className="grid grid-cols-3 gap-2">
-                          {[
-                            { label: t("app.userDashboard.date", "Date"), icon: CalendarDays, value: "Jan 28, 2025" },
-                            { label: t("app.userDashboard.time", "Time"), icon: Clock,        value: "2:00 PM"      },
-                            { label: t("app.userDashboard.guests", "Guests"), icon: Users,      value: t("app.userDashboard.guestsCount", "4 Guests", { count: 4 }) },
-                          ].map(({ label, icon: Icon, value }) => (
-                            <div key={label} className="bg-white/[0.03] rounded-xl px-3 py-2">
-                              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{label}</p>
-                              <div className="flex items-center gap-1 mt-0.5">
-                                <Icon className="h-3 w-3 text-gold/60 shrink-0" />
-                                <span className="text-xs text-foreground font-medium truncate">{value}</span>
+                      ) : (
+                        <div className="grid gap-4 sm:grid-cols-2">
+                          {completedBookings.map((b) => (
+                            <div
+                              key={b.id}
+                              className={`glass-card rounded-xl p-4 flex flex-col justify-between border transition-all ${
+                                selectedBookingId === b.id ? "border-gold bg-gold/5" : "border-white/5 hover:border-white/10"
+                              }`}
+                            >
+                              <div className="space-y-2">
+                                <div className="flex items-start justify-between">
+                                  <div>
+                                    <p className="text-[10px] font-mono text-muted-foreground">#{b.orderId || b.id}</p>
+                                    <h4 className="font-display text-base font-semibold text-foreground mt-0.5">
+                                      {b.suiteName || "Luxury Suite"}
+                                    </h4>
+                                  </div>
+                                </div>
+                                <div className="space-y-1 text-xs text-muted-foreground">
+                                  <p className="flex items-center gap-1.5">
+                                    <CalendarDays className="h-3.5 w-3.5 text-gold/60" /> {b.date}
+                                  </p>
+                                  <p className="flex items-center gap-1.5">
+                                    <Clock className="h-3.5 w-3.5 text-gold/60" /> {b.timeSlot}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="mt-4">
+                                <button
+                                  onClick={() => setSelectedBookingId(b.id)}
+                                  className={`w-full text-center py-2 text-xs font-semibold rounded-lg transition-all ${
+                                    selectedBookingId === b.id
+                                      ? "bg-gold text-[oklch(0.12_0.02_260)]"
+                                      : "bg-gold/10 hover:bg-gold/15 text-gold border border-gold/20"
+                                  }`}
+                                >
+                                  {selectedBookingId === b.id
+                                    ? t("app.userDashboard.selectedForReview", "Selected")
+                                    : t("app.userDashboard.writeReviewBtn", "Write Review")}
+                                </button>
                               </div>
                             </div>
                           ))}
                         </div>
-                      </div>
+                      )}
                     </div>
-                  </motion.div> */}
+                  )}
 
-                  {/* Category Ratings */}
-                  <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
-                    className="glass-card rounded-2xl p-6 space-y-4">
-                    <div>
-                      <p className="text-xs uppercase tracking-widest text-muted-foreground mb-0.5">{t("app.userDashboard.rateYourStay", "Rate Your Stay")}</p>
-                      <h3 className="font-display text-xl text-foreground">{t("app.userDashboard.categoryRatings", "Category Ratings")}</h3>
-                    </div>
-                    <div className="space-y-1">
-                      {CATEGORIES.map(({ key, label }, i) => {
-                        const transKey = key === "value" ? "valueForMoney" : key;
-                        const translatedLabel = t("app.userDashboard." + transKey, label);
-                        return (
-                          <motion.div key={key}
-                            initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 0.2 + i * 0.05 }}
-                            className="flex items-center justify-between py-3 border-b border-white/5 last:border-0">
-                            <span className="text-sm text-foreground font-medium w-36 shrink-0">{translatedLabel}</span>
-                            <div className="flex items-center gap-4">
-                              <StarRating value={ratings[key]}
-                                onChange={(v) => setRatings((prev) => ({ ...prev, [key]: v }))}
-                                size="sm" />
-                              <span className={`text-xs w-16 text-right transition-colors ${ratings[key] ? "text-gold" : "text-muted-foreground"}`}>
-                                {ratings[key] ? t("app.userDashboard.overallLabels_" + ratings[key], OVERALL_LABELS[ratings[key]]) : "—"}
-                              </span>
+                  {/* Review Form - Visible when a booking is selected OR for general reviews */}
+                  <AnimatePresence>
+                    {showForm ? (
+                      <motion.div
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 15 }}
+                        className="space-y-5"
+                      >
+                        {/* Selected Booking Summary */}
+                        {selectedBooking && (
+                          <div className="glass-card rounded-2xl p-5 border border-gold/20 bg-gold/5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                            <div>
+                              <p className="text-[10px] text-gold uppercase tracking-wider font-semibold">
+                                {t("app.userDashboard.nowReviewing", "You are reviewing")}
+                              </p>
+                              <h3 className="font-display text-lg text-foreground font-semibold mt-0.5">
+                                {selectedBooking.suiteName}
+                              </h3>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Stayed on {selectedBooking.date} at {selectedBooking.timeSlot}
+                              </p>
                             </div>
-                          </motion.div>
-                        );
-                      })}
-                    </div>
-                  </motion.div>
-
-                  {/* Overall Experience */}
-                  <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
-                    className={`glass-card rounded-2xl p-6 space-y-4 ${showError && !overall ? "border-rose-500/40" : ""}`}>
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-xs uppercase tracking-widest text-muted-foreground mb-0.5">{t("app.userDashboard.required", "Required")}</p>
-                        <h3 className="font-display text-xl text-foreground">{t("app.userDashboard.overallExperience", "Overall Experience")}</h3>
-                      </div>
-                      <AnimatePresence mode="wait">
-                        {overall > 0 && (
-                          <motion.span key={overall}
-                            initial={{ opacity: 0, scale: 0.8, y: -4 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.8 }}
-                            className={`px-3 py-1 rounded-full border border-white/10 bg-white/5 text-sm font-semibold ${OVERALL_COLORS[overall]}`}>
-                            {t("app.userDashboard.overallLabels_" + overall, OVERALL_LABELS[overall])}
-                          </motion.span>
+                            <button
+                              onClick={() => setSelectedBookingId(null)}
+                              className="text-xs text-muted-foreground hover:text-foreground transition-colors py-1.5 px-3 rounded-lg border border-white/10 hover:bg-white/5"
+                            >
+                              {t("app.userDashboard.changeBooking", "Change Booking")}
+                            </button>
+                          </div>
                         )}
-                      </AnimatePresence>
-                    </div>
-                    <StarRating value={overall} onChange={(v) => { setOverall(v); setShowError(false); }} size="lg" />
-                    {showError && !overall && (
-                      <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
-                        className="text-xs text-rose-400 flex items-center gap-1.5">
-                        <span className="h-1.5 w-1.5 rounded-full bg-rose-400 shrink-0" />
-                        {t("app.userDashboard.ratingRequiredError", "Please rate your overall experience before submitting.")}
-                      </motion.p>
-                    )}
-                  </motion.div>
 
-                  {/* Review Text */}
-                  <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-                    className="glass-card rounded-2xl p-6 space-y-4">
-                    <div className="flex items-center gap-2">
-                      <MessageSquare className="h-4 w-4 text-gold" />
-                      <h3 className="font-display text-xl text-foreground">{t("app.userDashboard.yourReview", "Your Review")}</h3>
-                    </div>
-                    <textarea value={review}
-                      onChange={(e) => setReview(e.target.value.slice(0, MAX_CHARS))}
-                      rows={5}
-                      placeholder={t("app.userDashboard.reviewPlaceholder", "Share details about your experience — the ambience, service, what stood out, and anything that could be improved...")}
-                      className="luxury-input w-full rounded-xl px-4 py-4 text-sm text-foreground bg-black/40 resize-none leading-relaxed" />
-                    <div className="flex items-center justify-between">
-                      <p className="text-[11px] text-muted-foreground">{t("app.userDashboard.charsLimit", "Be specific and honest — your feedback matters.")}</p>
-                      <span className={`text-[11px] font-mono ${review.length >= MAX_CHARS ? "text-rose-400" : review.length > 800 ? "text-amber-400" : "text-muted-foreground"}`}>
-                        {review.length} / {MAX_CHARS}
-                      </span>
-                    </div>
-                  </motion.div>
+                        {/* Category Ratings */}
+                        <div className="glass-card rounded-2xl p-6 space-y-4">
+                          <div>
+                            <p className="text-xs uppercase tracking-widest text-muted-foreground mb-0.5">
+                              {t("app.userDashboard.rateYourStay", "Rate Your Stay")}
+                            </p>
+                            <h3 className="font-display text-xl text-foreground">
+                              {t("app.userDashboard.categoryRatings", "Category Ratings")}
+                            </h3>
+                          </div>
+                          <div className="space-y-1">
+                            {CATEGORIES.map(({ key, label }, i) => {
+                              const transKey = key === "value" ? "valueForMoney" : key;
+                              const translatedLabel = t("app.userDashboard." + transKey, label);
+                              return (
+                                <motion.div
+                                  key={key}
+                                  initial={{ opacity: 0, x: -8 }}
+                                  animate={{ opacity: 1, x: 0 }}
+                                  transition={{ delay: 0.1 + i * 0.05 }}
+                                  className="flex items-center justify-between py-3 border-b border-white/5 last:border-0"
+                                >
+                                  <span className="text-sm text-foreground font-medium w-36 shrink-0">{translatedLabel}</span>
+                                  <div className="flex items-center gap-4">
+                                    <StarRating
+                                      value={ratings[key]}
+                                      onChange={(v) => setRatings((prev) => ({ ...prev, [key]: v }))}
+                                      size="sm"
+                                    />
+                                    <span
+                                      className={`text-xs w-16 text-right transition-colors ${
+                                        ratings[key] ? "text-gold" : "text-muted-foreground"
+                                      }`}
+                                    >
+                                      {ratings[key] ? t("app.userDashboard.overallLabels_" + ratings[key], OVERALL_LABELS[ratings[key]]) : "—"}
+                                    </span>
+                                  </div>
+                                </motion.div>
+                              );
+                            })}
+                          </div>
+                        </div>
 
-                  {/* Buttons */}
-                  <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
-                    className="flex flex-col gap-3 pb-8">
-                    {submitError && (
-                      <p className="text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-xl px-4 py-2 text-center">
-                        {submitError}
-                      </p>
+                        {/* Overall Experience */}
+                        <div className={`glass-card rounded-2xl p-6 space-y-4 ${showError && !overall ? "border-rose-500/40" : ""}`}>
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="text-xs uppercase tracking-widest text-muted-foreground mb-0.5">
+                                {t("app.userDashboard.required", "Required")}
+                              </p>
+                              <h3 className="font-display text-xl text-foreground">
+                                {t("app.userDashboard.overallExperience", "Overall Experience")}
+                              </h3>
+                            </div>
+                            <AnimatePresence mode="wait">
+                              {overall > 0 && (
+                                <motion.span
+                                  key={overall}
+                                  initial={{ opacity: 0, scale: 0.8, y: -4 }}
+                                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                                  exit={{ opacity: 0, scale: 0.8 }}
+                                  className={`px-3 py-1 rounded-full border border-white/10 bg-white/5 text-sm font-semibold ${OVERALL_COLORS[overall]}`}
+                                >
+                                  {t("app.userDashboard.overallLabels_" + overall, OVERALL_LABELS[overall])}
+                                </motion.span>
+                              )}
+                            </AnimatePresence>
+                          </div>
+                          <StarRating value={overall} onChange={(v) => { setOverall(v); setShowError(false); }} size="lg" />
+                          {showError && !overall && (
+                            <motion.p
+                              initial={{ opacity: 0, y: -4 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className="text-xs text-rose-400 flex items-center gap-1.5"
+                            >
+                              <span className="h-1.5 w-1.5 rounded-full bg-rose-400 shrink-0" />
+                              {t("app.userDashboard.ratingRequiredError", "Please rate your overall experience before submitting.")}
+                            </motion.p>
+                          )}
+                        </div>
+
+                        {/* Review Text */}
+                        <div className="glass-card rounded-2xl p-6 space-y-4">
+                          <div className="flex items-center gap-2">
+                            <MessageSquare className="h-4 w-4 text-gold" />
+                            <h3 className="font-display text-xl text-foreground">
+                              {t("app.userDashboard.yourReview", "Your Review")}
+                            </h3>
+                          </div>
+                          <textarea
+                            value={review}
+                            onChange={(e) => setReview(e.target.value.slice(0, MAX_CHARS))}
+                            rows={5}
+                            placeholder={t(
+                              "app.userDashboard.reviewPlaceholder",
+                              "Share details about your experience — the ambience, service, what stood out, and anything that could be improved..."
+                            )}
+                            className="luxury-input w-full rounded-xl px-4 py-4 text-sm text-foreground bg-black/40 resize-none leading-relaxed"
+                          />
+                          <div className="flex items-center justify-between">
+                            <p className="text-[11px] text-muted-foreground">
+                              {t("app.userDashboard.charsLimit", "Be specific and honest — your feedback matters.")}
+                            </p>
+                            <span
+                              className={`text-[11px] font-mono ${
+                                review.length >= MAX_CHARS
+                                  ? "text-rose-400"
+                                  : review.length > 800
+                                  ? "text-amber-400"
+                                  : "text-muted-foreground"
+                              }`}
+                            >
+                              {review.length} / {MAX_CHARS}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Submit/Cancel Buttons */}
+                        <div className="flex flex-col gap-3 pb-8">
+                          {submitError && (
+                            <p className="text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-xl px-4 py-2 text-center">
+                              {submitError}
+                            </p>
+                          )}
+                          <div className="flex gap-3">
+                            <button
+                              onClick={() => {
+                                if (isGeneralReview) {
+                                  navigate("/user/dashboard");
+                                } else {
+                                  setSelectedBookingId(null);
+                                }
+                              }}
+                              disabled={submitting}
+                              className="flex-1 glass rounded-xl py-3 text-sm text-muted-foreground border border-white/10 hover:text-foreground hover:border-white/20 transition-all disabled:opacity-50"
+                            >
+                              {t("app.userDashboard.cancel", "Cancel")}
+                            </button>
+                            <button
+                              onClick={handleSubmit}
+                              disabled={submitting}
+                              className="flex-1 gold-btn rounded-xl py-3 text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
+                            >
+                              {submitting ? (
+                                "Submitting..."
+                              ) : (
+                                <>
+                                  <Sparkles className="h-4 w-4" /> {t("app.userDashboard.submitReview", "Submit Review")}
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ) : (
+                      <div className="glass-card rounded-2xl p-8 text-center text-muted-foreground text-sm border border-dashed border-white/10">
+                        {t(
+                          "app.userDashboard.selectBookingPrompt",
+                          "Please select a completed stay from the list above to begin writing your review."
+                        )}
+                      </div>
                     )}
-                    <div className="flex gap-3">
-                      <button onClick={() => navigate("/user/dashboard")}
-                        disabled={submitting}
-                        className="flex-1 glass rounded-xl py-3 text-sm text-muted-foreground border border-white/10 hover:text-foreground hover:border-white/20 transition-all disabled:opacity-50">
-                        {t("app.userDashboard.cancel", "Cancel")}
-                      </button>
-                      <button onClick={handleSubmit}
-                        disabled={submitting}
-                        className="flex-1 gold-btn rounded-xl py-3 text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
-                        {submitting ? "Submitting..." : <><Sparkles className="h-4 w-4" /> {t("app.userDashboard.submitReview", "Submit Review")}</>}
-                      </button>
-                    </div>
-                  </motion.div>
+                  </AnimatePresence>
                 </div>
 
                 {/* Sidebar info card */}

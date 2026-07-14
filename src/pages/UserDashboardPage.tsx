@@ -241,6 +241,7 @@ type Transaction = {
   date: string; status: "completed" | "pending" | "failed";
   category: "booking" | "refund" | "topup" | "withdrawal";
   method: string; invoice?: string;
+  booking?: any;
 };
 type PaymentMethod = {
   id: string; type: "visa" | "mastercard" | "upi" | "bank";
@@ -498,6 +499,7 @@ function RequestCancellationModal({ bookingId, onClose, onSuccess }: { bookingId
 /* ─── Booking Details Drawer ─────────────────────────── */
 function BookingDetailsDrawer({ booking, onClose }: { booking: Booking; onClose: () => void }) {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const s = STATUS_CONFIG[booking.status];
   const SI = s.icon;
@@ -821,7 +823,7 @@ function BookingDetailsDrawer({ booking, onClose }: { booking: Booking; onClose:
                 </div>
                 <p className="text-xs text-muted-foreground">{t("app.userDashboard.invoiceDesc", "Invoice #{{id}}-INV · Generated on booking confirmation", { id: booking.id })}</p>
                 <button
-                  onClick={() => generateBookingInvoicePDF(booking, null, booking.addons || [])}
+                  onClick={() => generateBookingInvoicePDF(details || booking, user, details?.addOnsDetails || booking.addons || [])}
                   className="flex items-center gap-2 px-4 py-2 rounded-xl border border-gold/30 bg-gold/8 text-gold text-sm hover:bg-gold/15 transition-colors w-full justify-center">
                   <Download className="h-4 w-4" /> {t("app.userDashboard.downloadInvoicePdf", "Download Invoice PDF")}
                 </button>
@@ -1134,6 +1136,7 @@ function SuiteCard({ suite, index, onBookNow }: { suite: ReturnType<typeof useSu
 /* ─── Transaction Details Modal ──────────────────────── */
 function TransactionModal({ txn, onClose }: { txn: Transaction; onClose: () => void }) {
   const { t } = useTranslation();
+  const { user } = useAuth();
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -1180,7 +1183,7 @@ function TransactionModal({ txn, onClose }: { txn: Transaction; onClose: () => v
             </div>
           </div>
           {txn.invoice && (
-            <button onClick={() => generateTransactionInvoicePDF(txn)}
+            <button onClick={() => generateTransactionInvoicePDF(txn, user)}
               className="w-full gold-btn rounded-xl py-2.5 text-sm font-semibold flex items-center justify-center gap-2">
               <Download className="h-4 w-4" /> {t("app.userDashboard.downloadInvoice", "Download Invoice")}
             </button>
@@ -1787,6 +1790,7 @@ function WalletView() {
       category: isRefund ? "refund" : "booking",
       method: p.method || "Other",
       invoice: p.bookingId ? `INV-${p.bookingId}` : undefined,
+      booking: p.booking,
     };
   });
 
@@ -2875,9 +2879,11 @@ function ProfileView({ referralStats, refreshReferrals }: { referralStats: any; 
     return `${yyyy}-${mm}-${dd}`;
   }
 
+  const isEmailPlaceholder = !user?.email || user.email.endsWith('@phone.local');
+
   const [form, setForm] = useState({
-    fullName: user?.fullName || '',
-    email: user?.email || '',
+    fullName: user?.fullName === 'New Guest' ? '' : (user?.fullName || ''),
+    email: isEmailPlaceholder ? '' : (user?.email || ''),
     phone: user?.phone || '',
     dateOfBirth: toDateInputValue((user as any)?.dateOfBirth) || '',
     marriageDate: toDateInputValue((user as any)?.marriageDate) || '',
@@ -2888,9 +2894,10 @@ function ProfileView({ referralStats, refreshReferrals }: { referralStats: any; 
 
   useEffect(() => {
     if (user) {
+      const isPl = !user.email || user.email.endsWith('@phone.local');
       setForm({
-        fullName: user.fullName || '',
-        email: user.email || '',
+        fullName: user.fullName === 'New Guest' ? '' : (user.fullName || ''),
+        email: isPl ? '' : (user.email || ''),
         phone: user.phone || '',
         dateOfBirth: toDateInputValue((user as any).dateOfBirth) || '',
         marriageDate: toDateInputValue((user as any)?.marriageDate) || '',
@@ -2898,13 +2905,16 @@ function ProfileView({ referralStats, refreshReferrals }: { referralStats: any; 
     } else {
       setLoading(true);
       usersApi.me()
-        .then((u: any) => setForm({
-          fullName: u.fullName || '',
-          email: u.email || '',
-          phone: u.phone || '',
-          dateOfBirth: toDateInputValue(u.dateOfBirth) || '',
-          marriageDate: toDateInputValue(u.marriageDate) || '',
-        }))
+        .then((u: any) => {
+          const isPl = !u.email || u.email.endsWith('@phone.local');
+          setForm({
+            fullName: u.fullName === 'New Guest' ? '' : (u.fullName || ''),
+            email: isPl ? '' : (u.email || ''),
+            phone: u.phone || '',
+            dateOfBirth: toDateInputValue(u.dateOfBirth) || '',
+            marriageDate: toDateInputValue(u.marriageDate) || '',
+          });
+        })
         .catch(console.error)
         .finally(() => setLoading(false));
     }
@@ -2915,18 +2925,33 @@ function ProfileView({ referralStats, refreshReferrals }: { referralStats: any; 
       alert(t("app.validation.nameRequired", "Full name is required"));
       return;
     }
+    const emailTrim = form.email.trim();
+    if (isEmailPlaceholder) {
+      if (!emailTrim) {
+        alert(t("app.validation.emailRequired", "Email address is required"));
+        return;
+      }
+      if (!/\S+@\S+\.\S+/.test(emailTrim)) {
+        alert(t("app.validation.emailInvalid", "Please enter a valid email address"));
+        return;
+      }
+    }
     setSaving(true);
     try {
-      const payload = {
+      const payload: any = {
         fullName: form.fullName.trim(),
         marriageDate: form.marriageDate || undefined
       };
-      const updated = await usersApi.updateMe(payload);
+      if (isEmailPlaceholder) {
+        payload.email = emailTrim;
+      }
+      const updated = await (usersApi as any).updateMe(payload);
 
 
       setForm((f: any) => ({
         ...f,
         fullName: updated.fullName || '',
+        email: updated.email || '',
         marriageDate: toDateInputValue(updated?.marriageDate) || '',
       }));
 
@@ -2936,6 +2961,7 @@ function ProfileView({ referralStats, refreshReferrals }: { referralStats: any; 
         saveSession(token, refresh, {
           ...user,
           fullName: updated.fullName,
+          email: updated.email,
           phone: updated.phone || '',
           dateOfBirth: updated.dateOfBirth || '',
         });
@@ -2967,7 +2993,17 @@ function ProfileView({ referralStats, refreshReferrals }: { referralStats: any; 
           </div>
           <div className="space-y-1.5">
             <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">{t("app.auth.emailLabel", "Email Address")}</label>
-            <input type="email" value={form.email} disabled className="luxury-input w-full rounded-xl px-4 py-2.5 text-sm text-foreground bg-transparent opacity-60 cursor-not-allowed" />
+            {isEmailPlaceholder ? (
+              <input
+                type="email"
+                value={form.email}
+                onChange={(e) => setForm((f: any) => ({ ...f, email: e.target.value }))}
+                placeholder="Enter your email address"
+                className="luxury-input w-full rounded-xl px-4 py-2.5 text-sm text-foreground bg-transparent"
+              />
+            ) : (
+              <input type="email" value={form.email} disabled className="luxury-input w-full rounded-xl px-4 py-2.5 text-sm text-foreground bg-transparent opacity-60 cursor-not-allowed" />
+            )}
           </div>
           <div className="space-y-1.5">
             <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">{t("app.auth.phoneNumber", "Phone Number")}</label>
@@ -3113,7 +3149,16 @@ export default function UserDashboardPage() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const [referralStats, setReferralStats] = useState<any>(null);
-  const [activeNav, setActiveNav] = useState("dashboard");
+  const isProfileIncomplete = user?.fullName === 'New Guest' || !user?.email || user?.email?.endsWith('@phone.local');
+  const [activeNav, setActiveNav] = useState(isProfileIncomplete ? "profile" : "dashboard");
+
+  useEffect(() => {
+    if (isProfileIncomplete) {
+      setActiveNav("profile");
+    } else if (activeNav === "profile" && user?.fullName !== 'New Guest' && user?.email && !user?.email?.endsWith('@phone.local')) {
+      setActiveNav("dashboard");
+    }
+  }, [isProfileIncomplete, user?.fullName, user?.email]);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -3303,11 +3348,13 @@ export default function UserDashboardPage() {
                       className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10 transition-colors">
                       <LogOut className="h-4 w-4 shrink-0" /> {t("app.userDashboard.logout", "Logout")}
                     </button>
-                    <button
-                      onClick={() => setProfileOpen(false)}
-                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors">
-                      <X className="h-4 w-4 shrink-0" /> {t("app.userDashboard.cancel", "Cancel")}
-                    </button>
+                    {!isProfileIncomplete && (
+                      <button
+                        onClick={() => setProfileOpen(false)}
+                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors">
+                        <X className="h-4 w-4 shrink-0" /> {t("app.userDashboard.cancel", "Cancel")}
+                      </button>
+                    )}
                   </motion.div>
                 </>
               )}
@@ -3369,16 +3416,21 @@ export default function UserDashboardPage() {
                                       id === "write-review" ? t("app.userDashboard.writeReview", "Write a Review") :
                                         label;
 
+              const isDisabled = isProfileIncomplete && id !== "profile";
               return (
                 <button key={id}
-                  title={sidebarCollapsed ? translatedLabel : undefined}
+                  disabled={isDisabled}
+                  title={sidebarCollapsed ? translatedLabel : (isDisabled ? "Please complete profile setup first" : undefined)}
                   onClick={() => {
+                    if (isDisabled) return;
                     if (id === "write-review") { navigate("/user/write-review"); setSidebarOpen(false); return; }
                     setActiveNav(id); setSidebarOpen(false);
                   }}
                   className={`w-full flex items-center gap-3 px-2.5 py-2.5 border rounded-xl text-sm transition-all
                     ${sidebarCollapsed ? "justify-center" : ""}
-                    ${active ? "bg-gold/15 border-gold/25 text-gold font-medium" : "border-transparent text-muted-foreground hover:bg-white/5 hover:text-foreground"}`}>
+                    ${active ? "bg-gold/15 border-gold/25 text-gold font-medium" : "border-transparent text-muted-foreground hover:bg-white/5 hover:text-foreground"}
+                    ${isDisabled ? "opacity-30 cursor-not-allowed hover:bg-transparent hover:text-muted-foreground" : ""}`}
+                >
                   <Icon className={`h-4 w-4 shrink-0 ${active ? "text-gold" : ""}`} />
                   {!sidebarCollapsed && translatedLabel}
                 </button>

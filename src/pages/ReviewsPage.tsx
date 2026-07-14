@@ -24,6 +24,7 @@ interface ReviewType {
   comment: string;
   createdAt: string;
   user: ReviewUser;
+  suiteName?: string;
 }
 
 export default function ReviewsPage() {
@@ -319,8 +320,13 @@ export default function ReviewsPage() {
                                 {userLetter}
                               </div>
                               <div className="min-w-0">
-                                <h4 className="text-sm font-semibold text-foreground truncate">
+                                <h4 className="text-sm font-semibold text-foreground truncate flex items-center gap-2">
                                   {r.user?.fullName || "Anonymous Guest"}
+                                  {r.suiteName && (
+                                    <span className="px-2 py-0.5 rounded-full text-[9px] bg-gold/10 border border-gold/20 text-gold uppercase tracking-wider font-semibold">
+                                      {r.suiteName}
+                                    </span>
+                                  )}
                                 </h4>
                                 <p className="text-[11px] text-muted-foreground truncate">
                                   {r.user?.email || "No email"}

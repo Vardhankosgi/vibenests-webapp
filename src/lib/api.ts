@@ -272,6 +272,7 @@ export const reviewsApi = {
     decoration?: number;
     value?: number;
     comment?: string;
+    bookingId?: number;
   }) => request<any>('/reviews', { method: 'POST', body: JSON.stringify(body) }),
   remove: (id: number) => request<any>(`/reviews/${id}`, { method: 'DELETE' }),
 };
